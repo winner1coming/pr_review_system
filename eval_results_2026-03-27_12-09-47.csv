@@ -1,3 +1,0 @@
-repo,pr,strategy,recall,time
-fastapi/fastapi,15232,baseline,,2026-03-27 12:09:14
-fastapi/fastapi,15232,with_readme,,2026-03-27 12:09:46

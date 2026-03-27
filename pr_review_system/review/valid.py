@@ -1,17 +1,15 @@
 def is_valid_pr(pr):
-    # 1️⃣ 必须有 review comment
-    if pr.get("review_comments", 0) == 0:
-        return False
+    # 2️⃣ 标题过滤（轻量，不要过度）
+    title = pr.get("title", "").lower()
 
-    # 2️⃣ 过滤垃圾 PR
-    title = pr["title"].lower()
-    INVALID_KEYWORDS = ["typo", "doc", "readme", "chore", "bump"]
+    INVALID_KEYWORDS = ["typo", "chore", "bump", "format"]
 
     if any(k in title for k in INVALID_KEYWORDS):
         return False
 
     # 3️⃣ 过滤 bot
-    if "bot" in pr["user"]["login"].lower():
+    user = pr.get("user", {}).get("login", "").lower()
+    if "bot" in user:
         return False
 
     return True

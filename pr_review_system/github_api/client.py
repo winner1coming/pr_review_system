@@ -58,3 +58,13 @@ class GitHubClient:
             return []
     
         return r.json()
+    
+    def get_issue_comments(self, owner, repo, pr_number):
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
+        r = requests.get(url, headers=self.headers)
+
+        if r.status_code != 200:
+            print("GitHub API error:", r.text)
+            return []
+
+        return r.json()

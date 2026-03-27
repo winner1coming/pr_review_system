@@ -8,6 +8,7 @@ from pr_review_system.llm.client import LLMClient
 from pr_review_system.output.writer import save_results
 from pr_review_system.evaluation.evalution_base import EvalutionBase
 from pr_review_system.review.get_valid_prs import get_valid_prs
+from pr_review_system.config import MAX_PRS
 
 import time
 
@@ -21,7 +22,7 @@ class Reviewer:
     def run(self, repo_name):
         owner, repo = repo_name.split("/")
 
-        prs = get_valid_prs(self.github,owner, repo)
+        prs = get_valid_prs(self.github,owner, repo, MAX_PRS)
         readme = self.github.get_readme(owner, repo)
 
         results = []
@@ -42,9 +43,12 @@ class Reviewer:
             commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits[-3:]]
             comments = self.github.get_review_comments(owner, repo, pr_number)
             people_reviews = self.github.get_reviews(owner, repo, pr_number)
+            issue_comments = self.github.get_issue_comments(owner, repo, pr_number)
             review_comments = []
             review_comments += [c["body"] for c in comments if c["body"]]
             review_comments += [r["body"] for r in people_reviews if r["body"]]
+            review_comments += [c["body"] for c in issue_comments if c["body"]]
+
             print(f"评论{review_comments}")
 
             if not review_comments:
