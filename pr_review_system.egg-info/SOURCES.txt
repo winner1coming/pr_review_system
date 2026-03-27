@@ -9,6 +9,8 @@ pr_review_system.egg-info/dependency_links.txt
 pr_review_system.egg-info/entry_points.txt
 pr_review_system.egg-info/requires.txt
 pr_review_system.egg-info/top_level.txt
+pr_review_system/evaluation/__init__.py
+pr_review_system/evaluation/evalution_base.py
 pr_review_system/github_api/__init__.py
 pr_review_system/github_api/client.py
 pr_review_system/github_api/pr_service.py

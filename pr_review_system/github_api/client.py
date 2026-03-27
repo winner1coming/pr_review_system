@@ -8,7 +8,7 @@ class GitHubClient:
         }
 
     def get_prs(self, owner, repo):
-        url = f"https://api.github.com/repos/{owner}/{repo}/pulls?state=closed"
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls?state=all"
         return requests.get(url, headers=self.headers).json()
 
     def get_pr_files(self, owner, repo, pr_number):
@@ -38,4 +38,33 @@ class GitHubClient:
             print("GitHub API error:", r.text)
             return []
     
+        return r.json()
+    
+    # 获取PR的评论信息,用于评估LLM审查结果的合理性
+    def get_review_comments(self, owner, repo, pr_number):
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/comments"
+        r = requests.get(url, headers=self.headers)
+        if r.status_code != 200:
+            print("GitHub API error:", r.text)
+            return []
+    
+        return r.json()
+    
+    def get_reviews(self, owner, repo, pr_number):
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+        r = requests.get(url, headers=self.headers)
+        if r.status_code != 200:
+            print("GitHub API error:", r.text)
+            return []
+    
+        return r.json()
+    
+    def get_issue_comments(self, owner, repo, pr_number):
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
+        r = requests.get(url, headers=self.headers)
+
+        if r.status_code != 200:
+            print("GitHub API error:", r.text)
+            return []
+
         return r.json()

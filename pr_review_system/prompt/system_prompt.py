@@ -83,3 +83,30 @@ def build_context_system_prompt():
 如果没有发现问题，返回空数组：[]
 
 禁止输出 Markdown、解释性文本或额外说明。'''
+
+def build_match_base_prompt():
+    return '''你是一个代码审查评估专家。
+
+任务：判断AI生成的审查意见，是否覆盖了人类review提出的问题。
+
+【输入内容包括】
+1. 人类Review（Ground Truth）
+2. 【AI生成的Review】
+
+---
+
+【判断标准】
+如果AI review中表达了“相同或等价的问题”，即认为覆盖（match = 1）
+否则认为未覆盖（match = 0）
+
+---
+
+【输出格式（严格JSON）】
+只允许输出：
+
+{{
+  "match": 0 或 1,
+  "reason": "简要说明原因"
+}}
+
+禁止输出任何额外内容。'''

@@ -3,7 +3,7 @@ from pr_review_system.config import DEEPSEEK_API_KEY
 
 class LLMClient:
 
-    def review(self, prompt):
+    def review(self, prompt,temperature=0.3):
         url = "https://api.deepseek.com/v1/chat/completions"
 
         headers = {
@@ -17,7 +17,7 @@ class LLMClient:
                 {"role": "system", "content": prompt["system"]},
                 {"role": "user", "content": prompt["user"]}
             ],
-            "temperature": 0.3
+            "temperature": temperature
         }
 
         r = requests.post(url, json=data, headers=headers)
