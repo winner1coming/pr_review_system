@@ -1,0 +1,45 @@
+repo,pr,strategy,review,commits,review_comments,time
+kubernetes/kubernetes,138059,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在轮询函数中，当 `metricstestutil.GetHistogramMetricCount` 返回错误时，函数返回 `false, nil`。这会导致轮询逻辑将错误视为非致命情况并继续重试，而不是传播错误或失败。如果获取指标计数持续失败（例如由于底层指标系统问题），测试可能会在超时后失败，但错误信息可能无法准确反映根本原因（获取指标失败）。"",
+    ""evidence"": ""if err := wait.PollUntilContextTimeout(ctx, 20*time.Millisecond, 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {\n\t\t\tcount, err := metricstestutil.GetHistogramMetricCount(monitor.ReconciliationsDuration.WithLabelValues(actionStr, errorStr))\n\t\t\tif err != nil {\n\t\t\t\treturn false, nil\n\t\t\t}\n\t\t\treturn count >= 1, nil\n\t\t}); err != nil {\n\t\t\tt.Fatalf(\""%s metric was not recorded for action=%s, error=%s\"", monitor.ReconciliationsDuration.Name, actionStr, errorStr)\n\t\t}"",
+    ""advice"": ""考虑在 `metricstestutil.GetHistogramMetricCount` 返回错误时，要么返回 `false, err` 以传播错误并让轮询函数因该错误而停止，要么至少记录该错误以便调试。例如：`if err != nil { t.Logf(\""Warning: failed to get metric count: %v\"", err); return false, nil }`。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""错误信息格式化字符串中使用了 `monitor.ReconciliationsDuration.Name`，这与之前使用的 `monitor.ReconciliationsTotal.Name` 不一致。虽然这可能正确，但为了清晰和一致性，可以考虑使用更具描述性的常量或变量名。此外，错误信息本身（\""metric was not recorded\""）在两种情况下是相同的，但使用了不同的指标名称变量，这可能会在将来修改时引入错误。"",
+    ""evidence"": ""t.Fatalf(\""%s metric was not recorded for action=%s, error=%s\"", monitor.ReconciliationsDuration.Name, actionStr, errorStr)"",
+    ""advice"": ""为了更好的可读性和维护性，可以考虑定义一个通用的错误信息格式，或者确保所有类似的错误信息都使用一致的变量命名方式。例如，可以创建一个辅助函数来生成此类错误信息。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '845c461b989f709f4d352ae53b30d0359119da32', 'message': 'Adds polling for HPA reconciliation_duration unit test\n\nSigned-off-by: Omer Aplatony <omerap12@gmail.com>'}, {'sha': 'e34c056adf0e795a180ac78f28e3e167bdfa9f35', 'message': 'using struct name\n\nSigned-off-by: Omer Aplatony <omerap12@gmail.com>'}]","['If this approach above is valid, should we add polling for this as well?', 'This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>', '[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nThis pull-request has been approved by: *<a href=""https://github.com/kubernetes/kubernetes/pull/138059#"" title=""Author self-approved"">omerap12</a>*\n**Once this PR has been reviewed and has the lgtm label**, please assign [mwielgus](https://github.com/mwielgus) for approval. For more information see [the Code Review Process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process).\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\n<details open>\nNeeds approval from an approver in each of these files:\n\n- **[pkg/controller/podautoscaler/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/podautoscaler/OWNERS)**\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={""approvers"":[""mwielgus""]} -->']",2026-03-27 23:22:08
+kubernetes/kubernetes,138059,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在验证 `ReconciliationsDuration` 指标时，如果 `metricstestutil.GetHistogramMetricCount` 返回错误，新的轮询逻辑会将其忽略并返回 `false, nil`。这可能导致即使存在底层错误（如指标标签不匹配、指标未注册等），测试也会继续轮询并在超时后失败，但错误信息会误导性地提示指标未被记录，而不是揭示真正的错误原因。这降低了测试的健壮性和调试的便利性。"",
+    ""evidence"": ""`if err := wait.PollUntilContextTimeout(ctx, 20*time.Millisecond, 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {\n\t\t\tcount, err := metricstestutil.GetHistogramMetricCount(monitor.ReconciliationsDuration.WithLabelValues(actionStr, errorStr))\n\t\t\tif err != nil {\n\t\t\t\treturn false, nil\n\t\t\t}\n\t\t\treturn count >= 1, nil\n\t\t}); err != nil {`"",
+    ""advice"": ""建议在轮询函数中，当 `metricstestutil.GetHistogramMetricCount` 返回错误时，直接将该错误返回（`return false, err`），或者至少记录该错误。这样，如果轮询因错误而失败，测试的失败信息能更准确地反映问题根源，便于调试。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""description"": ""为 `ReconciliationsDuration` 指标添加了轮询逻辑（20ms间隔，100ms超时）。虽然这确保了测试在指标异步记录时的健壮性，但增加了测试执行时间。对于单元测试，尤其是可能被频繁运行的测试，增加固定的等待时间会降低测试套件的整体执行速度。"",
+    ""evidence"": ""`if err := wait.PollUntilContextTimeout(ctx, 20*time.Millisecond, 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {`"",
+    ""advice"": ""评估此轮询是否绝对必要。如果指标记录是同步的（在测试环境中通常可以模拟），可以考虑移除轮询。如果必须保留，考虑是否可以减少轮询间隔或总超时时间，或者使用更轻量级的同步机制（如通道或条件变量）来避免忙等待。同时，确保这种更改不会影响项目中其他类似测试模式的一致性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""代码变更将硬编码的指标名称字符串（如 `\""reconciliation metric\""`）替换为从 `monitor` 结构体字段（`monitor.ReconciliationsTotal.Name` 和 `monitor.ReconciliationsDuration.Name`）动态获取。这提高了代码的可维护性，因为指标名称的更改只需在 `monitor` 定义处修改，无需在测试中搜索替换。这与Kubernetes项目注重代码可维护性和减少魔法字符串的最佳实践一致。"",
+    ""evidence"": ""`t.Fatalf(\""%s metric was not recorded for action=%s, error=%s\"", monitor.ReconciliationsTotal.Name, actionStr, errorStr)` 和 `t.Fatalf(\""%s metric was not recorded for action=%s, error=%s\"", monitor.ReconciliationsDuration.Name, actionStr, errorStr)`"",
+    ""advice"": ""这是一个良好的改进。建议审查项目中其他测试文件，看是否存在类似的硬编码指标名称字符串，并考虑进行类似的统一重构，以提升整体代码质量。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '845c461b989f709f4d352ae53b30d0359119da32', 'message': 'Adds polling for HPA reconciliation_duration unit test\n\nSigned-off-by: Omer Aplatony <omerap12@gmail.com>'}, {'sha': 'e34c056adf0e795a180ac78f28e3e167bdfa9f35', 'message': 'using struct name\n\nSigned-off-by: Omer Aplatony <omerap12@gmail.com>'}]","['If this approach above is valid, should we add polling for this as well?', 'This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>', '[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nThis pull-request has been approved by: *<a href=""https://github.com/kubernetes/kubernetes/pull/138059#"" title=""Author self-approved"">omerap12</a>*\n**Once this PR has been reviewed and has the lgtm label**, please assign [mwielgus](https://github.com/mwielgus) for approval. For more information see [the Code Review Process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process).\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\n<details open>\nNeeds approval from an approver in each of these files:\n\n- **[pkg/controller/podautoscaler/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/podautoscaler/OWNERS)**\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={""approvers"":[""mwielgus""]} -->']",2026-03-27 23:22:37

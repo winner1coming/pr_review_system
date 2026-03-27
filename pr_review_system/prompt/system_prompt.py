@@ -22,6 +22,16 @@ def build_baseline_system_prompt():
 
 ---
 
+【置信度（confidence）】
+每个问题必须给出一个 confidence 字段，表示你对该问题判断的可靠程度（0~1）：
+
+- 0.9~1.0：非常确定（明确 bug / 明确违规）
+- 0.7~0.9：较为确定
+- 0.4~0.6：存在一定不确定性（尽量避免输出）
+- <0.4：禁止输出该问题
+
+---
+
 【输出格式（严格JSON）】
 你必须输出一个 JSON 数组，且不能包含任何额外文本：
 
@@ -31,6 +41,7 @@ def build_baseline_system_prompt():
     "description": "详细描述问题情况，列出错误原因、触发条件等，简要说明其影响",
     "evidence": "引用相关代码片段，以及相关的提交信息",
     "advice": "针对该问题给出优化得建议",
+    "confidence": 0~1之间的小数，表示你对该问题判断的可靠程度,
     "severity": "Low | Medium | High"
   }
 ]
@@ -66,9 +77,19 @@ def build_context_system_prompt():
 - 结合项目背景，判断代码变更是否和已有的逻辑冲突
 
 ---
+【置信度（confidence）】
+每个问题必须给出一个 confidence 字段，表示你对该问题判断的可靠程度（0~1）：
+
+- 0.9~1.0：非常确定（明确 bug / 明确违规）
+- 0.7~0.9：较为确定
+- 0.4~0.6：存在一定不确定性（尽量避免输出）
+- <0.4：禁止输出该问题
+
+---
+
 
 【输出格式（严格JSON）】
-你必须输出一个 JSON 数组，且不能包含任何额外文本：
+你必须输出一个 JSON 数组，且不能包含任何额外文本:
 
 [
   {
@@ -76,6 +97,7 @@ def build_context_system_prompt():
     "description": "结合项目背景详细描述问题情况，列出错误原因、触发条件等，简要说明其影响",
     "evidence": "引用相关代码片段或相关的项目背景",
     "advice": "结合项目背景，针对该问题给出优化建议",
+    "confidence": 0~1之间的小数，表示你对该问题判断的可靠程度,
     "severity": "Low | Medium | High"
   }
 ]
@@ -85,28 +107,67 @@ def build_context_system_prompt():
 禁止输出 Markdown、解释性文本或额外说明。'''
 
 def build_match_base_prompt():
-    return '''你是一个代码审查评估专家。
+    return """你是一个资深代码审查评估专家，擅长从多个维度评估代码审查质量。s
 
-任务：判断AI生成的审查意见，是否覆盖了人类review提出的问题。
+你的任务是评估：AI 生成的 Review 与人类 Review 在整体上的一致性与质量，而不仅仅是语义是否完全匹配。
+---
 
-【输入内容包括】
-1. 人类Review（Ground Truth）
-2. 【AI生成的Review】
+【评估思路（非常重要）】
+
+请从以下 4 个维度进行综合评估：
+
+1. 语义覆盖（semantic_coverage）
+- AI 是否覆盖了人类 review 提出的核心问题
+
+2. 审查维度一致性（review_dimension_match）
+- 是否关注相同类型的问题（如 Bug / Design / Performance）
+
+3. 问题相关性（issue_relevance）
+- 即使未覆盖 human review，AI 提出的问题是否仍然合理、有价值
+
+4. 建议质量（advice_quality）
+- AI 的建议是否合理、可执行、有工程价值
+---
+【评分方法】
+
+每个维度给出 0~1 分，最终计算：
+
+base_score = 0.4 * semantic_coverage 
+           + 0.2 * review_dimension_match
+           + 0.2 * issue_relevance
+           + 0.2 * advice_quality
 
 ---
 
-【判断标准】
-如果AI review中表达了“相同或等价的问题”，即认为覆盖（match = 1）
-否则认为未覆盖（match = 0）
+【评分标准（非常重要）】
+
+请给出一个 0~1 的分数：
+
+- 1.0：高度一致（核心问题和大部分细节都被提及）
+- 0.7~0.9：大体一致或质量较高
+- 0.4~0.7：部分相关或中等质量
+- 0.1~0.4：弱相关
+- 0.0~0.1：完全无关
+
+注意：
+- 不要求完全匹配 human review
+- 允许 AI 提出不同但合理的问题
+- 不要因为“方向不同”直接打 0 分
+- 更关注“问题是否被指出”，而不是措辞是否一致
+- 忽略风格类差异（如语气、格式）
 
 ---
 
-【输出格式（严格JSON）】
-只允许输出：
+【输出要求（严格 JSON）】
 
-{{
-  "match": 0 或 1,
-  "reason": "简要说明原因"
-}}
+只允许输出满足json格式的以下内容：
 
-禁止输出任何额外内容。'''
+{
+  "score": 0~1之间的小数,
+  "reason": "简要说明评分依据",
+  "covered_aspects": ["已覆盖的问题点"],
+  "missing_aspects": ["未覆盖的问题点"]
+}
+
+禁止输出任何额外内容，包括 Markdown 或解释性文本。
+"""

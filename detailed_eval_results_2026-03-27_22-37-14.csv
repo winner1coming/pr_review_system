@@ -1,0 +1,9 @@
+repo,pr,strategy,score,time
+fastapi/fastapi,15235,baseline,0.0,2026-03-27 22:29:13
+fastapi/fastapi,15235,with_readme,0.0,2026-03-27 22:29:50
+fastapi/fastapi,15234,baseline,0.0,2026-03-27 22:30:52
+fastapi/fastapi,15234,with_readme,0.0,2026-03-27 22:31:31
+fastapi/fastapi,15233,baseline,0.1,2026-03-27 22:32:46
+fastapi/fastapi,15233,with_readme,0.0,2026-03-27 22:33:41
+fastapi/fastapi,15232,baseline,0.0,2026-03-27 22:35:12
+fastapi/fastapi,15232,with_readme,0.0,2026-03-27 22:35:54
