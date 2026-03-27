@@ -1,0 +1,199 @@
+repo,pr,strategy,review,commits,review_comments,time
+fastapi/fastapi,15235,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `include_router` 中处理 `Mount` 路由时，路径拼接逻辑存在潜在错误。当 `router.prefix` 为空字符串时，拼接 `prefix + router.prefix + route.path` 是安全的。然而，如果 `router.prefix` 以斜杠结尾，或者 `route.path` 以斜杠开头，可能会导致双斜杠或路径格式不正确。虽然当前测试用例通过了，但未覆盖这些边界情况，可能导致意外的路由行为。"",
+    ""evidence"": ""文件: fastapi/routing.py\n+                self.mount(\n+                    prefix + router.prefix + route.path,\n+                    app=route.app,\n+                    name=route.name,\n+                )"",
+    ""advice"": ""建议使用 `urljoin` 或类似的路径规范化工具来拼接路径，确保生成的路径格式正确。例如：`from starlette.routing import normalize_path` 或手动处理斜杠的拼接逻辑。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的测试文件 `test_mount_subrouter.py` 中，测试函数 `test_mount_subapp_docs` 的断言过于简单，仅检查了状态码为200。这不足以验证子应用的OpenAPI文档是否正确生成和挂载。测试应该更具体，例如检查响应内容是否包含特定的HTML标题或OpenAPI JSON端点。"",
+    ""evidence"": ""文件: test_mount_subrouter.py\n+    response = client.get(\""/api/subapi/docs\"")\n+    assert response.status_code == 200"",
+    ""advice"": ""增强测试断言，例如检查响应内容是否包含 \""Swagger UI\"" 或类似标识，或者直接测试 `/api/subapi/openapi.json` 端点以确保OpenAPI规范正确生成。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '8c8bd3d5141b92858e188a7167036339a60c497b', 'message': 'update tests: mount before include_router'}, {'sha': '9bd49b3ec6e8c54440232e8e7395e52294773a48', 'message': 'research: propagate Mount with router.prefix in include_router'}, {'sha': 'fc21d83c5c9a269640137637e0d178f5a7896b6a', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>garagon:fix/mount-subapp-under-router</code> (fc21d83) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/garagon%3Afix%2Fmount-subapp-under-router?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@garagon, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '@YuriiMotov thanks for the pointer. I reviewed all related PRs:\n\n- #13944 (yours, open): supports StaticFiles only, raises `FastAPIError` for other ASGI apps\n- #14032 (sujin502, closed): generic Mount support, closed for inactivity\n- #14924, #14926 (kimchikingdom, closed): generic Mount, you redirected to #13944\n- #14793 (jonathan-fulton, open): generic Mount support\n- #14984 (fcarvajalbrown, closed), #15014 (Anandesh-Sharma, closed): same approach as ours\n\nI understand your position: sub-apps should be mounted to the root app, and only StaticFiles makes sense on a sub-router.\n\nLooking at the issue comments, there are real use cases beyond StaticFiles that users are requesting:\n\n- Mounting v1/v2 API versions under a shared prefix router\n- Serving Dash dashboards alongside API routes on the same router\n- Adding authentication dependencies to third-party ASGI apps via router\n- Modular app composition where teams own routers with their own sub-apps\n\nThe current behavior silently drops Mount routes with no error and no warning. Your PR (#13944) solves this for StaticFiles and raises a clear error for everything else, which is better than silent failure.\n\nOur approach propagates all Mount routes with the correct prefix. The technical difference is one line: `self.mount(prefix + router.prefix + route.path, app=route.app, name=route.name)`. The reason `router.prefix` is needed is that `APIRoute.path` has the prefix baked in at creation time, but `Mount.path` does not.\n\nBoth approaches are valid. If Sebastian decides StaticFiles-only is the right scope, #13944 is the right PR. If full Mount support is desired, the approach in this PR (and #14793) handles it.\n\nHappy to close this if #13944 is the direction the project wants to take.']",2026-03-27 22:29:13
+fastapi/fastapi,15235,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `include_router` 中处理 `Mount` 路由时，路径拼接逻辑存在错误。当 `router.prefix` 不为空时，`prefix + router.prefix + route.path` 会导致路径重复包含 `router.prefix`。例如，如果 `router.prefix` 是 `/api`，`route.path` 是 `/subapi`，那么拼接后的路径将是 `/api/subapi`。然而，在 `include_router` 的上下文中，`prefix` 参数已经包含了 `router.prefix`（这是 `include_router` 的默认行为）。因此，最终的路径将是 `prefix + router.prefix + route.path`，这会导致路径为 `/api/api/subapi`，从而使得挂载的子应用无法通过正确的路径访问。"",
+    ""evidence"": ""在 `fastapi/routing.py` 的变更中，第1825行：`self.mount(prefix + router.prefix + route.path, app=route.app, name=route.name,)`。这里的 `prefix` 是 `include_router` 调用时传入的参数，它通常用于为整个路由器的所有路由添加额外的前缀。而 `router.prefix` 是路由器自身定义的前缀。在 `include_router` 的上下文中，`prefix` 参数已经用于调整路由器内所有路由的路径，包括 `Mount`。因此，直接相加会导致前缀重复。"",
+    ""advice"": ""应该只使用 `prefix + route.path` 作为挂载路径，因为 `router.prefix` 已经在 `prefix` 参数中体现（或者由 `include_router` 的逻辑处理）。参考同一函数中处理 `APIRoute` 和 `WebSocketRoute` 的方式，它们都只使用了 `prefix + route.path`。因此，建议将代码修改为：`self.mount(prefix + route.path, app=route.app, name=route.name,)`。"",
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""新增的 `Mount` 处理逻辑与项目中对 `APIRoute` 和 `WebSocketRoute` 的处理方式不一致，违反了设计一致性原则。在 `include_router` 函数中，对于 `APIRoute` 和 `WebSocketRoute`，路径拼接都是 `prefix + route.path`，其中 `prefix` 是 `include_router` 调用时传入的参数，它已经考虑了路由器前缀的叠加。而新增的 `Mount` 处理却使用了 `prefix + router.prefix + route.path`，这引入了不一致的路径构建逻辑，可能导致混淆和错误。"",
+    ""evidence"": ""在 `fastapi/routing.py` 的变更中，第1819-1826行：对于 `APIRoute` 和 `WebSocketRoute`，路径是 `prefix + route.path`；对于新增的 `Mount` 处理，路径是 `prefix + router.prefix + route.path`。这种不一致性表明新增代码没有遵循项目已有的路径处理约定。"",
+    ""advice"": ""为了保持设计一致性，应该将 `Mount` 的路径拼接方式改为与 `APIRoute` 和 `WebSocketRoute` 一致，即使用 `prefix + route.path`。这确保了所有路由类型的路径处理逻辑统一，并符合 `include_router` 的预期行为。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的测试文件 `test_mount_subrouter.py` 中的测试用例名称和描述不够清晰，没有明确说明测试的具体场景或边界条件。例如，`test_mount_subapp_under_router` 测试了子应用在路由器下的挂载，但没有涵盖路径前缀重复的潜在问题。测试用例应该更具体地描述其测试目的，以增强可读性和可维护性。"",
+    ""evidence"": ""在 `test_mount_subrouter.py` 中，测试函数 `test_mount_subapp_under_router` 的描述为：\""Sub-application mounted under APIRouter should be reachable.\"" 这个描述比较泛泛，没有提及路径前缀的处理或潜在的重复问题。"",
+    ""advice"": ""建议更新测试用例的描述，以更准确地反映测试的重点，例如：\""Test that a sub-application mounted under an APIRouter with a prefix is accessible at the correct combined path.\"" 同时，考虑添加更多边界测试，例如测试当 `router.prefix` 和 `mount` 路径组合时的行为，以确保路径拼接的正确性。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '8c8bd3d5141b92858e188a7167036339a60c497b', 'message': 'update tests: mount before include_router'}, {'sha': '9bd49b3ec6e8c54440232e8e7395e52294773a48', 'message': 'research: propagate Mount with router.prefix in include_router'}, {'sha': 'fc21d83c5c9a269640137637e0d178f5a7896b6a', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>garagon:fix/mount-subapp-under-router</code> (fc21d83) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/garagon%3Afix%2Fmount-subapp-under-router?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@garagon, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '@YuriiMotov thanks for the pointer. I reviewed all related PRs:\n\n- #13944 (yours, open): supports StaticFiles only, raises `FastAPIError` for other ASGI apps\n- #14032 (sujin502, closed): generic Mount support, closed for inactivity\n- #14924, #14926 (kimchikingdom, closed): generic Mount, you redirected to #13944\n- #14793 (jonathan-fulton, open): generic Mount support\n- #14984 (fcarvajalbrown, closed), #15014 (Anandesh-Sharma, closed): same approach as ours\n\nI understand your position: sub-apps should be mounted to the root app, and only StaticFiles makes sense on a sub-router.\n\nLooking at the issue comments, there are real use cases beyond StaticFiles that users are requesting:\n\n- Mounting v1/v2 API versions under a shared prefix router\n- Serving Dash dashboards alongside API routes on the same router\n- Adding authentication dependencies to third-party ASGI apps via router\n- Modular app composition where teams own routers with their own sub-apps\n\nThe current behavior silently drops Mount routes with no error and no warning. Your PR (#13944) solves this for StaticFiles and raises a clear error for everything else, which is better than silent failure.\n\nOur approach propagates all Mount routes with the correct prefix. The technical difference is one line: `self.mount(prefix + router.prefix + route.path, app=route.app, name=route.name)`. The reason `router.prefix` is needed is that `APIRoute.path` has the prefix baked in at creation time, but `Mount.path` does not.\n\nBoth approaches are valid. If Sebastian decides StaticFiles-only is the right scope, #13944 is the right PR. If full Mount support is desired, the approach in this PR (and #14793) handles it.\n\nHappy to close this if #13944 is the direction the project wants to take.']",2026-03-27 22:29:50
+fastapi/fastapi,15234,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `_LenientTypeResolutionDict.__missing__` 方法中，当 `key` 不在 `vars(builtins)` 中时，会创建一个 `ForwardRef(key)` 作为值。然而，`ForwardRef` 的构造函数期望一个字符串形式的类型注解，但这里传入的 `key` 可能是一个普通的变量名，而不是一个有效的类型注解字符串。这可能导致后续的 `evaluate_forwardref` 调用失败或产生意外的结果。"",
+    ""evidence"": ""value = vars(builtins).get(key, ForwardRef(key))"",
+    ""advice"": ""建议在创建 `ForwardRef` 之前，验证 `key` 是否是一个有效的类型注解。或者，考虑仅在 `key` 是已知类型名称时才创建 `ForwardRef`，否则直接返回 `key` 本身或引发一个更明确的错误。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""`_LenientTypeResolutionDict` 是一个内部辅助类，但其名称和用途不够直观。类名中的 'Lenient' 暗示了宽松的类型解析，但具体如何宽松以及为什么需要这种宽松性，从代码中不易直接理解。"",
+    ""evidence"": ""class _LenientTypeResolutionDict(dict[str, Any]):"",
+    ""advice"": ""建议为这个类添加文档字符串，解释其目的：即在解析类型注解时，如果遇到未定义的名称，尝试从内置函数中查找，否则将其视为一个前向引用（ForwardRef）。这有助于提高代码的可读性和可维护性。"",
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Performance"",
+    ""description"": ""`_LenientTypeResolutionDict` 在每次解析类型注解时都可能被创建，并且其 `__missing__` 方法会调用 `vars(builtins).get(key, ...)`。`vars(builtins)` 的调用虽然不昂贵，但在高频调用的场景下，重复创建字典和查找内置函数可能会带来微小的性能开销。"",
+    ""evidence"": ""lenient_globalns = _LenientTypeResolutionDict(globalns)"",
+    ""advice"": ""考虑缓存 `vars(builtins)` 的结果，或者仅在确实需要时才创建 `_LenientTypeResolutionDict` 实例。另外，可以评估是否真的需要为每次注解解析都创建一个新的字典实例。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '83c35bb8c5deb7d244cf185b2f425535a94426b6', 'message': ""Merge branch 'master' into fix/annotated-forwardref-dependency""}, {'sha': 'ed5ace87adfcbfb1f72d4c592771a1a0104fc1b2', 'message': 'Fix mypy builtins lookup in annotation resolution'}, {'sha': '87063e8046b9669fc7486c9e7eda4f9f5b2ad5b6', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/annotated-forwardref-dependency</code> (87063e8) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fannotated-forwardref-dependency?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.']",2026-03-27 22:30:52
+fastapi/fastapi,15234,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `get_typed_annotation` 函数中，当 `annotation` 是 `ForwardRef` 类型时，会创建一个 `_LenientTypeResolutionDict` 实例，该实例的 `__missing__` 方法会尝试从 `builtins` 模块中查找键。然而，如果 `globalns` 字典中已经包含了与内置类型同名的键（例如，用户定义了一个名为 `int` 的变量），`__missing__` 方法将不会被调用，因为键已存在。这可能导致在解析 `ForwardRef` 时，用户定义的变量会覆盖内置类型，从而引发类型解析错误或意外行为。例如，如果 `globalns` 中有一个键 `'int'` 对应一个非类型对象，那么解析 `ForwardRef('int')` 时可能会失败或返回错误的值。"",
+    ""evidence"": ""+class _LenientTypeResolutionDict(dict[str, Any]):\n+    def __missing__(self, key: str) -> Any:\n+        value = vars(builtins).get(key, ForwardRef(key))\n+        self[key] = value\n+        return value\n...\n+    if isinstance(annotation, ForwardRef):\n+        lenient_globalns = _LenientTypeResolutionDict(globalns)\n+        annotation = evaluate_forwardref(  # ty: ignore[deprecated]\n+            annotation, lenient_globalns, lenient_globalns\n+        )"",
+    ""advice"": ""建议修改 `_LenientTypeResolutionDict.__missing__` 方法，使其在查找内置类型时具有更高的优先级，或者确保在解析 `ForwardRef` 时，内置类型的解析不会受到用户命名空间污染的影响。可以考虑在 `__missing__` 中首先检查 `builtins`，如果找到则返回，否则再使用 `ForwardRef(key)`。但当前实现已经这样做了。问题在于，如果键已存在于字典中（即用户定义的同名变量），`__missing__` 不会被触发。因此，可能需要调整策略：在创建 `lenient_globalns` 时，预先将 `builtins` 中的类型注入，并确保它们不会被用户命名空间覆盖。或者，在解析时，优先使用 `builtins` 中的类型，但允许用户定义的类型在特定上下文中使用。需要仔细评估 FastAPI 的类型解析逻辑，以确保与 Pydantic 和 Python 的类型提示标准保持一致。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的 `_LenientTypeResolutionDict` 类缺少文档字符串（docstring），这降低了代码的可读性和可维护性。由于该类用于处理类型解析中的特殊情况，其他开发者可能不清楚其设计意图和工作机制。"",
+    ""evidence"": ""+class _LenientTypeResolutionDict(dict[str, Any]):\n+    def __missing__(self, key: str) -> Any:\n+        value = vars(builtins).get(key, ForwardRef(key))\n+        self[key] = value\n+        return value"",
+    ""advice"": ""建议为该类添加一个清晰的文档字符串，解释其目的：在解析 ForwardRef 时，提供一种宽松的全局命名空间查找机制，当键不存在时，首先尝试从 Python 内置模块（builtins）中查找，如果找不到，则将其视为一个 ForwardRef。这有助于其他贡献者理解代码逻辑。"",
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""新增的 `_LenientTypeResolutionDict` 类在 `__missing__` 方法中返回一个 `ForwardRef(key)` 作为默认值。这可能导致无限递归或解析失败，因为如果 `key` 不是内置类型，`evaluate_forwardref` 可能会再次调用 `get_typed_annotation`，而 `ForwardRef(key)` 又会被传递回来，形成循环。虽然当前测试通过，但这种设计可能在某些边缘情况下导致问题，例如当 `key` 是一个复杂的表达式或无效标识符时。"",
+    ""evidence"": ""+    def __missing__(self, key: str) -> Any:\n+        value = vars(builtins).get(key, ForwardRef(key))\n+        self[key] = value\n+        return value"",
+    ""advice"": ""建议重新评估此设计。如果 `key` 不是内置类型，返回 `ForwardRef(key)` 可能不是最佳选择。考虑是否应该引发一个更明确的错误，或者让调用者处理未解析的引用。需要确保该逻辑与 FastAPI 和 Pydantic 的类型解析整体设计一致。可以查看 Pydantic 的 `evaluate_forwardref` 实现，了解它如何处理未解析的引用。"",
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '83c35bb8c5deb7d244cf185b2f425535a94426b6', 'message': ""Merge branch 'master' into fix/annotated-forwardref-dependency""}, {'sha': 'ed5ace87adfcbfb1f72d4c592771a1a0104fc1b2', 'message': 'Fix mypy builtins lookup in annotation resolution'}, {'sha': '87063e8046b9669fc7486c9e7eda4f9f5b2ad5b6', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/annotated-forwardref-dependency</code> (87063e8) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fannotated-forwardref-dependency?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.']",2026-03-27 22:31:31
+fastapi/fastapi,15233,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `APIRouter.mount` 方法中，当 `self.prefix` 为 `None` 时，`self.prefix + path` 会导致 `TypeError`，因为 `None` 不能与字符串拼接。这会影响所有未设置 `prefix` 的 `APIRouter` 实例调用 `mount` 方法。"",
+    ""evidence"": ""文件: fastapi/routing.py\n@@ -1499,6 +1499,9 @@ def add_api_websocket_route(\n         self.routes.append(route)\n \n+    def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n+        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""在拼接路径前，应检查 `self.prefix` 是否为 `None`。如果是，则直接使用 `path`。例如：`effective_path = (self.prefix or \""\"") + path`。"",
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `APIRouter` 的 `include_router` 方法中，处理 `routing.Mount` 类型路由时，直接将 `prefix` 与 `route.path` 拼接，但 `route.path` 可能已经包含了父路由器的 `prefix`，导致路径重复。这会导致挂载的子应用路径不正确。"",
+    ""evidence"": ""文件: fastapi/routing.py\n@@ -1803,6 +1806,8 @@ def read_users():\n                     include_in_schema=route.include_in_schema,\n                     name=route.name,\n                 )\n+            elif isinstance(route, routing.Mount):\n+                self.mount(prefix + route.path, route.app, route.name)"",
+    ""advice"": ""需要检查 `route.path` 是否已经包含了 `prefix`。一个更健壮的方法是使用 `APIRouter.mount` 方法，因为它会处理 `self.prefix`。或者，在拼接前确保路径不重复。"",
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的 `mount` 方法缺少文档字符串（docstring），这降低了代码的可读性和可维护性，其他开发者无法快速了解该方法的用途和参数。"",
+    ""evidence"": ""文件: fastapi/routing.py\n@@ -1499,6 +1499,9 @@ def add_api_websocket_route(\n         self.routes.append(route)\n \n+    def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n+        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""为 `mount` 方法添加一个清晰的文档字符串，说明其功能、参数含义以及返回值。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'ff36995ebe5ba19385dd0ae2ac60fe70fe37f869', 'message': ""Merge branch 'master' into fix/mount-subapps-apirouter""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/mount-subapps-apirouter</code> (ff36995) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmount-subapps-apirouter?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Hi, this PR fixes a bug in router mounting behavior, so the appropriate label should be `bug`.\r\n\r\nI don’t have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944']",2026-03-27 22:32:46
+fastapi/fastapi,15233,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `APIRouter.mount` 方法中，当 `self.prefix` 为空字符串时，`self.prefix + path` 的拼接逻辑是正确的。然而，当 `path` 参数以斜杠开头时，拼接后的路径可能会出现双斜杠（例如 `prefix=''` 且 `path='/sub'` 会得到 `'/sub'`，这是正确的；但 `prefix='/api'` 且 `path='/sub'` 会得到 `'/api/sub'`，这也是正确的）。但是，如果 `path` 参数不以斜杠开头，而 `self.prefix` 以斜杠结尾，拼接后路径中可能缺少斜杠或产生双斜杠，这取决于 `self.prefix` 的格式。当前实现假设 `self.prefix` 和 `path` 的格式由调用者保证，但未在方法内进行规范化处理，可能导致意外的路由路径。在 FastAPI 的上下文中，路径规范化通常由底层 Starlette 处理，但 `mount` 方法直接拼接字符串，如果传入的 `path` 格式不一致，可能产生不一致的行为。"",
+    ""evidence"": ""在 `fastapi/routing.py` 中，新增的 `APIRouter.mount` 方法：`super().mount(self.prefix + path, app=app, name=name)`。"",
+    ""advice"": ""建议在拼接路径前对 `self.prefix` 和 `path` 进行规范化处理，确保路径格式一致。例如，可以移除 `self.prefix` 末尾的斜杠（如果存在）和 `path` 开头的斜杠（如果存在），然后使用 `f\""{prefix}/{path}\""` 进行拼接，并确保结果以单斜杠开头。或者，依赖 Starlette 的路径规范化，但应在文档中明确要求调用者提供正确格式的路径。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""新增的 `APIRouter.mount` 方法覆盖了从 `Starlette` 继承的 `mount` 方法，但改变了其签名和行为。原 `Starlette.mount` 方法的 `path` 参数是相对于应用根路径的。而 `APIRouter.mount` 方法在调用父类的 `mount` 时，将 `self.prefix` 前置到 `path` 前，这意味着 `path` 参数现在是相对于路由器前缀的。这种设计改变了 `mount` 方法的语义，可能导致混淆，因为用户可能期望 `mount` 的行为与 Starlette 一致。在 FastAPI 项目中，`APIRouter` 的其他方法（如 `get`、`post`）也会自动添加前缀，但 `mount` 方法之前不存在，现在新增并改变了语义，需要确保这种设计一致性。"",
+    ""evidence"": ""在 `fastapi/routing.py` 中，新增的 `APIRouter.mount` 方法：`def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:` 和实现 `super().mount(self.prefix + path, app=app, name=name)`。"",
+    ""advice"": ""建议在 `APIRouter` 的文档中明确说明 `mount` 方法的行为：`path` 是相对于路由器前缀的。同时，考虑是否需要在方法内部或调用处进行路径格式的验证和规范化，以确保与项目其他部分（如路由装饰器）的行为一致。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `fastapi/routing.py` 的 `APIRouter.include_router` 方法中，新增了对 `routing.Mount` 类型的处理：`elif isinstance(route, routing.Mount): self.mount(prefix + route.path, route.app, route.name)`。这里将 `prefix`（来自 `include_router` 的 `prefix` 参数）与 `route.path` 拼接后传递给 `self.mount`。然而，`self.mount` 方法内部还会再加上 `self.prefix`（即路由器自己的前缀）。这可能导致路径被重复添加前缀。例如，如果路由器有前缀 `/api`，通过 `include_router` 包含另一个路由器时传递了 `prefix='/v1'`，而该被包含的路由器内部有一个 `Mount`，其 `route.path` 为 `/sub`，则最终路径可能变为 `/api/v1/sub` 或 `/api/v1//sub`，具体取决于拼接逻辑。这可能导致路由路径与预期不符。"",
+    ""evidence"": ""在 `fastapi/routing.py` 的 `APIRouter.include_router` 方法中，新增的代码行：`elif isinstance(route, routing.Mount): self.mount(prefix + route.path, route.app, route.name)`。以及 `APIRouter.mount` 方法的实现：`super().mount(self.prefix + path, app=app, name=name)`。"",
+    ""advice"": ""需要仔细审查路径拼接逻辑。在 `include_router` 中处理 `Mount` 时，可能不应该额外添加 `prefix`，因为 `Mount` 的 `route.path` 可能已经是相对于被包含路由器的完整路径，或者 `self.mount` 方法已经处理了路由器前缀。建议检查 `Mount` 对象的 `path` 属性是否已经包含了必要的上下文。可能需要调整 `include_router` 中的逻辑，直接调用 `self.mount(route.path, route.app, route.name)`，让 `self.mount` 方法处理路由器前缀的添加。或者，确保 `prefix` 和 `route.path` 的拼接与 `self.prefix` 的添加是协调的。"",
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的测试文件 `tests/test_router_mount.py` 中的测试函数命名清晰，但缺少对边缘情况和错误场景的测试。例如，没有测试当 `path` 参数以斜杠开头或不以斜杠开头时，`mount` 方法的行为；没有测试嵌套路由器和多次 `mount` 的情况；没有测试当 `APIRouter` 没有前缀时 `mount` 的行为。虽然现有测试覆盖了基本功能，但为了确保代码健壮性，应增加更多测试用例。"",
+    ""evidence"": ""新增的测试文件 `tests/test_router_mount.py` 包含三个测试函数：`test_mount_sub_application_with_router_prefix`、`test_mount_sub_application_with_include_router_prefix` 和 `test_mount_sub_application_openapi_with_included_router`。"",
+    ""advice"": ""建议增加测试用例，覆盖以下场景：1) `APIRouter` 无前缀时 `mount` 的行为；2) `path` 参数不以斜杠开头；3) 嵌套 `include_router` 且包含 `Mount` 的情况；4) 多次调用 `mount` 的路径冲突；5) 验证 `mount` 后 OpenAPI 文档的路径是否正确生成（特别是服务器 URL）。这有助于确保新增功能的稳定性和与项目其他部分的一致性。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'ff36995ebe5ba19385dd0ae2ac60fe70fe37f869', 'message': ""Merge branch 'master' into fix/mount-subapps-apirouter""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/mount-subapps-apirouter</code> (ff36995) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmount-subapps-apirouter?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Hi, this PR fixes a bug in router mounting behavior, so the appropriate label should be `bug`.\r\n\r\nI don’t have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944']",2026-03-27 22:33:41
+fastapi/fastapi,15232,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在APIRouter.mount方法中，当router本身有prefix时，mount的路径拼接逻辑可能导致重复的斜杠。如果self.prefix以'/'结尾，或者path以'/'开头，拼接后会产生'//'。虽然许多ASGI服务器能处理，但不符合URL规范，可能导致路由匹配问题或OpenAPI文档生成错误。"",
+    ""evidence"": ""文件: fastapi/routing.py, 行: +1502, 代码: super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""建议使用urllib.parse.urljoin或手动处理斜杠来规范化路径拼接，例如：combined_path = (self.prefix.rstrip('/') + '/' + path.lstrip('/')).replace('//', '/') 或 combined_path = self.prefix.rstrip('/') + '/' + path.lstrip('/')"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在APIRouter的include_router逻辑中，当处理Mount类型的route时，直接拼接prefix和route.path，同样存在重复斜杠问题。这可能导致挂载的子应用路径不正确。"",
+    ""evidence"": ""文件: fastapi/routing.py, 行: +1809, 代码: self.mount(prefix + route.path, route.app, route.name)"",
+    ""advice"": ""建议在此处也进行路径规范化处理，或者复用APIRouter.mount方法（如果它已处理了规范化），但当前APIRouter.mount方法也存在同样问题。应统一使用一个路径拼接工具函数。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""新增的APIRouter.mount方法缺少文档字符串（docstring）。这降低了代码的可读性和可维护性，其他开发者无法快速了解该方法的目的、参数含义和用法。"",
+    ""evidence"": ""文件: fastapi/routing.py, 行: +1500 到 +1502, 代码: def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""建议添加docstring，说明该方法用于在APIRouter下挂载子ASGI应用，并解释path参数是相对于router前缀的路径，以及name参数的作用。"",
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""APIRouter.mount方法直接调用了父类（APIRoute）的mount方法，但APIRoute的mount方法可能并未设计用于处理router前缀。这种继承和重写可能破坏了类的职责分离，使得路由逻辑更复杂。需要确保父类的mount方法能正确处理带前缀的路径。"",
+    ""evidence"": ""文件: fastapi/routing.py, 行: +1500 到 +1502, 代码: def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""审查APIRoute.mount方法的实现，确保它能正确处理传入的完整路径（包含router前缀）。或者考虑在APIRouter级别维护一个独立的挂载点列表，在最终生成应用时统一处理。"",
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'b041772fb1c8bf49709236af41c3009f711289df', 'message': ""Merge branch 'master' into codex/apirouter-mount-subapps""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:codex/apirouter-mount-subapps</code> (b041772) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Acodex%2Fapirouter-mount-subapps?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-03-27 22:35:12
+fastapi/fastapi,15232,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `APIRouter.mount` 方法中，当 `path` 参数为空字符串 `\""\""` 时，`self.prefix + path` 的结果与 `self.prefix` 相同。这可能导致将子应用挂载到与路由器前缀完全相同的路径上，这可能不是预期的行为，并且可能与路由器上已有的路由产生路径冲突。例如，如果路由器前缀是 `/api`，调用 `router.mount(\""\"", sub_app)` 会将子应用挂载到 `/api`，这可能覆盖或与路由器上定义在 `/api` 的其他路由冲突。"",
+    ""evidence"": ""在 `fastapi/routing.py` 中，新增的 `mount` 方法实现为：`super().mount(self.prefix + path, app=app, name=name)`。"",
+    ""advice"": ""考虑在 `mount` 方法中添加对 `path` 参数的验证或处理。例如，可以检查 `path` 是否为空字符串，并决定是否抛出异常、发出警告，或者将其视为根路径 `/` 进行处理。这有助于防止意外的路径覆盖和冲突。"",
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""新增的 `APIRouter.mount` 方法直接调用了父类 `APIRoute` 的 `mount` 方法，并自动将路由器的 `prefix` 前置到传入的 `path` 上。这确保了挂载路径与路由器前缀的一致性，符合 FastAPI 中 `APIRouter` 其他路由方法（如 `get`、`post`）的行为模式。然而，需要确保这种自动前缀添加在所有使用场景下都是正确的，特别是当 `path` 参数已经包含前缀或需要特殊处理时。"",
+    ""evidence"": ""在 `fastapi/routing.py` 中，新增的 `mount` 方法实现为：`super().mount(self.prefix + path, app=app, name=name)`。"",
+    ""advice"": ""当前实现与项目设计目标（如一致性、易用性）相符。建议在相关文档中明确说明 `APIRouter.mount` 方法会自动添加路由器前缀，以保持与项目其他部分行为的一致性。"",
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `_generate_unique_id` 函数中，当处理 `routing.Mount` 类型的路由时，代码调用了 `self.mount(prefix + route.path, route.app, route.name)`。这里存在一个潜在问题：`route.path` 可能已经包含了路由器前缀（如果该 `Mount` 对象是在另一个 `APIRouter` 内创建的）。直接拼接 `prefix` 和 `route.path` 可能导致路径重复。例如，如果一个 `Mount` 的 `path` 是 `/subapi`，而 `prefix` 是 `/api`，那么拼接后的路径将是 `/api/subapi`。但如果这个 `Mount` 对象本身是在一个前缀为 `/api` 的 `APIRouter` 内创建的，那么 `route.path` 可能已经是 `/api/subapi`，导致最终路径变成 `/api/api/subapi`。"",
+    ""evidence"": ""在 `fastapi/routing.py` 的 `_generate_unique_id` 函数中，新增的处理 `Mount` 的代码为：`self.mount(prefix + route.path, route.app, route.name)`。"",
+    ""advice"": ""需要仔细审查 `Mount` 对象的 `path` 属性在创建时是否已经包含了其所属路由器的前缀。如果 `Mount` 对象是在 `APIRouter` 内部通过 `mount` 方法创建的，那么其 `path` 应该已经是相对于路由器前缀的路径。在 `_generate_unique_id` 中拼接时，可能需要考虑 `route.path` 是否已经是绝对路径或已经包含了必要的上下文。建议检查 `Mount` 类的实现和 `APIRouter.mount` 方法如何设置 `Mount` 对象的 `path` 属性，以确保路径拼接的正确性。"",
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""在测试文件 `tests/test_router_mount.py` 中，函数 `get_sub_app` 返回一个 `FastAPI` 实例。这个函数被多个测试用例重复使用，这符合 DRY 原则，是好的实践。然而，测试用例的名称 `test_mount_sub_application_with_router_prefix` 和 `test_mount_sub_application_with_include_router_prefix` 非常相似，可能容易混淆。它们分别测试了 `APIRouter(prefix=\""/api\"")` 和 `app.include_router(router, prefix=\""/api\"")` 两种设置前缀的方式。虽然名称试图区分，但可读性仍有提升空间。"",
+    ""evidence"": ""测试文件 `tests/test_router_mount.py` 中的两个测试函数：`test_mount_sub_application_with_router_prefix` 和 `test_mount_sub_application_with_include_router_prefix`。"",
+    ""advice"": ""考虑为测试函数使用更具描述性的名称，以更清晰地区分它们测试的具体场景。例如，可以命名为 `test_mount_with_router_class_prefix` 和 `test_mount_with_include_router_prefix_argument`。这有助于其他开发者快速理解每个测试的意图。"",
+    ""severity"": ""Low""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'b041772fb1c8bf49709236af41c3009f711289df', 'message': ""Merge branch 'master' into codex/apirouter-mount-subapps""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:codex/apirouter-mount-subapps</code> (b041772) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Acodex%2Fapirouter-mount-subapps?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-03-27 22:35:54

@@ -16,9 +16,17 @@ def build_user_prompt(diff, commit, context=None):
         {diff}
         '''
 
-def build_match_base_user_prompt(people_comment, ai_review):
-    return f'''以下分别是人类review提出的问题和AI生成的审查意见，请判断AI生成的审查意见，是否覆盖了人类review提出的问题。
-    【人类Review（Ground Truth）】
-    {people_comment}
-    【AI生成的Review】
-    {ai_review}'''
+def build_match_base_user_prompt(people_comments, ai_review):
+
+    return f"""以下是同一个 Pull Request 的人类 Review 与 AI 生成的 Review。
+
+请从“整体语义覆盖”的角度进行评估。
+
+【人类 Review（Ground Truth）】
+{people_comments}
+
+【AI 生成的 Review】
+{ai_review}
+
+请分析 AI Review 覆盖了哪些问题，遗漏了哪些问题，并给出覆盖程度评分。
+"""

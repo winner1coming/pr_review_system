@@ -1,0 +1,3 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+kubernetes/kubernetes,138059,baseline,0.0,AI Review 与 Human Review 在语义上完全无关。Human Review 关注的是 PR 的流程问题（如是否需要添加轮询、等待分类、审批状态），而 AI Review 讨论的是代码实现细节（如错误处理、代码可读性）。两者讨论的是不同层面、不同性质的问题，AI Review 完全没有覆盖 Human Review 提出的任何核心问题。,[],"['关于是否应该添加轮询（polling）的疑问', '关于问题正在等待分类（triage）的说明', '关于如何添加 `triage/accepted` 标签的指导', '关于 PR 尚未获得批准（NOT APPROVED）的状态通知', '关于需要特定审批者（mwielgus）批准的指示']",2026-03-27 23:22:08
+kubernetes/kubernetes,138059,with_readme,0.0,AI Review 与 Human Review 在语义上完全无关。Human Review 关注的是 PR 的流程问题（如是否需要添加轮询、等待分类、审批状态），而 AI Review 讨论的是代码实现细节（如错误处理、性能、设计）。两者针对的是完全不同的层面，AI Review 没有覆盖 Human Review 提出的任何核心问题。,[],"['对现有方法有效性的疑问（是否需要添加轮询）', 'PR 当前处于等待分类（triage）状态', 'PR 尚未获得批准（approval）的提醒']",2026-03-27 23:22:37
