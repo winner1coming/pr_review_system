@@ -1,0 +1,85 @@
+repo,pr,strategy,review,commits,review_comments,time
+fastapi/fastapi,15269,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了基于模型的参数（如Query、Header、Cookie、Form）在缺失时错误地应用默认值的问题。"",
+    ""description"": ""当请求中缺少基于Pydantic模型的参数（如`Query(DefaultModel)`）时，代码会错误地将字段的默认值作为显式提供的值传递给Pydantic，导致`model_fields_set`包含该字段。这违反了Pydantic的预期行为：未提供的字段不应被视为已设置。"",
+    ""evidence"": ""在`request_params_to_args`函数中，当`is_model_param`为True时，调用`_get_multidict_value`并设置`use_default_when_missing=False`（第829-834行）。这确保了当模型参数缺失时，不返回其默认值，而是返回None，从而让Pydantic在后续验证中应用默认值且不将其标记为已设置。"",
+    ""advice"": ""当前修改是正确的。它确保了模型参数的默认值行为与直接使用Pydantic模型时保持一致。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了基于模型的参数（如Query、Header、Cookie、Form）在缺失时错误地应用默认值的问题。"",
+    ""description"": ""在表单数据处理中，当请求体是单个Pydantic模型且字段缺失时，代码同样会错误地应用默认值。这导致`model_fields_set`包含未提供的字段。"",
+    ""evidence"": ""在`request_body_to_args`函数中，当处理`FormData`且是单个未嵌入的模型字段时，调用`_extract_form_body`并设置`use_default_when_missing=False`（第986-994行）。这确保了在表单数据中缺失的模型字段不会被填充默认值，从而让Pydantic正确应用默认值。"",
+    ""advice"": ""当前修改是正确的。它统一了模型参数在查询、头、Cookie和表单中的默认值处理逻辑。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了基于模型的参数（如Query、Header、Cookie、Form）在缺失时错误地应用默认值的问题。"",
+    ""description"": ""`_get_multidict_value`函数新增了`use_default_when_missing`参数，但其默认值为`True`。在`request_params_to_args`和`_extract_form_body`中，对于模型参数，显式传递`use_default_when_missing=False`。虽然功能正确，但参数命名和逻辑可能对初次阅读者造成困惑，因为“使用默认值”在模型参数上下文中反而是不希望的行为。"",
+    ""evidence"": ""`_get_multidict_value`函数签名新增了`use_default_when_missing: bool = True`参数（第755行）。在`request_params_to_args`中调用时传递`use_default_when_missing=not is_model_param`（第834行）。"",
+    ""advice"": ""考虑将参数重命名为更中性的名称，例如`apply_default_on_missing`，或者添加清晰的注释说明其在不同上下文（单个字段 vs 模型）中的不同预期行为。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了基于模型的参数（如Query、Header、Cookie、Form）在缺失时错误地应用默认值的问题。"",
+    ""description"": ""测试用例`test_no_data`的预期错误响应中，`input`字段的值从包含其他字段数据（`{\""tags\"": [\""foo\"", \""bar\""], \""with\"": \""nothing\""}`）更改为空字典（`{}`）。这反映了修复后的行为：当表单体是模型且字段缺失时，这些缺失字段不会以默认值形式出现在传递给Pydantic的输入中，因此验证错误的`input`只包含实际接收到的数据（为空）。"",
+    ""evidence"": ""在`tests/test_forms_single_model.py`文件中，两个验证错误的`input`字段值从`{\""tags\"": [\""foo\"", \""bar\""], \""with\"": \""nothing\""}`改为`{}`（第102行和第108行）。"",
+    ""advice"": ""测试更新是正确的，它验证了修复的有效性。确保所有相关测试都已更新以反映新的行为。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '6cfd51bd3b63f52f2d4ff800c0c74035f776f9b6', 'message': 'Fix defaults for model-based params'}, {'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (d5fc96d) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-01 10:16:57
+fastapi/fastapi,15269,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了基于模型的查询、头部、Cookie和表单参数在缺失时错误地应用默认值的问题。"",
+    ""description"": ""在代码变更前，当请求中缺少基于Pydantic模型的查询、头部、Cookie或表单参数时，`_get_multidict_value`函数会返回字段的默认值。这导致Pydantic将缺失的字段视为已显式提供，并将其标记在`model_fields_set`中。这与Pydantic的预期行为不符，Pydantic期望缺失的字段不应被标记为已设置，以便正确应用模型级别的默认值。"",
+    ""evidence"": ""在`fastapi/dependencies/utils.py`中，新增了`use_default_when_missing`参数，并在`request_params_to_args`和`_extract_form_body`中根据参数是否为模型类型来控制其值。对于模型参数，`use_default_when_missing`被设置为`False`，使得`_get_multidict_value`在字段缺失且非必需时返回`None`，而不是默认值。\n相关代码：`value = _get_multidict_value(field, received_params, alias=alias, use_default_when_missing=not is_model_param,)` 和 `value = _get_multidict_value(field, received_body, use_default_when_missing=use_default_when_missing)`"",
+    ""advice"": ""此修复是正确且必要的，它确保了FastAPI与Pydantic在处理模型参数默认值时的行为一致性。无需修改。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了基于模型的查询、头部、Cookie和表单参数在缺失时错误地应用默认值的问题。"",
+    ""description"": ""新增的`use_default_when_missing`参数名虽然描述了其功能，但在函数调用时，特别是在`_extract_form_body`中，通过一个复杂的布尔表达式来设置其值，可读性稍差。该表达式意图是：只有当参数是单个、非嵌入的Pydantic模型时，才不应用默认值。"",
+    ""evidence"": ""在`fastapi/dependencies/utils.py`中，`request_body_to_args`函数调用`_extract_form_body`时：`use_default_when_missing=not (single_not_embedded_field and lenient_issubclass(first_field.field_info.annotation, BaseModel))`。这个逻辑与`request_params_to_args`中设置`is_model_param`的逻辑相似但略有不同，可能造成理解上的混淆。"",
+    ""advice"": ""建议将`request_params_to_args`中判断是否为模型参数的逻辑提取为一个辅助函数（例如`_is_single_model_param`），并在`request_body_to_args`中复用，以提高代码的一致性和可读性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复了基于模型的查询、头部、Cookie和表单参数在缺失时错误地应用默认值的问题。"",
+    ""description"": ""代码变更引入了一个新的参数`use_default_when_missing`，并修改了相关函数的签名和调用逻辑。这改变了`_get_multidict_value`和`_extract_form_body`的内部行为，但属于对现有错误行为的修正，旨在使FastAPI更符合Pydantic的语义。变更与FastAPI的设计目标（如“基于标准”、“健壮”）一致，因为它修复了与底层数据验证库（Pydantic）行为不一致的问题。"",
+    ""evidence"": ""新增的`use_default_when_missing`参数及其在`request_params_to_args`和`request_body_to_args`中的使用，确保了模型参数的默认值由Pydantic正确应用，而不是在FastAPI层面提前注入。这修复了`model_fields_set`被错误标记的问题。"",
+    ""advice"": ""设计变更合理，符合项目修复缺陷、提升与Pydantic集成一致性的目标。建议在相关文档或代码注释中简要说明此行为，以帮助其他开发者理解。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '6cfd51bd3b63f52f2d4ff800c0c74035f776f9b6', 'message': 'Fix defaults for model-based params'}, {'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (d5fc96d) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-01 10:17:26
+fastapi/fastapi,15261,baseline,"[
+  {
+    ""conclusion"": ""将GitHub Actions工作流中的第三方Action引用从标签版本固定为具体的提交SHA"",
+    ""description"": ""未发现问题，代码质量良好""
+  }
+]","[{'sha': 'e4b41511a31cce747a0dcaa4f50964c724dcc425', 'message': 'Pin github actions by commit sha'}]","['I decided to use action from GitHub marketplace as it will be more convenient to track exact version.\nBut we can probably use docker image and pin it by sha', 'The issue has been resolved and we can upgrade to v6: https://github.com/actions/checkout/issues/2313#issuecomment-3574792559\n\n(upgraded it to v6 in some other workflows as well to be consistent)', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>pin-actions-by-sha</code> (e4b4151) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/pin-actions-by-sha?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', '## 📝 Docs preview\n\nLast commit e4b41511a31cce747a0dcaa4f50964c724dcc425 at: https://d3a724d7.fastapitiangolo.pages.dev']",2026-04-01 10:17:36
+fastapi/fastapi,15261,with_readme,"[
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""更新GitHub Actions工作流，将依赖项从标签引用固定为提交SHA以提高安全性。"",
+    ""description"": ""代码变更将GitHub Actions工作流中的依赖项引用从可变的标签（如`v4`）更改为不可变的提交SHA。这符合安全最佳实践，可以防止供应链攻击，因为标签可以被维护者移动或覆盖，而提交SHA是唯一的、不可变的。"",
+    ""evidence"": ""项目背景强调FastAPI是一个用于生产环境的框架，注重健壮性。将依赖项固定为SHA是确保构建过程可重现和安全的关键步骤。"",
+    ""advice"": ""此变更是正确的。建议未来对所有第三方GitHub Actions都采用此模式，以进一步增强CI/CD管道的安全性。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': 'e4b41511a31cce747a0dcaa4f50964c724dcc425', 'message': 'Pin github actions by commit sha'}]","['I decided to use action from GitHub marketplace as it will be more convenient to track exact version.\nBut we can probably use docker image and pin it by sha', 'The issue has been resolved and we can upgrade to v6: https://github.com/actions/checkout/issues/2313#issuecomment-3574792559\n\n(upgraded it to v6 in some other workflows as well to be consistent)', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>pin-actions-by-sha</code> (e4b4151) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/pin-actions-by-sha?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', '## 📝 Docs preview\n\nLast commit e4b41511a31cce747a0dcaa4f50964c724dcc425 at: https://d3a724d7.fastapitiangolo.pages.dev']",2026-04-01 10:17:44

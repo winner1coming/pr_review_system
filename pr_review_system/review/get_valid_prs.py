@@ -1,5 +1,6 @@
 import requests
 from pr_review_system.review.valid import is_valid_pr
+from pr_review_system.github_api.pr_service import filter_files
 
 def get_valid_prs(github_client, owner, repo, max_prs=10):
     valid_prs = []
@@ -31,6 +32,11 @@ def get_valid_prs(github_client, owner, repo, max_prs=10):
 
             if len(valid_prs) >= max_prs:
                 break
+            files = github_client.get_pr_files(owner, repo, pr["number"])
+            files = filter_files(files)
+            if not files:
+                print(f"PR #{pr['number']} 没有有效的代码文件，跳过")
+                continue
 
         page += 1
 

@@ -12,6 +12,7 @@ from pr_review_system.config import MAX_PRS
 
 import time
 
+
 class Reviewer:
 
     def __init__(self):
@@ -21,7 +22,7 @@ class Reviewer:
 
     def run(self, repo_name):
         owner, repo = repo_name.split("/")
-
+        time.sleep(0.5)
         prs = get_valid_prs(self.github,owner, repo, MAX_PRS)
         readme = self.github.get_readme(owner, repo)
 
@@ -33,11 +34,7 @@ class Reviewer:
 
             files = self.github.get_pr_files(owner, repo, pr_number)
             files = filter_files(files)
-
-            if not files:
-                print("跳过（无有效代码）")
-                continue
-
+            
             diff = extract_diff(files)
             commits = self.github.get_pr_commits(owner, repo, pr_number)
             commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits[-3:]]
@@ -49,7 +46,6 @@ class Reviewer:
             review_comments += [r["body"] for r in people_reviews if r["body"]]
             review_comments += [c["body"] for c in issue_comments if c["body"]]
 
-            print(f"评论{review_comments}")
 
             if not review_comments:
                 print("跳过（无评论）")
@@ -59,12 +55,11 @@ class Reviewer:
                 startTime = time.time()
                 prompt = self.prompt_builder.build(strategy, diff, commit_info, readme)
                 review = self.llm.review(prompt)
-                parsed_review = json.loads(review)
                 results.append({
                     "repo": repo_name,
                     "pr": pr_number,
                     "strategy": strategy,
-                    "review": parsed_review,
+                    "review": review,
                     "commits": commit_info,
                     "review_comments": review_comments,
                     "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -72,8 +67,8 @@ class Reviewer:
                 endTime = time.time()
                 print(f"👉 策略:{strategy},耗时: {endTime - startTime:.2f} 秒")
                 time.sleep(1)
-            evaluator = EvalutionBase()
-            evaluator.evaluate(results)
-            save_results(results)
+        evaluator = EvalutionBase()
+        evaluator.evaluate(results)
+        save_results(results)
 
         
