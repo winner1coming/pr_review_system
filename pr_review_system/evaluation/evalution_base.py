@@ -20,6 +20,7 @@ class EvalutionBase:
             return llm_review_json  # fallback
 
         texts = []
+        
         for i, r in enumerate(reviews):
             if r.get("confidence", 0) < 0.4:
                 continue

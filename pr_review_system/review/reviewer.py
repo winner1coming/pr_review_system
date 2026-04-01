@@ -25,6 +25,7 @@ class Reviewer:
         time.sleep(0.5)
         prs = get_valid_prs(self.github,owner, repo, MAX_PRS)
         readme = self.github.get_readme(owner, repo)
+        print(f"README内容: {readme} \n")
 
         results = []
 

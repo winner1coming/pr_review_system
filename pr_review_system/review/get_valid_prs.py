@@ -27,16 +27,17 @@ def get_valid_prs(github_client, owner, repo, max_prs=10):
         for pr in prs:
             print(f"检查PR: {pr['number']}")
 
-            if is_valid_pr(pr):
-                valid_prs.append(pr)
-
-            if len(valid_prs) >= max_prs:
-                break
             files = github_client.get_pr_files(owner, repo, pr["number"])
             files = filter_files(files)
             if not files:
                 print(f"PR #{pr['number']} 没有有效的代码文件，跳过")
                 continue
+
+            if is_valid_pr(pr):
+                valid_prs.append(pr)
+
+            if len(valid_prs) >= max_prs:
+                break
 
         page += 1
 
