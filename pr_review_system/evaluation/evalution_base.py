@@ -26,8 +26,9 @@ class EvalutionBase:
             type = r.get("type", "")
             desc = r.get("description", "")
             advice = r.get("advice", "")
+            conclution = r.get("conclusion", "")
 
-            text = f"{i+1}.类型：{type} 问题：{desc} 建议：{advice}"
+            text = f"{i+1}.概括：{conclution} 类型：{type} 问题：{desc} 建议：{advice}"
             texts.append(text)
 
         return "\n".join(texts)
@@ -62,21 +63,21 @@ class EvalutionBase:
             llm_review = item["review"]
 
             score_result = self.compute_match_score(people_review, llm_review)
-
+            result_json = {}
             try:
                 result_json = json.loads(score_result)
-                score = result_json.get("score", 0)
             except:
                 print("评分解析失败，返回原始结果作为分数：", score_result)
-                score = 0.0
-            confidence = item.get("confidence", 1)
-            final_score = score *(0.5 + 0.5 * confidence)  # 根据置信度调整分数
+            score = 0.0
+            score = result_json.get("score", 0)
+            #confidence = item.get("review").get("confidence", 1)  # 默认置信度为0.5
+            #final_score = score *(0.5 + 0.5 * confidence)  # 根据置信度调整分数
             
             eval_results.append({
                 "repo": item["repo"],
                 "pr": item["pr"],
                 "strategy": item["strategy"],
-                "score": final_score,
+                "score": score,  
                 "reason": result_json.get("reason", ""),
                 "covered_aspects": result_json.get("covered_aspects", []),
                 "missing_aspects": result_json.get("missing_aspects", []),
@@ -101,6 +102,7 @@ class EvalutionBase:
             ratio = sum(1 for s in scores if s >= threshold) / len(scores)
 
             summary.append({
+                "repo": results[0]["repo"] if results else "",
                 "strategy": strategy,
                 "avg_score": round(avg_score, 4),
                 "high_quality_ratio": round(ratio, 4),

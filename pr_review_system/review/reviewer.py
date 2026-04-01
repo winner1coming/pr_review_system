@@ -12,6 +12,7 @@ from pr_review_system.config import MAX_PRS
 
 import time
 
+
 class Reviewer:
 
     def __init__(self):
@@ -21,7 +22,7 @@ class Reviewer:
 
     def run(self, repo_name):
         owner, repo = repo_name.split("/")
-
+        time.sleep(0.5)
         prs = get_valid_prs(self.github,owner, repo, MAX_PRS)
         readme = self.github.get_readme(owner, repo)
 
@@ -33,11 +34,7 @@ class Reviewer:
 
             files = self.github.get_pr_files(owner, repo, pr_number)
             files = filter_files(files)
-
-            if not files:
-                print("跳过（无有效代码）")
-                continue
-
+            
             diff = extract_diff(files)
             commits = self.github.get_pr_commits(owner, repo, pr_number)
             commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits[-3:]]

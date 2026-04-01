@@ -1,0 +1,81 @@
+repo,pr,strategy,review,commits,review_comments,time
+fastapi/fastapi,15269,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `_get_multidict_value` 函数中，当 `use_default_when_missing` 为 `False` 且字段非必需时，函数返回 `None`。然而，对于非必需字段，当值缺失且不应使用默认值时，返回 `None` 可能会与显式传递 `null` 值的行为混淆。这可能导致下游处理逻辑错误地认为该字段被显式设置为 `None`，而不是缺失。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -776,8 +780,9 @@ def _get_multidict_value(\n     ):\n         if field.field_info.is_required():\n             return\n-        else:\n+        if use_default_when_missing:\n             return deepcopy(field.default)\n+        return"",
+    ""advice"": ""建议在这种情况下返回一个特定的哨兵值（例如 `fastapi.dependencies.utils.Missing`），以明确区分字段缺失和显式设置为 `None` 的情况。或者，确保所有调用方都能正确处理 `None` 返回值，并理解其含义。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""在 `request_params_to_args` 函数中，新增的 `is_model_param` 变量名可能引起误解。该变量仅在参数是单个 Pydantic 模型时设置为 `True`，但变量名 `is_model_param` 可能被理解为任何模型参数（包括嵌入在列表或字典中的模型）。这可能导致代码阅读者误解其确切含义。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -795,11 +800,13 @@ def request_params_to_args(\n     fields_to_extract = fields\n     single_not_embedded_field = False\n     default_convert_underscores = True\n+    is_model_param = False\n     if len(fields) == 1 and lenient_issubclass(\n         first_field.field_info.annotation, BaseModel\n     ):\n         fields_to_extract = get_cached_model_fields(first_field.field_info.annotation)\n         single_not_embedded_field = True\n+        is_model_param = True"",
+    ""advice"": ""建议将变量名 `is_model_param` 更改为更精确的名称，例如 `is_single_top_level_model` 或 `is_single_model_param`，以准确反映其条件。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `request_body_to_args` 函数中，当处理表单数据且参数为单个 Pydantic 模型时，`use_default_when_missing` 的逻辑条件可能过于复杂且容易出错。当前条件为 `not (single_not_embedded_field and lenient_issubclass(first_field.field_info.annotation, BaseModel))`，这实际上与 `not single_not_embedded_field` 或 `not lenient_issubclass(first_field.field_info.annotation, BaseModel)` 等价。但 `single_not_embedded_field` 已经是在检查 `len(fields) == 1` 且第一个字段的注解是 `BaseModel` 的子类。因此，`lenient_issubclass(first_field.field_info.annotation, BaseModel)` 在 `single_not_embedded_field` 为 `True` 时应该总是为 `True`。这可能导致逻辑冗余和潜在的混淆。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -970,7 +986,16 @@ async def request_body_to_args(\n         fields_to_extract = get_cached_model_fields(first_field.field_info.annotation)\n \n     if isinstance(received_body, FormData):\n-        body_to_process = await _extract_form_body(fields_to_extract, received_body)\n+        body_to_process = await _extract_form_body(\n+            fields_to_extract,\n+            received_body,\n+            # Keep omitted fields absent so Pydantic can apply defaults without\n+            # marking them as explicitly provided on the resulting model.\n+            use_default_when_missing=not (\n+                single_not_embedded_field\n+                and lenient_issubclass(first_field.field_info.annotation, BaseModel)\n+            ),\n+        )"",
+    ""advice"": ""简化条件逻辑。由于 `single_not_embedded_field` 已经隐含了 `lenient_issubclass(first_field.field_info.annotation, BaseModel)` 为真，可以直接使用 `not single_not_embedded_field`。或者，添加注释明确说明这种关系，以提高代码可读性。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Right"",
+    ""description"": ""未发现代码问题"",
+    ""evidence"": """",
+    ""advice"": ""代码无任何问题，可以合并"",
+    ""confidence"": 0.0,
+    ""severity"": """"
+  }
+]","[{'sha': '6cfd51bd3b63f52f2d4ff800c0c74035f776f9b6', 'message': 'Fix defaults for model-based params'}, {'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (57d36db) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-01 09:50:41
+fastapi/fastapi,15269,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""description"": ""在 `_get_multidict_value` 函数中，当 `use_default_when_missing` 为 `False` 且字段不是必需时，函数会返回 `None`。然而，对于 Pydantic 模型字段，如果字段有默认值但未提供，Pydantic 期望在验证时应用默认值，而不是接收一个 `None` 值。返回 `None` 可能会导致 Pydantic 将 `None` 视为显式提供的值，从而可能覆盖默认值或引发验证错误，具体取决于字段类型。这违反了 FastAPI 的设计目标，即利用 Pydantic 进行自动数据验证和默认值处理。"",
+    ""evidence"": ""在 `fastapi/dependencies/utils.py` 的 `_get_multidict_value` 函数中，当 `use_default_when_missing` 为 `False` 且字段不是必需时，代码返回 `None`（`return` 语句）。"",
+    ""advice"": ""当 `use_default_when_missing` 为 `False` 且字段不是必需时，应该引发一个特定的信号（例如，返回一个 sentinel 值如 `MISSING`）或完全跳过该字段，而不是返回 `None`。这样，上层调用者可以区分“字段缺失”和“字段显式设置为 `None`”。然而，查看调用上下文（`request_params_to_args` 和 `_extract_form_body`），缺失的字段似乎被期望从结果字典中省略，以便 Pydantic 可以应用其默认值。因此，建议在这种情况下不将字段添加到结果字典中，而不是添加一个值为 `None` 的条目。实际上，当前的代码在 `_get_multidict_value` 返回 `None` 时，上层函数（如 `request_params_to_args`）可能不会将该字段添加到 `params_to_process` 字典中，因为 `if value is not None:` 检查会过滤掉 `None`。这似乎是正确的行为。但需要确认 `value` 为 `None` 时是否确实被过滤。在 `request_params_to_args` 中，有 `if value is not None:` 检查，所以 `None` 会被跳过。在 `_extract_form_body` 中，没有类似的检查，但 `value` 被直接赋值给 `values[field.alias]`，这可能导致字典中包含 `None` 值。然而，查看 `_extract_form_body` 的调用，当 `use_default_when_missing=False` 时，它被用于模型参数，并且期望缺失的字段不被包含在结果中。但当前代码会将 `None` 赋值给字典。这可能导致问题。建议修改 `_extract_form_body`，使其在 `value` 为 `None` 且 `use_default_when_missing=False` 时跳过该字段。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""description"": ""在 `request_params_to_args` 函数中，变量 `is_model_param` 的命名可能不够清晰。它被设置为 `True` 当且仅当参数是一个单独的、未嵌入的 Pydantic 模型。然而，这个变量名可能被误解为“任何模型参数”，而实际上它特指“单个未嵌入的模型参数”。这可能会给代码维护者带来困惑。"",
+    ""evidence"": ""在 `fastapi/dependencies/utils.py` 的 `request_params_to_args` 函数中，变量 `is_model_param` 被定义并仅在特定条件下设置为 `True`。"",
+    ""advice"": ""考虑将变量名重命名为更具体的名称，例如 `is_single_non_embedded_model_param`，以准确反映其含义。或者，可以添加注释说明其用途。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""description"": ""代码变更引入了一个新的参数 `use_default_when_missing` 到 `_get_multidict_value` 和 `_extract_form_body` 函数中，以控制当字段缺失时是否应用默认值。这个设计是为了确保 Pydantic 模型字段的默认值不会被标记为“已设置”（`model_fields_set`），当它们实际上是从请求中缺失时。然而，这个逻辑的传播（通过 `is_model_param` 和条件判断）增加了代码的复杂性，并且可能难以理解。需要确保这种复杂性是必要的，并且不会引入新的错误。"",
+    ""evidence"": ""在 `fastapi/dependencies/utils.py` 中，`_get_multidict_value` 增加了 `use_default_when_missing` 参数，并且在 `request_params_to_args` 和 `request_body_to_args` 中根据条件传递该参数。"",
+    ""advice"": ""审查这个设计决策，确保它解决了正确的问题（即 Pydantic 模型字段的默认值行为），并且没有过度设计。考虑是否有更简洁的方法来实现相同的目标，例如通过修改 Pydantic 的验证逻辑或使用不同的数据传递方式。同时，确保相关的测试用例充分覆盖了各种边界情况。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '6cfd51bd3b63f52f2d4ff800c0c74035f776f9b6', 'message': 'Fix defaults for model-based params'}, {'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (57d36db) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-01 09:51:14
+fastapi/fastapi,15261,baseline,"[
+  {
+    ""type"": ""Right"",
+    ""description"": ""未发现代码问题"",
+    ""evidence"": """",
+    ""advice"": ""代码无任何问题，可以合并"",
+    ""confidence"": 1.0,
+    ""severity"": """"
+  }
+]","[{'sha': 'e4b41511a31cce747a0dcaa4f50964c724dcc425', 'message': 'Pin github actions by commit sha'}]","['I decided to use action from GitHub marketplace as it will be more convenient to track exact version.\nBut we can probably use docker image and pin it by sha', 'The issue has been resolved and we can upgrade to v6: https://github.com/actions/checkout/issues/2313#issuecomment-3574792559\n\n(upgraded it to v6 in some other workflows as well to be consistent)', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>pin-actions-by-sha</code> (e4b4151) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/pin-actions-by-sha?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', '## 📝 Docs preview\n\nLast commit e4b41511a31cce747a0dcaa4f50964c724dcc425 at: https://d3a724d7.fastapitiangolo.pages.dev']",2026-04-01 09:51:24
+fastapi/fastapi,15261,with_readme,"[
+  {
+    ""type"": ""Right"",
+    ""description"": ""未发现代码问题"",
+    ""evidence"": """",
+    ""advice"": ""代码无任何问题，可以合并"",
+    ""confidence"": 1.0,
+    ""severity"": """"
+  }
+]","[{'sha': 'e4b41511a31cce747a0dcaa4f50964c724dcc425', 'message': 'Pin github actions by commit sha'}]","['I decided to use action from GitHub marketplace as it will be more convenient to track exact version.\nBut we can probably use docker image and pin it by sha', 'The issue has been resolved and we can upgrade to v6: https://github.com/actions/checkout/issues/2313#issuecomment-3574792559\n\n(upgraded it to v6 in some other workflows as well to be consistent)', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>pin-actions-by-sha</code> (e4b4151) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/pin-actions-by-sha?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', '## 📝 Docs preview\n\nLast commit e4b41511a31cce747a0dcaa4f50964c724dcc425 at: https://d3a724d7.fastapitiangolo.pages.dev']",2026-04-01 09:51:28

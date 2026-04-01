@@ -1,0 +1,3 @@
+strategy,avg_score,high_quality_ratio,num_samples
+baseline,0.15,0.0,2
+with_readme,0.375,0.5,2
