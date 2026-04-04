@@ -1,3 +1,0 @@
-repo,strategy,avg_score,high_quality_ratio,num_samples
-fastapi/fastapi,baseline,0.1667,0.0,3
-fastapi/fastapi,with_readme,0.1333,0.0,3

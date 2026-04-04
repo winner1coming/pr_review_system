@@ -1,0 +1,350 @@
+repo,pr,strategy,review,commits,review_comments,time
+psf/requests,7313,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复 Response.iter_lines 的可重入调用问题，支持多次调用"",
+    ""description"": ""代码变更通过引入 _iter_lines_state 字典来持久化行缓冲状态，解决了 iter_lines 方法不可重入的问题。但存在一个潜在的设计问题：当 decode_unicode 或 delimiter 参数在多次调用之间发生变化时，会重置 pending 状态，这可能导致数据丢失或不一致。例如，如果第一次调用使用 decode_unicode=False，第二次调用使用 decode_unicode=True，pending 状态会被重置，但原始响应流可能已经部分消耗，导致第二次调用从错误的位置开始解析。"",
+    ""evidence"": ""if (\n    state[\""decode_unicode\""] != decode_unicode\n    or state[\""delimiter\""] != delimiter\n):\n    state[\""pending\""] = None\n    state[\""decode_unicode\""] = decode_unicode\n    state[\""delimiter\""] = delimiter"",
+    ""advice"": ""建议在参数变化时抛出异常或警告，明确告知用户不支持在同一个响应对象上使用不同的参数多次调用 iter_lines。或者，更安全的设计是：当参数变化时，重置整个响应流的状态（如果可能），但这可能涉及更复杂的逻辑。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复 Response.iter_lines 的可重入调用问题，支持多次调用"",
+    ""description"": ""在 iter_lines 方法的末尾，存在重复设置 state[\""pending\""] = None 的代码。当 pending 为 None 时，会执行 else 分支再次设置相同的值。这种重复操作虽然无害，但降低了代码的可读性，可能让读者困惑。"",
+    ""evidence"": ""if pending is not None:\n    state[\""pending\""] = None\n    yield pending\nelse:\n    state[\""pending\""] = None"",
+    ""advice"": ""建议简化代码，将 state[\""pending\""] = None 移到 yield 语句之后，只需设置一次。例如：\nif pending is not None:\n    yield pending\nstate[\""pending\""] = None"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ad190688ad692addb5af3cf04baaaec1238356df', 'message': 'Fix Response.iter_lines reentrant calls\n\nPersist line-buffer state across repeated iter_lines() calls on the same\nstreaming response and add coverage for the reentrant and single-iterator\ncases.'}]","['Hi @fr3y123, thanks for the PR. While this is a clever approach, I\'m not sure it solves the ""re-entrancy"" issue. We\'re now maintaining shared mutable state of the Response which I think violates the concept. Having things like delimiter or pending outside of the method means two readers will inherently corrupt each others data.\r\n\r\nThere\'s also the issue of the streaming case which breaks here. That\'s because we have a single ephemeral source (the raw response). Unless everything can be buffered by iter_content _and_ you enforce the whole stream is read by a single caller on the first pass, you\'re going to have issues. This is the primary use case for `iter_lines` because otherwise you could simply call `.split()` on `Response.content`.\r\n\r\nThe initial addition of the note + xfail was likely to indicate a fundamental API limitation rather than documenting something to fix. I don\'t know how we\'d be able to keep track of individual reads in the same manner we can for `iter_content`.', 'Hi @nateprewitt, Thanks for the detailed explanation.\r\n\r\nThat makes sense. I was reading the xfail as a bug to fix, but your explanation clarified that this is really a limitation of a single streaming source rather than a straightforward correctness bug.\r\n\r\nI’m reverted this on my side and closed out the PR. Thanks again for the clear review.']",2026-04-04 02:11:22
+psf/requests,7313,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复 Response.iter_lines 方法的重入调用问题"",
+    ""description"": ""原代码中 iter_lines 方法不是重入安全的，当同一个响应对象上多次调用 iter_lines 时，pending 变量会在每次调用时重新初始化为 None，导致跨调用的行缓冲状态丢失。这可能导致数据丢失或行分割错误，特别是在流式响应中。"",
+    ""evidence"": ""原代码第 872 行: 'pending = None'，每次调用都会重置 pending 状态"",
+    ""advice"": ""已通过添加 _iter_lines_state 字典来持久化跨调用的状态，这是正确的修复方式。建议确保状态字典在响应对象生命周期结束时被正确清理，避免内存泄漏。"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复 Response.iter_lines 方法的重入调用问题"",
+    ""description"": ""代码中重复设置了 state['pending'] = None，存在冗余代码。在 yield pending 后和函数结尾处都设置了相同的值，这增加了代码复杂度和维护成本。"",
+    ""evidence"": ""第 911-912 行: 'state[\""pending\""] = None' 和 第 915-916 行: 'state[\""pending\""] = None'"",
+    ""advice"": ""可以简化逻辑，只在需要时更新 pending 状态。例如，在函数开头统一初始化 pending = state['pending']，在函数结束时统一设置 state['pending'] = pending。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复 Response.iter_lines 方法的重入调用问题"",
+    ""description"": ""_iter_lines_state 字典的初始化放在 __init__ 方法中，但字典的键值对初始化可能不够明确。decode_unicode 和 delimiter 初始化为 None，但 pending 也初始化为 None，这可能导致状态判断时的歧义。"",
+    ""evidence"": ""第 664-669 行: self._iter_lines_state = {\""pending\"": None, \""decode_unicode\"": None, \""delimiter\"": None}"",
+    ""advice"": ""考虑使用更明确的状态管理，例如使用一个专门的类来管理迭代状态，或者至少添加注释说明这些 None 值的含义（未开始迭代 vs 参数不匹配需重置）。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ad190688ad692addb5af3cf04baaaec1238356df', 'message': 'Fix Response.iter_lines reentrant calls\n\nPersist line-buffer state across repeated iter_lines() calls on the same\nstreaming response and add coverage for the reentrant and single-iterator\ncases.'}]","['Hi @fr3y123, thanks for the PR. While this is a clever approach, I\'m not sure it solves the ""re-entrancy"" issue. We\'re now maintaining shared mutable state of the Response which I think violates the concept. Having things like delimiter or pending outside of the method means two readers will inherently corrupt each others data.\r\n\r\nThere\'s also the issue of the streaming case which breaks here. That\'s because we have a single ephemeral source (the raw response). Unless everything can be buffered by iter_content _and_ you enforce the whole stream is read by a single caller on the first pass, you\'re going to have issues. This is the primary use case for `iter_lines` because otherwise you could simply call `.split()` on `Response.content`.\r\n\r\nThe initial addition of the note + xfail was likely to indicate a fundamental API limitation rather than documenting something to fix. I don\'t know how we\'d be able to keep track of individual reads in the same manner we can for `iter_content`.', 'Hi @nateprewitt, Thanks for the detailed explanation.\r\n\r\nThat makes sense. I was reading the xfail as a bug to fix, but your explanation clarified that this is really a limitation of a single streaming source rather than a straightforward correctness bug.\r\n\r\nI’m reverted this on my side and closed out the PR. Thanks again for the clear review.']",2026-04-04 02:11:40
+psf/requests,7310,baseline,"```json
+[
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""为DigestAuth哈希算法添加usedforsecurity=False参数"",
+    ""description"": ""代码变更将hashlib.md5、sha1、sha256、sha512等哈希函数的调用都添加了usedforsecurity=False参数。这主要是为了绕过某些环境（如FIPS模式）下对加密哈希函数的安全限制。然而，Digest认证协议本身是用于安全目的的（HTTP认证），将其标记为non-security use可能会与协议的安全意图相矛盾，并可能在某些安全审计或合规性检查中引发问题。"",
+    ""evidence"": ""return hashlib.md5(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha1(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha256(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha512(x, usedforsecurity=False).hexdigest()\ncnonce = hashlib.sha1(s, usedforsecurity=False).hexdigest()[:16]"",
+    ""advice"": ""建议评估此变更的必要性。如果确实需要绕过FIPS限制，应确保这是可接受的妥协，并考虑在文档中说明原因。或者，探索是否可以使用被FIPS允许的替代哈希算法（如SHA-256）来完全实现Digest认证，而不是通过参数规避安全策略。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '53a8c797aaae64fbc851d22b986eb83a625fb71c', 'message': 'Move DigestAuth hash algorithms to use usedforsecurity=False'}]","['## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (MD5) that is insecure for password hashing, since it is not a computationally expensive hash function.\n[Sensitive data (id)](2) is used in a hashing algorithm (MD5) that is insecure.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/17)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA1) that is insecure for password hashing, since it is not a computationally expensive hash function.\n[Sensitive data (id)](2) is used in a hashing algorithm (SHA1) that is insecure.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/18)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA256) that is insecure for password hashing, since it is not a computationally expensive hash function.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/19)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA512) that is insecure for password hashing, since it is not a computationally expensive hash function.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/20)']",2026-04-04 02:11:54
+psf/requests,7310,with_readme,"```json
+[
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""为DigestAuth的哈希算法添加usedforsecurity=False参数"",
+    ""description"": ""代码变更在多个哈希函数调用中添加了`usedforsecurity=False`参数。这是一个安全相关的变更，旨在明确标记这些哈希操作不用于安全目的，以符合某些环境（如FIPS模式）的合规性要求。然而，在Digest认证的上下文中，这些哈希值实际上是用于安全目的（认证），因此这个标记可能不准确，并可能在某些严格的安全策略下导致问题。"",
+    ""evidence"": ""return hashlib.md5(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha1(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha256(x, usedforsecurity=False).hexdigest()\nreturn hashlib.sha512(x, usedforsecurity=False).hexdigest()\ncnonce = hashlib.sha1(s, usedforsecurity=False).hexdigest()[:16]"",
+    ""advice"": ""建议重新评估此变更。Digest认证（RFC 7616）使用哈希算法来保护密码和验证消息完整性，这本质上是一个安全用途。`usedforsecurity=False`参数可能不适用于此场景。如果目标是绕过某些系统（如FIPS模式）对弱哈希算法（如MD5）的限制，应考虑更合适的替代方案，或者仅在特定算法（如MD5）上使用此标志，并添加明确的注释说明原因。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为DigestAuth的哈希算法添加usedforsecurity=False参数"",
+    ""description"": ""代码变更在多个地方重复了相同的参数`usedforsecurity=False`。这增加了代码的冗余度。可以考虑将哈希函数的创建逻辑重构，以减少重复。"",
+    ""evidence"": ""所有新增的`hashlib`调用都添加了相同的参数`usedforsecurity=False`。"",
+    ""advice"": ""可以考虑创建一个辅助函数来封装哈希操作，该函数根据算法名称和输入字符串返回哈希值，并在其中统一处理`usedforsecurity`参数和编码逻辑。这可以提高代码的可维护性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '53a8c797aaae64fbc851d22b986eb83a625fb71c', 'message': 'Move DigestAuth hash algorithms to use usedforsecurity=False'}]","['## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (MD5) that is insecure for password hashing, since it is not a computationally expensive hash function.\n[Sensitive data (id)](2) is used in a hashing algorithm (MD5) that is insecure.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/17)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA1) that is insecure for password hashing, since it is not a computationally expensive hash function.\n[Sensitive data (id)](2) is used in a hashing algorithm (SHA1) that is insecure.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/18)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA256) that is insecure for password hashing, since it is not a computationally expensive hash function.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/19)', '## Use of a broken or weak cryptographic hashing algorithm on sensitive data\n\n[Sensitive data (password)](1) is used in a hashing algorithm (SHA512) that is insecure for password hashing, since it is not a computationally expensive hash function.\n\n[Show more details](https://github.com/psf/requests/security/code-scanning/20)']",2026-04-04 02:12:08
+psf/requests,7300,baseline,"```json
+[
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""修复NO_PROXY代理绕过漏洞（尾随点FQDN和域名后缀匹配问题）"",
+    ""description"": ""原代码使用简单的字符串后缀匹配（endswith）来检查主机名是否在no_proxy列表中，这存在安全漏洞。攻击者可以通过在no_proxy中设置较短的后缀（如'.com'）来绕过代理，或者通过添加尾随点（如'example.com.'）来绕过匹配。新代码通过规范化处理（去除尾随点、转为小写）和精确的域名匹配逻辑修复了这些漏洞。"",
+    ""evidence"": ""原代码：if parsed.hostname.endswith(host) or host_with_port.endswith(host):\n新代码：candidate = host.lstrip(\"".\"").lower()\nhostname = parsed.hostname.lower().rstrip(\"".\"")\nif hostname == candidate or hostname.endswith(\"".\"" + candidate):"",
+    ""advice"": ""修复逻辑正确，但建议添加注释说明为何需要去除尾随点和转为小写，以增强代码可读性。同时考虑添加单元测试覆盖边界情况，如：no_proxy包含'.com'、'example.com.'、带端口的主机名等场景。"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复NO_PROXY代理绕过漏洞（尾随点FQDN和域名后缀匹配问题）"",
+    ""description"": ""新代码中host_with_port变量的作用域和重新赋值可能引起混淆。在循环内部，当parsed.port存在时，会重新赋值host_with_port，但原代码中host_with_port是在循环外定义的。虽然逻辑正确，但变量作用域和重复定义可能降低可读性。"",
+    ""evidence"": ""循环外定义：host_with_port += f\"":{parsed.port}\""\n循环内重新赋值：if parsed.port:\n                    host_with_port = f\""{hostname}:{parsed.port}\"""",
+    ""advice"": ""建议将循环内的host_with_port重命名为其他变量名（如hostname_with_port），以避免与外部变量混淆。或者将端口处理逻辑统一到循环开始前。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复NO_PROXY代理绕过漏洞（尾随点FQDN和域名后缀匹配问题）"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b16b772dfe98ce922d81c8ae3a3c48a9ea911920', 'message': 'Fix NO_PROXY proxy bypass vulnerabilities (trailing-dot FQDN and domain suffix)'}]",['Duplicate of https://github.com/psf/requests/pull/4812.'],2026-04-04 02:12:27
+psf/requests,7300,with_readme,"[
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""修复了NO_PROXY代理绕过漏洞（尾随点FQDN和域名后缀）。"",
+    ""description"": ""原始代码使用 `parsed.hostname.endswith(host)` 来检查主机名是否匹配 `no_proxy` 列表中的条目。这存在安全漏洞，因为攻击者可以注册一个以 `no_proxy` 条目为后缀的域名来绕过代理设置。例如，如果 `no_proxy='example.com'`，那么 `evilexample.com` 也会被错误地匹配并绕过代理。此外，原始代码没有正确处理主机名末尾的点（FQDN中的尾随点）。新代码通过移除主机名的尾随点、将 `no_proxy` 条目开头的点移除并进行小写化，然后进行精确匹配或后缀匹配（要求后缀以点开头），从而更安全地执行匹配。"",
+    ""evidence"": ""for host in no_proxy:\n                candidate = host.lstrip(\"".\"").lower()\n                hostname = parsed.hostname.lower().rstrip(\"".\"")\n\n                if hostname == candidate or hostname.endswith(\"".\"" + candidate):\n                    return True\n\n                if parsed.port:\n                    host_with_port = f\""{hostname}:{parsed.port}\""\n                    if host_with_port == candidate or host_with_port.endswith(\"".\"" + candidate):\n                        return True"",
+    ""advice"": ""修复逻辑正确。建议添加单元测试，覆盖以下场景：1) 精确域名匹配（如 `example.com` 匹配 `example.com`）；2) 子域名匹配（如 `sub.example.com` 匹配 `.example.com` 或 `example.com`）；3) 带端口号的匹配；4) 尾随点FQDN（如 `example.com.`）；5) 应防止后缀误匹配（如 `evilexample.com` 不应匹配 `example.com`）。"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了NO_PROXY代理绕过漏洞（尾随点FQDN和域名后缀）。"",
+    ""description"": ""新代码中，变量 `host_with_port` 在循环内部被重新定义和赋值。然而，在循环开始之前，已经有一个同名的变量 `host_with_port` 被定义（`host_with_port += f\"":{parsed.port}\""`）。这可能会引起混淆，因为循环内部的 `host_with_port` 覆盖了外部的变量，并且两者的用途和格式略有不同（外部变量包含原始主机名，内部变量使用小写化和去尾随点后的主机名）。虽然这不会导致功能错误，但降低了代码的可读性。"",
+    ""evidence"": ""host_with_port += f\"":{parsed.port}\""\n...\n                if parsed.port:\n                    host_with_port = f\""{hostname}:{parsed.port}\"""",
+    ""advice"": ""建议将循环内部用于端口匹配的变量重命名，例如改为 `hostname_with_port`，以避免与外部变量名冲突，使代码意图更清晰。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'b16b772dfe98ce922d81c8ae3a3c48a9ea911920', 'message': 'Fix NO_PROXY proxy bypass vulnerabilities (trailing-dot FQDN and domain suffix)'}]",['Duplicate of https://github.com/psf/requests/pull/4812.'],2026-04-04 02:12:46
+psf/requests,7294,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要更新了requests库的版本号"",
+    ""description"": ""未发现明显问题。此变更将开发版本号`2.33.0.dev1`更新为正式版本号`2.33.0`，并同步更新了`__build__`的十六进制表示。这是一个标准的版本发布操作。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'fb77cefe22f13ab4f02ebd8d18f32376fc15ae87', 'message': 'v2.33.0'}]",['LGTM'],2026-04-04 02:12:53
+psf/requests,7294,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了将版本号从开发版更新为正式版"",
+    ""description"": ""未发现明显问题。代码变更仅将 `__version__` 从 '2.33.0.dev1' 更新为 '2.33.0'，这是发布新版本的标准操作。"",
+    ""evidence"": ""- __version__ = \""2.33.0.dev1\""\n+ __version__ = \""2.33.0\"""",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'fb77cefe22f13ab4f02ebd8d18f32376fc15ae87', 'message': 'v2.33.0'}]",['LGTM'],2026-04-04 02:12:59
+psf/requests,7291,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了更清晰的依赖兼容性警告信息"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ed724b1e24569d31b5279e6dd5e24401f592ca00', 'message': 'Clarify dependency compatibility warning messages\n\nReplace the vague combined warning ""urllib3 (...) or chardet\n(...)/charset_normalizer (...) doesn\'t match a supported version!"" with\nindividual, actionable warnings that identify exactly which dependency\nis incompatible and state the supported version range.\n\nThis makes it much easier for users to diagnose and resolve the issue,\nespecially when chardet is pulled in transitively by another package.\n\nFixes #7284'}]","[""Thanks for the PR, @Krishnachaitanyakc. Unfortunately I don't think this is a change we'd take. Chardet gets a major version bump once every 4-5 years historically. The error is intended to show everything in the workspace that may be mismatched, so moving them to individual errors defeats that.\r\n\r\nUsually we ship releases same day as chardet release, or very close, this one has just had some controversy around it. We'll have that addressed in the near future.""]",2026-04-04 02:13:06
+psf/requests,7291,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""将依赖版本检查从assert改为warning，提供更清晰的错误信息"",
+    ""description"": ""在检查urllib3版本时，当major>=1且minor>=21时，代码不会发出警告。然而，当major>1时（例如urllib3 2.0.0），虽然满足major>=1的条件，但minor可能不存在或小于21，这会导致逻辑错误。原代码使用assert时，major>1会通过检查，但新代码的逻辑可能导致误判。"",
+    ""evidence"": ""if major < 1 or (major == 1 and minor < 21):\n    warnings.warn(\n        f\""urllib3 ({'.'.join(str(v) for v in [major, minor, patch])}) \""\n        \""is not a supported version. Requests supports urllib3 >= 1.21.1.\"",\n        RequestsDependencyWarning,\n    )"",
+    ""advice"": ""建议明确处理major>1的情况。根据项目背景，urllib3 2.x应该是支持的，所以条件应为：if major < 1 or (major == 1 and minor < 21): 这个逻辑是正确的，因为major>1（如2.0.0）应该被支持。但需要确保传入的版本号格式正确，包含minor和patch。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""将依赖版本检查从assert改为warning，提供更清晰的错误信息"",
+    ""description"": ""在chardet和charset_normalizer版本解析失败时，函数直接return，但urllib3的版本检查可能还未执行。这会导致urllib3的兼容性问题被忽略。"",
+    ""evidence"": ""except ValueError:\n    warnings.warn(\n        f\""Unable to parse chardet version ({chardet_version}).\"",\n        RequestsDependencyWarning,\n    )\n    return"",
+    ""advice"": ""建议将return改为continue或调整逻辑，确保urllib3的版本检查仍然执行。或者将三个依赖的检查完全独立，避免一个解析失败影响其他检查。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将依赖版本检查从assert改为warning，提供更清晰的错误信息"",
+    ""description"": ""异常捕获从(AssertionError, ValueError)改为(ValueError, TypeError)，但未考虑其他可能的异常类型，如AttributeError（当urllib3.__version__不存在时）。"",
+    ""evidence"": ""except (ValueError, TypeError):\n    warnings.warn(\n        f\""Unable to check dependency compatibility \""\n        f\""(urllib3={urllib3.__version__}, chardet={chardet_version}, \""\n        f\""charset_normalizer={charset_normalizer_version}).\"",\n        RequestsDependencyWarning,\n    )"",
+    ""advice"": ""建议捕获更通用的异常，如Exception，并记录详细信息以便调试。或者保持特定异常捕获，但确保所有可能异常都被覆盖。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""将依赖版本检查从assert改为warning，提供更清晰的错误信息"",
+    ""description"": ""测试用例中硬编码了版本字符串，如\""2.0.0\""、\""1.20.0\""等，这些字符串可能不符合实际的版本格式（如缺少patch版本）。虽然测试可能通过，但不够健壮。"",
+    ""evidence"": ""check_compatibility(\""2.0.0\"", \""2.0.0\"", None)\ncheck_compatibility(\""1.20.0\"", None, \""3.0.0\"")"",
+    ""advice"": ""建议使用更真实的版本字符串，或添加注释说明这些是简化的测试用例。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ed724b1e24569d31b5279e6dd5e24401f592ca00', 'message': 'Clarify dependency compatibility warning messages\n\nReplace the vague combined warning ""urllib3 (...) or chardet\n(...)/charset_normalizer (...) doesn\'t match a supported version!"" with\nindividual, actionable warnings that identify exactly which dependency\nis incompatible and state the supported version range.\n\nThis makes it much easier for users to diagnose and resolve the issue,\nespecially when chardet is pulled in transitively by another package.\n\nFixes #7284'}]","[""Thanks for the PR, @Krishnachaitanyakc. Unfortunately I don't think this is a change we'd take. Chardet gets a major version bump once every 4-5 years historically. The error is intended to show everything in the workspace that may be mismatched, so moving them to individual errors defeats that.\r\n\r\nUsually we ship releases same day as chardet release, or very close, this one has just had some controversy around it. We'll have that addressed in the near future.""]",2026-04-04 02:13:28
+psf/requests,7285,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复HTTPDigestAuth中非拉丁字符（字节）凭据的处理问题"",
+    ""description"": ""当用户名或密码以bytes类型传递给HTTPDigestAuth时，f-string格式化会在Digest头中产生b'...'的repr表示（例如username=\""b'Ond\\xc5\\99ej'\""而不是username=\""Ondřej\""）。这会导致HTTP认证头格式错误，服务器无法正确验证。"",
+    ""evidence"": ""username = (\n            self.username.decode(\""utf-8\"")\n            if isinstance(self.username, bytes)\n            else self.username\n        )\n        password = (\n            self.password.decode(\""utf-8\"")\n            if isinstance(self.password, bytes)\n            else self.password\n        )"",
+    ""advice"": ""建议在类初始化时就进行bytes到str的转换，避免每次调用build_digest_header时都重复检查。可以在__init__方法中添加类型检查并统一转换为str类型。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复HTTPDigestAuth中非拉丁字符（字节）凭据的处理问题"",
+    ""description"": ""代码中重复使用了相同的模式来转换username和password，可以考虑提取为辅助函数以提高代码可读性和减少重复。"",
+    ""evidence"": ""username = (\n            self.username.decode(\""utf-8\"")\n            if isinstance(self.username, bytes)\n            else self.username\n        )\n        password = (\n            self.password.decode(\""utf-8\"")\n            if isinstance(self.password, bytes)\n            else self.password\n        )"",
+    ""advice"": ""建议提取一个辅助函数：def _normalize_to_str(value): return value.decode('utf-8') if isinstance(value, bytes) else value，然后在代码中调用username = _normalize_to_str(self.username)。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复HTTPDigestAuth中非拉丁字符（字节）凭据的处理问题"",
+    ""description"": ""在build_digest_header方法内部进行类型转换，而不是在类初始化时处理，可能导致多次调用时重复转换。如果self.username或self.password在多次调用间保持不变，这种设计会导致不必要的重复工作。"",
+    ""evidence"": ""username = (\n            self.username.decode(\""utf-8\"")\n            if isinstance(self.username, bytes)\n            else self.username\n        )\n        password = (\n            self.password.decode(\""utf-8\"")\n            if isinstance(self.password, bytes)\n            else self.password\n        )"",
+    ""advice"": ""考虑在HTTPDigestAuth类的__init__方法中统一处理bytes到str的转换，或者使用属性装饰器在访问时自动转换。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '71f73e543de5ed2b0221e88f4da64fc16ddd7b6b', 'message': 'Fix HTTPDigestAuth with non-latin (bytes) credentials\n\nWhen username or password are passed as bytes to HTTPDigestAuth,\nthe f-string formatting produced b\'...\' repr in the Digest header\n(e.g., username=""b\'Ond\\xc5\\99ej\'"" instead of username=""Ondřej"").\n\nThis fix normalizes bytes to str (via UTF-8 decode) at the start of\nbuild_digest_header, ensuring correct header formatting and digest\ncomputation for both bytes and str credentials.\n\nFixes #6102'}]",['@r266-tech please check for open PRs before creating new ones.'],2026-04-04 02:13:48
+psf/requests,7285,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了HTTPDigestAuth在使用字节类型凭据时生成错误Digest头的问题。"",
+    ""description"": ""当用户名或密码以字节类型（bytes）传入时，原始的f-string格式化会在Digest头中产生字节对象的repr表示（如`b'Ond\\xc5\\x99ej'`），而不是正确的字符串值（如`Ondřej`）。这会导致服务器端认证失败，因为服务器期望的是解码后的字符串。"",
+    ""evidence"": ""username = (\n            self.username.decode(\""utf-8\"")\n            if isinstance(self.username, bytes)\n            else self.username\n        )\n        password = (\n            self.password.decode(\""utf-8\"")\n            if isinstance(self.password, bytes)\n            else self.password\n        )"",
+    ""advice"": ""修复方案正确。建议考虑解码失败的情况（如非UTF-8编码的字节），可以添加错误处理，例如使用`decode('utf-8', 'replace')`或`decode('utf-8', 'ignore')`，或者抛出一个更清晰的异常。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了HTTPDigestAuth在使用字节类型凭据时生成错误Digest头的问题。"",
+    ""description"": ""新增的字节解码逻辑使用了重复的模式，可以提取为一个小的辅助函数以提高可读性和避免重复。"",
+    ""evidence"": ""username = (\n            self.username.decode(\""utf-8\"")\n            if isinstance(self.username, bytes)\n            else self.username\n        )\n        password = (\n            self.password.decode(\""utf-8\"")\n            if isinstance(self.password, bytes)\n            else self.password\n        )"",
+    ""advice"": ""建议定义一个内部函数，如`_ensure_str(value)`，来处理字节到字符串的转换，使主逻辑更清晰。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '71f73e543de5ed2b0221e88f4da64fc16ddd7b6b', 'message': 'Fix HTTPDigestAuth with non-latin (bytes) credentials\n\nWhen username or password are passed as bytes to HTTPDigestAuth,\nthe f-string formatting produced b\'...\' repr in the Digest header\n(e.g., username=""b\'Ond\\xc5\\99ej\'"" instead of username=""Ondřej"").\n\nThis fix normalizes bytes to str (via UTF-8 decode) at the start of\nbuild_digest_header, ensuring correct header formatting and digest\ncomputation for both bytes and str credentials.\n\nFixes #6102'}]",['@r266-tech please check for open PRs before creating new ones.'],2026-04-04 02:14:00
+psf/requests,7283,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""调整代理等参数的合并顺序，确保会话级设置优先于环境变量。"",
+    ""description"": ""代码变更将 `merge_setting` 调用从环境变量处理之后移动到了之前。这改变了参数的优先级顺序。在变更前，环境变量（如 `http_proxy`）的优先级高于会话对象（`self.proxies`）的设置。变更后，会话对象的设置优先级高于环境变量。这修复了问题 #2018，确保了会话级别的代理配置不会被环境变量意外覆盖，提高了配置的可预测性和安全性。"",
+    ""evidence"": ""@@ -756,6 +756,12 @@ def merge_environment_settings(self, url, proxies, stream, verify, cert):\n \n         :rtype: dict\n         \""\""\""\n+        # Merge all the kwargs.\n+        proxies = merge_setting(proxies, self.proxies)\n+        stream = merge_setting(stream, self.stream)\n+        verify = merge_setting(verify, self.verify)\n+        cert = merge_setting(cert, self.cert)\n+\n         # Gather clues from the surrounding environment.\n         if self.trust_env:\n             # Set environment's proxies.\n@@ -773,12 +779,6 @@ def merge_environment_settings(self, url, proxies, stream, verify, cert):\n                     or verify\n                 )\n \n-        # Merge all the kwargs.\n-        proxies = merge_setting(proxies, self.proxies)\n+        stream = merge_setting(stream, self.stream)\n+        verify = merge_setting(verify, self.verify)\n+        cert = merge_setting(cert, self.cert)\n+\n         return {\""proxies\"": proxies, \""stream\"": stream, \""verify\"": verify, \""cert\"": cert}"",
+    ""advice"": ""此变更是正确的，符合修复意图。建议确保相关的文档（如API文档或配置指南）也更新以反映新的优先级顺序：会话设置 > 环境变量 > 请求参数（`proxies`等）。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试验证会话代理不被环境变量覆盖。"",
+    ""description"": ""新增的测试 `test_proxy_env_vars_dont_override_session_proxies` 验证了代码变更的核心逻辑：当会话对象设置了代理，且环境变量也存在代理设置时，最终使用的代理应是会话级别的设置。这确保了修复的正确性。"",
+    ""evidence"": ""@@ -2634,6 +2634,18 @@ def test_proxy_env_vars_override_default(var, url, proxy):\n         assert proxies[scheme] == proxy\n \n \n+def test_proxy_env_vars_dont_override_session_proxies():\n+    session = requests.Session()\n+    session.proxies[\""http\""] = \""http://example.org\""\n+\n+    with override_environ(http_proxy=\""socks5://proxy.com:9876\""):\n+        settings = session.merge_environment_settings(\n+            url=\""http://example.com\"", proxies={}, stream=False, verify=True, cert=None\n+        )\n+\n+    assert settings[\""proxies\""][\""http\""] == \""http://example.org\"""",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'cde8917fb8b1628129fea41074b086e77d186698', 'message': 'Fix #2018: Re-order proxy precedence.'}]","[""## 🤖 Sentinel PR Agent — Review Report\n\n**Summary:** The PR correctly fixes proxy precedence by moving the merge_setting calls before the environment proxy lookup, so session-level proxies are not overridden by environment variables. The core logic change is sound. However, there are several issues: a PR_BODY.md file is being committed to the repo, the new test has limited coverage (missing per-request proxy precedence and verify ordering cases), and there is a latent AttributeError risk if proxies resolves to None after merge_setting.\n\n| Severity | Count |\n|----------|-------|\n| 🔴 Critical | 0 |\n| 🟠 High | 1 |\n| 🟡 Medium | 3 |\n| 🔵 Low | 3 |\n\n### Issues Found\n\n#### 🟡 [MEDIUM] PR_BODY.md committed to repository\n**File:** `PR_BODY.md` (line None)\nA PR_BODY.md file describing the pull request has been committed to the repository root. This is a meta-document intended for the GitHub PR description, not for the codebase itself. It will pollute the repository history and confuse future contributors who encounter it in the source tree.\n> **Suggestion:** Remove PR_BODY.md from the commit. Use the GitHub PR description field instead, or add PR_BODY.md to .gitignore if it is generated by tooling.\n\n#### 🟡 [MEDIUM] proxies.get() called on potentially None result from merge_setting\n**File:** `src/requests/sessions.py` (line 768)\nAfter the reorder, `proxies` is the result of `merge_setting(proxies, self.proxies)`. If both the incoming `proxies` argument and `self.proxies` are `None`, `merge_setting` returns `None` (see merge_setting lines 68-69: if session_setting is None, return request_setting). The subsequent `proxies.get('no_proxy')` on line 768 would then raise an `AttributeError`. While `self.proxies` is initialized to `{}` in `__init__`, this is a latent risk for subclasses, direct callers of `merge_environment_se…\n> **Suggestion:** Guard against None after merge_setting: `proxies = merge_setting(proxies, self.proxies) or {}`. Alternatively, ensure the None guard on line 768 is evaluated against the post-merge value, which it already is — but the real fix is to ensure merge_setting never returns None for proxies by defaulting: `proxies = merge_setting(proxies, self.proxies) or {}`.\n\n#### 🔵 [LOW] verify env-variable override behavior subtly changed when verify=None is passed\n**File:** `src/requests/sessions.py` (line 762)\nBefore this change, the execution order was: (1) check env for CA bundle using the raw `verify` argument, (2) then merge with `self.verify`. After the change: (1) merge `verify` with `self.verify` first, (2) then check env. When `verify=None` is passed and `self.verify=True` (the default), the old code checked `if verify is True or verify is None` with `verify=None` (True branch), then `merge_setting(env_ca_path, True)` returned the env CA path. The new code merges first: `merge_setting(None, Tr…\n> **Suggestion:** Document this behavioral change explicitly. If the intent is that `REQUESTS_CA_BUNDLE` should only apply when no CA bundle is configured at all (neither per-request nor session-level), the new behavior is correct and preferable. Add a test case: `session.verify = '/path/to/ca.pem'` with `REQUESTS_CA_BUNDLE` set, and `verify=None` passed — assert that the session CA path wins.\n\n#### 🟡 [MEDIUM] New test does not cover per-request proxy taking precedence over session proxy\n**File:** `tests/test_requests.py` (line 2637)\nThe new test `test_proxy_env_vars_dont_override_session_proxies` only verifies that `session.proxies` beats environment proxies. It does not test the full precedence chain: per-request proxy > session proxy > env proxy. Specifically, there is no test asserting that a proxy passed directly to `merge_environment_settings(proxies={'http': 'http://per-request-proxy'})` overrides both `session.proxies` and the environment proxy. This is the highest-priority case and should be explicitly covered.\n> **Suggestion:** Add a test that passes `proxies={'http': 'http://per-request-proxy.com'}` to `merge_environment_settings` while also setting `session.proxies['http']` and an env var, and asserts the per-request proxy wins. Also add a test that env proxy is used as fallback when neither per-request nor session proxies specify a scheme.\n\n#### 🔵 [LOW] No test for env proxy fallback when session proxy is absent\n**File:** `tests/test_requests.py` (line 2637)\nThe new test only covers the case where `session.proxies` should win over env proxies. There is no regression test confirming that env proxies still apply as a fallback when `session.proxies` does not contain the relevant scheme. This is the 'env proxy as fallback' behavior mentioned in the PR notes, and it should be explicitly tested to prevent future regressions.\n> **Suggestion:** Add a test: create a session with no proxies set, set `http_proxy` env var, call `merge_environment_settings`, and assert the env proxy is present in the result.\n\n#### 🔵 [LOW] Test passes proxies={} instead of None, masking a potential None-proxy edge case\n**File:** `tests/test_requests.py` (line 2637)\nThe test calls `merge_environment_settings(proxies={}, ...)`. In the real call path via `Session.request()`, `proxies` is also `proxies or {}` (line 580), so `{}` is realistic. However, external callers of `merge_environment_settings` (it is a public API) may pass `proxies=None`. The behavior when `proxies=None` is passed should be tested, since `merge_setting(None, self.proxies)` returns `self.proxies` directly (the session dict itself, not a copy), and subsequent `setdefault` mutations would m…\n> **Suggestion:** Add a test with `proxies=None` to verify correct behavior. Also audit whether `merge_setting` returns a copy or a reference when `request_setting is None` — if it returns `session_setting` directly, mutations via `setdefault` will corrupt `self.proxies`.\n\n#### 🟠 [HIGH] merge_setting returns session dict by reference; setdefault mutates self.proxies in-place\n**File:** `src/requests/sessions.py` (line 760)\nIn `merge_setting`, when `request_setting is None`, the function returns `session_setting` directly (line 72: `return session_setting`). After the reorder, if `proxies=None` is passed to `merge_environment_settings`, `merge_setting(None, self.proxies)` returns `self.proxies` itself (not a copy). The subsequent `proxies.setdefault(k, v)` loop then mutates `self.proxies` directly, permanently adding environment proxy entries to the session's proxy dict. This is a state-corruption bug: after the fi…\n> **Suggestion:** Ensure a copy is made before mutation. Either: (1) change the `setdefault` loop to build a new dict: `proxies = {**proxies, **{k: v for k, v in env_proxies.items() if k not in proxies}}`, or (2) explicitly copy after merge_setting: `proxies = dict(merge_setting(proxies, self.proxies) or {})`. Note: this bug existed before this PR when `proxies=None` was passed, but the reorder makes it more likely to be triggered since the merge now happens before the mutation.\n\n\n*Model: `anthropic/claude-sonnet-4.6` Powered by Sentinel PR Agent*""]",2026-04-04 02:14:27
+psf/requests,7283,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复代理优先级问题，确保会话代理设置优先于环境变量。"",
+    ""description"": ""代码变更调整了 `merge_environment_settings` 方法中合并参数的顺序。原逻辑是先处理环境变量（如 `http_proxy`），再合并会话级别的设置（如 `self.proxies`）。这导致环境变量中的代理设置会覆盖会话级别的代理设置，与预期的优先级（会话设置应优先）不符。变更将合并会话设置的步骤提前，确保了会话级别的代理、流、验证和证书设置优先于环境变量。"",
+    ""evidence"": ""文件: src/requests/sessions.py\n@@ -756,6 +756,12 @@ def merge_environment_settings(self, url, proxies, stream, verify, cert):\n \n         :rtype: dict\n         \""\""\""\n+        # Merge all the kwargs.\n+        proxies = merge_setting(proxies, self.proxies)\n+        stream = merge_setting(stream, self.stream)\n+        verify = merge_setting(verify, self.verify)\n+        cert = merge_setting(cert, self.cert)\n+\n         # Gather clues from the surrounding environment.\n         if self.trust_env:\n             # Set environment's proxies.\n@@ -773,12 +779,6 @@ def merge_environment_settings(self, url, proxies, stream, verify, cert):\n                     or verify\n                 )\n \n-        # Merge all the kwargs.\n-        proxies = merge_setting(proxies, self.proxies)\n+        stream = merge_setting(stream, self.stream)\n+        verify = merge_setting(verify, self.verify)\n+        cert = merge_setting(cert, self.cert)\n+\n         return {\""proxies\"": proxies, \""stream\"": stream, \""verify\"": verify, \""cert\"": cert}"",
+    ""advice"": ""变更逻辑正确，修复了代理设置的优先级问题。建议确保 `merge_setting` 函数的实现逻辑（例如在 `src/requests/utils.py` 中）符合预期，即第二个参数（会话设置）的优先级高于第一个参数（调用时传入的参数）。同时，新增的测试用例 `test_proxy_env_vars_dont_override_session_proxies` 验证了修复的有效性，应确保该测试通过。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试用例验证会话代理设置优先于环境变量。"",
+    ""description"": ""新增的测试用例 `test_proxy_env_vars_dont_override_session_proxies` 逻辑清晰，通过创建会话、设置会话代理、模拟环境变量，并调用 `merge_environment_settings` 方法，最后断言会话代理设置未被环境变量覆盖。这有效地验证了代码变更的正确性。"",
+    ""evidence"": ""文件: tests/test_requests.py\n@@ -2634,6 +2634,18 @@ def test_proxy_env_vars_override_default(var, url, proxy):\n         assert proxies[scheme] == proxy\n \n \n+def test_proxy_env_vars_dont_override_session_proxies():\n+    session = requests.Session()\n+    session.proxies[\""http\""] = \""http://example.org\""\n+\n+    with override_environ(http_proxy=\""socks5://proxy.com:9876\""):\n+        settings = session.merge_environment_settings(\n+            url=\""http://example.com\"", proxies={}, stream=False, verify=True, cert=None\n+        )\n+\n+    assert settings[\""proxies\""][\""http\""] == \""http://example.org\"""",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'cde8917fb8b1628129fea41074b086e77d186698', 'message': 'Fix #2018: Re-order proxy precedence.'}]","[""## 🤖 Sentinel PR Agent — Review Report\n\n**Summary:** The PR correctly fixes proxy precedence by moving the merge_setting calls before the environment proxy lookup, so session-level proxies are not overridden by environment variables. The core logic change is sound. However, there are several issues: a PR_BODY.md file is being committed to the repo, the new test has limited coverage (missing per-request proxy precedence and verify ordering cases), and there is a latent AttributeError risk if proxies resolves to None after merge_setting.\n\n| Severity | Count |\n|----------|-------|\n| 🔴 Critical | 0 |\n| 🟠 High | 1 |\n| 🟡 Medium | 3 |\n| 🔵 Low | 3 |\n\n### Issues Found\n\n#### 🟡 [MEDIUM] PR_BODY.md committed to repository\n**File:** `PR_BODY.md` (line None)\nA PR_BODY.md file describing the pull request has been committed to the repository root. This is a meta-document intended for the GitHub PR description, not for the codebase itself. It will pollute the repository history and confuse future contributors who encounter it in the source tree.\n> **Suggestion:** Remove PR_BODY.md from the commit. Use the GitHub PR description field instead, or add PR_BODY.md to .gitignore if it is generated by tooling.\n\n#### 🟡 [MEDIUM] proxies.get() called on potentially None result from merge_setting\n**File:** `src/requests/sessions.py` (line 768)\nAfter the reorder, `proxies` is the result of `merge_setting(proxies, self.proxies)`. If both the incoming `proxies` argument and `self.proxies` are `None`, `merge_setting` returns `None` (see merge_setting lines 68-69: if session_setting is None, return request_setting). The subsequent `proxies.get('no_proxy')` on line 768 would then raise an `AttributeError`. While `self.proxies` is initialized to `{}` in `__init__`, this is a latent risk for subclasses, direct callers of `merge_environment_se…\n> **Suggestion:** Guard against None after merge_setting: `proxies = merge_setting(proxies, self.proxies) or {}`. Alternatively, ensure the None guard on line 768 is evaluated against the post-merge value, which it already is — but the real fix is to ensure merge_setting never returns None for proxies by defaulting: `proxies = merge_setting(proxies, self.proxies) or {}`.\n\n#### 🔵 [LOW] verify env-variable override behavior subtly changed when verify=None is passed\n**File:** `src/requests/sessions.py` (line 762)\nBefore this change, the execution order was: (1) check env for CA bundle using the raw `verify` argument, (2) then merge with `self.verify`. After the change: (1) merge `verify` with `self.verify` first, (2) then check env. When `verify=None` is passed and `self.verify=True` (the default), the old code checked `if verify is True or verify is None` with `verify=None` (True branch), then `merge_setting(env_ca_path, True)` returned the env CA path. The new code merges first: `merge_setting(None, Tr…\n> **Suggestion:** Document this behavioral change explicitly. If the intent is that `REQUESTS_CA_BUNDLE` should only apply when no CA bundle is configured at all (neither per-request nor session-level), the new behavior is correct and preferable. Add a test case: `session.verify = '/path/to/ca.pem'` with `REQUESTS_CA_BUNDLE` set, and `verify=None` passed — assert that the session CA path wins.\n\n#### 🟡 [MEDIUM] New test does not cover per-request proxy taking precedence over session proxy\n**File:** `tests/test_requests.py` (line 2637)\nThe new test `test_proxy_env_vars_dont_override_session_proxies` only verifies that `session.proxies` beats environment proxies. It does not test the full precedence chain: per-request proxy > session proxy > env proxy. Specifically, there is no test asserting that a proxy passed directly to `merge_environment_settings(proxies={'http': 'http://per-request-proxy'})` overrides both `session.proxies` and the environment proxy. This is the highest-priority case and should be explicitly covered.\n> **Suggestion:** Add a test that passes `proxies={'http': 'http://per-request-proxy.com'}` to `merge_environment_settings` while also setting `session.proxies['http']` and an env var, and asserts the per-request proxy wins. Also add a test that env proxy is used as fallback when neither per-request nor session proxies specify a scheme.\n\n#### 🔵 [LOW] No test for env proxy fallback when session proxy is absent\n**File:** `tests/test_requests.py` (line 2637)\nThe new test only covers the case where `session.proxies` should win over env proxies. There is no regression test confirming that env proxies still apply as a fallback when `session.proxies` does not contain the relevant scheme. This is the 'env proxy as fallback' behavior mentioned in the PR notes, and it should be explicitly tested to prevent future regressions.\n> **Suggestion:** Add a test: create a session with no proxies set, set `http_proxy` env var, call `merge_environment_settings`, and assert the env proxy is present in the result.\n\n#### 🔵 [LOW] Test passes proxies={} instead of None, masking a potential None-proxy edge case\n**File:** `tests/test_requests.py` (line 2637)\nThe test calls `merge_environment_settings(proxies={}, ...)`. In the real call path via `Session.request()`, `proxies` is also `proxies or {}` (line 580), so `{}` is realistic. However, external callers of `merge_environment_settings` (it is a public API) may pass `proxies=None`. The behavior when `proxies=None` is passed should be tested, since `merge_setting(None, self.proxies)` returns `self.proxies` directly (the session dict itself, not a copy), and subsequent `setdefault` mutations would m…\n> **Suggestion:** Add a test with `proxies=None` to verify correct behavior. Also audit whether `merge_setting` returns a copy or a reference when `request_setting is None` — if it returns `session_setting` directly, mutations via `setdefault` will corrupt `self.proxies`.\n\n#### 🟠 [HIGH] merge_setting returns session dict by reference; setdefault mutates self.proxies in-place\n**File:** `src/requests/sessions.py` (line 760)\nIn `merge_setting`, when `request_setting is None`, the function returns `session_setting` directly (line 72: `return session_setting`). After the reorder, if `proxies=None` is passed to `merge_environment_settings`, `merge_setting(None, self.proxies)` returns `self.proxies` itself (not a copy). The subsequent `proxies.setdefault(k, v)` loop then mutates `self.proxies` directly, permanently adding environment proxy entries to the session's proxy dict. This is a state-corruption bug: after the fi…\n> **Suggestion:** Ensure a copy is made before mutation. Either: (1) change the `setdefault` loop to build a new dict: `proxies = {**proxies, **{k: v for k, v in env_proxies.items() if k not in proxies}}`, or (2) explicitly copy after merge_setting: `proxies = dict(merge_setting(proxies, self.proxies) or {})`. Note: this bug existed before this PR when `proxies=None` was passed, but the reorder makes it more likely to be triggered since the merge now happens before the mutation.\n\n\n*Model: `anthropic/claude-sonnet-4.6` Powered by Sentinel PR Agent*""]",2026-04-04 02:14:48
+psf/requests,7280,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复HTTPDigestAuth中字节类型凭据在Authorization头中的表示问题"",
+    ""description"": ""未发现明显问题。代码变更的主要目的是确保当用户名和密码以字节形式传入时，在构建摘要认证头之前将其正确解码为UTF-8字符串，避免在f-string格式化时产生字节字面量表示（如 b'Ond\\xc5\\x99ej'），而是输出正确的字符。这符合RFC 7616的要求，并使用严格解码以在遇到无效UTF-8序列时快速失败，向用户提供清晰的错误提示。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '8997b8edbeb5a3b0b245a5b90d369cd809d0d4ea', 'message': ""Fix HTTPDigestAuth bytes representation in Authorization header\n\nWhen non-Latin credentials are passed as bytes, f-string formatting\nproduces literal bytes representation (e.g., b'Ond\\xc5\\x99ej') instead\nof proper UTF-8 strings.\n\nThis fix decodes bytes credentials to UTF-8 strings before using them\nin header construction, ensuring proper character representation.\n\nFixes #6102""}, {'sha': 'ec72aaf7c78faba639f509dfec6450713c6be8a4', 'message': ""Fix HTTPDigestAuth to handle invalid UTF-8 bytes gracefully\n\nWhen decoding bytes credentials to strings for header formatting,\nuse errors='replace' to handle invalid UTF-8 sequences. This prevents\nUnicodeDecodeError crashes while maintaining RFC 7616 compliance for\nvalid UTF-8 input.\n\nFixes #6102""}, {'sha': '3f49a789dd630be7163370945c95eb2d6ae8852b', 'message': ""Use strict UTF-8 decoding for HTTPDigestAuth credentials\n\nThe previous fix used errors='replace' which silently corrupts invalid\nUTF-8 sequences in credentials. This causes authentication failures that\nare hard to debug because the corrupted characters are not visible.\n\nUsing strict decoding (the default) ensures that invalid UTF-8 input\nraises a clear UnicodeDecodeError, alerting users to malformed credentials.\n\nFixes #6102""}]","[""@nmurrell07 I'm going to have to ask you to stop posting the same PR. We'll have to restrict access to the repository if you continue."", '@nateprewitt Check #7280 if you get a chance, appreciate feedback, thx.']",2026-04-04 02:14:57
+psf/requests,7280,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复HTTP摘要认证中字节类型凭据在Authorization头中的表示问题"",
+    ""description"": ""当传入字节类型的用户名或密码时，f-string格式化会产生字节的字面表示（如b'Ond\\xc5\\x99ej'），而不是正确的UTF-8字符串。这违反了RFC 7616要求，并可能导致认证失败。"",
+    ""evidence"": ""在build_digest_header方法中，A1 = f\""{self.username}:{realm}:{self.password}\"" 和 base = f'username=\""{self.username}\"", realm=\""{realm}\"", nonce=\""{nonce}\"", ' 直接使用了self.username和self.password，如果它们是bytes类型，会产生错误的输出。"",
+    ""advice"": ""已通过添加解码逻辑修复：在构建A1和base字符串前，检查username和password是否为bytes类型，如果是则使用utf-8解码为字符串。这确保了正确的字符表示。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""修复HTTP摘要认证中字节类型凭据在Authorization头中的表示问题"",
+    ""description"": ""使用严格的UTF-8解码（默认）确保无效的UTF-8输入会引发清晰的UnicodeDecodeError，而不是静默地损坏凭据或产生难以调试的认证失败。"",
+    ""evidence"": ""代码变更中使用了username.decode(\""utf-8\"")和password.decode(\""utf-8\"")，这是默认的严格解码模式。"",
+    ""advice"": ""保持严格的解码是正确的，因为它符合RFC 7616对UTF-8的要求，并在输入无效时提供清晰的错误信息，有助于用户识别和修复凭据问题。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复HTTP摘要认证中字节类型凭据在Authorization头中的表示问题"",
+    ""description"": ""添加了清晰的注释来解释为什么需要解码bytes以及使用严格解码的原因，提高了代码的可维护性。"",
+    ""evidence"": ""代码变更中包含了注释：\""Ensure username and password are strings, not bytes... RFC 7616 requires UTF-8 encoding for Digest authentication credentials. We use strict decoding to fail fast on invalid UTF-8 sequences...\"""",
+    ""advice"": ""注释很好地解释了代码的意图和背后的RFC标准，无需修改。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '8997b8edbeb5a3b0b245a5b90d369cd809d0d4ea', 'message': ""Fix HTTPDigestAuth bytes representation in Authorization header\n\nWhen non-Latin credentials are passed as bytes, f-string formatting\nproduces literal bytes representation (e.g., b'Ond\\xc5\\x99ej') instead\nof proper UTF-8 strings.\n\nThis fix decodes bytes credentials to UTF-8 strings before using them\nin header construction, ensuring proper character representation.\n\nFixes #6102""}, {'sha': 'ec72aaf7c78faba639f509dfec6450713c6be8a4', 'message': ""Fix HTTPDigestAuth to handle invalid UTF-8 bytes gracefully\n\nWhen decoding bytes credentials to strings for header formatting,\nuse errors='replace' to handle invalid UTF-8 sequences. This prevents\nUnicodeDecodeError crashes while maintaining RFC 7616 compliance for\nvalid UTF-8 input.\n\nFixes #6102""}, {'sha': '3f49a789dd630be7163370945c95eb2d6ae8852b', 'message': ""Use strict UTF-8 decoding for HTTPDigestAuth credentials\n\nThe previous fix used errors='replace' which silently corrupts invalid\nUTF-8 sequences in credentials. This causes authentication failures that\nare hard to debug because the corrupted characters are not visible.\n\nUsing strict decoding (the default) ensures that invalid UTF-8 input\nraises a clear UnicodeDecodeError, alerting users to malformed credentials.\n\nFixes #6102""}]","[""@nmurrell07 I'm going to have to ask you to stop posting the same PR. We'll have to restrict access to the repository if you continue."", '@nateprewitt Check #7280 if you get a chance, appreciate feedback, thx.']",2026-04-04 02:15:12

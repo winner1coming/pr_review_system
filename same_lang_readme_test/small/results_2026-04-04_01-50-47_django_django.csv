@@ -1,0 +1,304 @@
+repo,pr,strategy,review,commits,review_comments,time
+django/django,21050,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要移除了测试中的硬编码主键值，使其更健壮。"",
+    ""description"": ""未发现明显问题。变更将硬编码的 'value=\""1\""' 替换为动态获取的 `self.band.pk`，提高了测试的可靠性，避免了因数据库主键值变化而导致的测试失败。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '86b9aca7deb1dad52e5ad3be4a13bc0160614590', 'message': 'Refs #36949 -- Removed hardcoded pks in modeladmin tests.'}]","['Sorry I missed this in review! Is it helpful to you if I backport this?', 'Yes']",2026-04-04 01:45:53
+django/django,21050,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要移除了测试中的硬编码主键值"",
+    ""description"": ""未发现明显问题。代码变更将测试中硬编码的主键值 '1' 替换为动态获取的 `self.band.pk`，提高了测试的健壮性，使其不依赖于特定的数据库记录ID。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '86b9aca7deb1dad52e5ad3be4a13bc0160614590', 'message': 'Refs #36949 -- Removed hardcoded pks in modeladmin tests.'}]","['Sorry I missed this in review! Is it helpful to you if I backport this?', 'Yes']",2026-04-04 01:45:58
+django/django,21049,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了get_language_info()函数在回退时未保留原始语言代码的问题"",
+    ""description"": ""在之前的实现中，当get_language_info()函数被调用时，如果传入的是国家/地区特定的语言变体（如'de-ch'），而该变体未在LANG_INFO中直接定义，函数会返回基础语言代码（如'de'）。这导致在模板中无法将返回的代码与LANGUAGE_CODE进行比较，特别是当LANGUAGES设置中包含国家/地区特定的语言代码时。现在函数在所有情况下都返回最初请求的语言代码，包括通用回退路径（如'de-ch' -> 'de'）和显式回退路径（如'zh-my' -> 'zh-hans'）。"",
+    ""evidence"": ""return {**info, \""code\"": lang_code}"",
+    ""advice"": ""变更正确，确保了函数行为的一致性。建议在函数文档字符串中明确说明此行为，即返回的字典中的'code'键始终是传入的lang_code参数，而不是回退后的语言代码。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""更新了测试用例以匹配修复后的行为"",
+    ""description"": ""测试用例已相应更新，验证了get_language_info()函数现在返回的'code'键值与传入的语言代码参数一致。"",
+    ""evidence"": ""self.assertEqual(li[\""code\""], \""de-xx\"") 和 self.assertEqual(li[\""code\""], \""zh-my\"")"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '477673cd23454e91fa5b4284bfeafd93ed462b42', 'message': 'Fixed #32737 -- Preserved requested language code in get_language_info().\n\nPreviously, get_language_info() returned the base language code (e.g.,\n""de"") when called with a country-specific variant (e.g., ""de-ch"") that\nwasn\'t directly in LANG_INFO. This made it impossible to compare the\nreturned code against LANGUAGE_CODE in templates when using\ncountry-specific language codes in the LANGUAGES setting.\n\nThe function now returns the originally requested language code in all\ncases, including both the generic fallback path (e.g., ""de-ch"" -> ""de"")\nand the explicit fallback path (e.g., ""zh-my"" -> ""zh-hans"").'}]","['Hello! Thank you for your contribution 💪\n\nAs it\'s your first contribution be sure to check out the [patch review checklist](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/submitting-patches/#patch-review-checklist).\n\nIf you\'re fixing a ticket [from Trac](https://code.djangoproject.com/) make sure to set the _""Has patch""_ flag and include a link to this PR in the ticket!\n\nIf you have any design or process questions then you can ask in the [Django forum](https://forum.djangoproject.com/c/internals/5).\n\nWelcome aboard ⛵️!']",2026-04-04 01:46:12
+django/django,21049,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复了get_language_info()函数中语言代码信息不一致的问题。"",
+    ""description"": ""代码变更的主要目的是确保`get_language_info()`函数返回的字典中，`'code'`键的值始终是调用时传入的原始语言代码（`lang_code`），而不是在查找过程中可能被替换的基语言或回退语言代码。这解决了当使用特定国家变体（如'de-ch'）时，无法与`LANGUAGE_CODE`设置进行直接比较的问题。变更包括核心逻辑的修复和对应单元测试的更新。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.95,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '477673cd23454e91fa5b4284bfeafd93ed462b42', 'message': 'Fixed #32737 -- Preserved requested language code in get_language_info().\n\nPreviously, get_language_info() returned the base language code (e.g.,\n""de"") when called with a country-specific variant (e.g., ""de-ch"") that\nwasn\'t directly in LANG_INFO. This made it impossible to compare the\nreturned code against LANGUAGE_CODE in templates when using\ncountry-specific language codes in the LANGUAGES setting.\n\nThe function now returns the originally requested language code in all\ncases, including both the generic fallback path (e.g., ""de-ch"" -> ""de"")\nand the explicit fallback path (e.g., ""zh-my"" -> ""zh-hans"").'}]","['Hello! Thank you for your contribution 💪\n\nAs it\'s your first contribution be sure to check out the [patch review checklist](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/submitting-patches/#patch-review-checklist).\n\nIf you\'re fixing a ticket [from Trac](https://code.djangoproject.com/) make sure to set the _""Has patch""_ flag and include a link to this PR in the ticket!\n\nIf you have any design or process questions then you can ask in the [Django forum](https://forum.djangoproject.com/c/internals/5).\n\nWelcome aboard ⛵️!']",2026-04-04 01:46:18
+django/django,21046,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了When()构造函数中无效参数传播到Q()的问题"",
+    ""description"": ""在When类的__init__方法中，当lookups参数包含PROHIBITED_FILTER_KWARGS中的关键字参数（如'_connector', '_negated'）时，会直接传递给Q()构造函数，这可能导致意外的行为或错误。这些参数是Q对象的内部实现细节，不应被外部使用。"",
+    ""evidence"": ""文件: django/db/models/expressions.py\n@@ -1640,6 +1640,9 @@ class When(Expression):\n \n     def __init__(self, condition=None, then=None, **lookups):\n         if lookups:\n+            if invalid_kwargs := PROHIBITED_FILTER_KWARGS.intersection(lookups):\n+                invalid_str = \"", \"".join(f\""'{k}'\"" for k in sorted(invalid_kwargs))\n+                raise TypeError(f\""The following kwargs are invalid: {invalid_str}\"")"",
+    ""advice"": ""建议保持当前实现，这能有效防止无效参数传播。同时，考虑在文档中说明When()接受的参数范围。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将PROHIBITED_FILTER_KWARGS常量移动到query_utils模块中共享"",
+    ""description"": ""PROHIBITED_FILTER_KWARGS常量从query.py移动到query_utils.py，使其成为共享常量，便于其他模块（如expressions.py）导入使用，提高了代码的可维护性和一致性。"",
+    ""evidence"": ""文件: django/db/models/query.py\n@@ -46,8 +46,6 @@\n # The maximum number of items to display in a QuerySet.__repr__\n REPR_OUTPUT_SIZE = 20\n \n-PROHIBITED_FILTER_KWARGS = frozenset([\""_connector\"", \""_negated\""])\n-\n \n 文件: django/db/models/query_utils.py\n@@ -21,6 +21,8 @@\n \n logger = logging.getLogger(\""django.db.models\"")\n \n+PROHIBITED_FILTER_KWARGS = frozenset([\""_connector\"", \""_negated\""])"",
+    ""advice"": ""建议保持当前设计，这种常量共享方式符合Django的代码组织风格。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了测试用例验证When()拒绝无效参数"",
+    ""description"": ""新增的测试用例test_when_rejects_invalid_arguments验证了When()构造函数能正确拒绝'_connector'和'_negated'参数，并抛出预期的TypeError。"",
+    ""evidence"": ""文件: tests/expressions_case/tests.py\n@@ -1668,6 +1668,11 @@ def test_invalid_when_constructor_args(self):\n         with self.assertRaisesMessage(TypeError, msg):\n             When()\n \n+    def test_when_rejects_invalid_arguments(self):\n+        msg = \""The following kwargs are invalid: '_connector', '_negated'\""\n+        with self.assertRaisesMessage(TypeError, msg):\n+            When(_negated=True, _connector=\""evil\"")"",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c15f361a1b2b07d72ff0f91457002d6debf4006d', 'message': 'Fixed #37016 -- Avoided propagating invalid arguments from When() to Q().'}]","['Code organization / likely micro-optimization: I suggest moving this under `if lookups:`. You could shorten the variable name for the string to keep it from flowing onto a new line.', 'Thanks @varunkasyap 👍 ', 'Thanks @jacobtylerwalls ']",2026-04-04 01:46:42
+django/django,21046,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了When()构造函数中无效参数传播到Q()的问题"",
+    ""description"": ""在When类的__init__方法中，当通过lookups参数传递无效的关键字参数（如_connector、_negated）时，这些参数会直接传递给Q()构造函数，导致潜在的错误或意外行为。现在添加了检查，在参数传递给Q()之前就拒绝这些无效参数。"",
+    ""evidence"": ""文件: django/db/models/expressions.py\n@@ -1640,6 +1640,9 @@ class When(Expression):\n \n     def __init__(self, condition=None, then=None, **lookups):\n         if lookups:\n+            if invalid_kwargs := PROHIBITED_FILTER_KWARGS.intersection(lookups):\n+                invalid_str = \"", \"".join(f\""'{k}'\"" for k in sorted(invalid_kwargs))\n+                raise TypeError(f\""The following kwargs are invalid: {invalid_str}\"")"",
+    ""advice"": ""这个修复是正确的。建议确保错误消息格式与Django其他部分的错误消息保持一致。另外，考虑是否还有其他类似的类（如Case）也需要相同的保护。"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将PROHIBITED_FILTER_KWARGS常量移动到query_utils模块"",
+    ""description"": ""将PROHIBITED_FILTER_KWARGS常量从query.py移动到query_utils.py，使其在需要的地方（如When类）可以导入使用，提高了代码的组织性和可维护性。"",
+    ""evidence"": ""文件: django/db/models/query.py\n@@ -46,8 +46,6 @@\n # The maximum number of items to display in a QuerySet.__repr__\n REPR_OUTPUT_SIZE = 20\n \n-PROHIBITED_FILTER_KWARGS = frozenset([\""_connector\"", \""_negated\""])\n-\n \n 文件: django/db/models/query_utils.py\n@@ -21,6 +21,8 @@\n \n logger = logging.getLogger(\""django.db.models\"")\n \n+PROHIBITED_FILTER_KWARGS = frozenset([\""_connector\"", \""_negated\""])"",
+    ""advice"": ""这是一个好的设计改进。确保所有需要这个常量的模块都从query_utils导入，而不是重新定义。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""添加了测试用例验证When类拒绝无效参数"",
+    ""description"": ""新增的测试用例清晰地展示了当传递_negated和_connector参数时，When构造函数会抛出预期的TypeError。测试用例的命名和实现都很清晰。"",
+    ""evidence"": ""文件: tests/expressions_case/tests.py\n@@ -1668,6 +1668,11 @@ def test_invalid_when_constructor_args(self):\n         with self.assertRaisesMessage(TypeError, msg):\n             When()\n \n+    def test_when_rejects_invalid_arguments(self):\n+        msg = \""The following kwargs are invalid: '_connector', '_negated'\""\n+        with self.assertRaisesMessage(TypeError, msg):\n+            When(_negated=True, _connector=\""evil\"")"",
+    ""advice"": ""测试用例很好。考虑是否还需要测试其他无效参数组合，或者测试当同时传递有效和无效参数时的情况。"",
+    ""confidence"": 0.85,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c15f361a1b2b07d72ff0f91457002d6debf4006d', 'message': 'Fixed #37016 -- Avoided propagating invalid arguments from When() to Q().'}]","['Code organization / likely micro-optimization: I suggest moving this under `if lookups:`. You could shorten the variable name for the string to keep it from flowing onto a new line.', 'Thanks @varunkasyap 👍 ', 'Thanks @jacobtylerwalls ']",2026-04-04 01:47:03
+django/django,21045,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复异步登录/登出后 request.user 属性未同步更新的问题。"",
+    ""description"": ""在异步登录（alogin）和登出（alogout）函数中，当请求对象（request）已经通过同步的 AuthenticationMiddleware 设置了 `request.user` 属性时，异步操作后该属性未能被更新。这会导致后续的同步代码访问到过时的用户信息，引发逻辑错误。"",
+    ""evidence"": ""文件: django/contrib/auth/__init__.py\n@@ -205,6 +205,8 @@ async def alogin(request, user, backend=None):\n     await request.session.aset(SESSION_KEY, user._meta.pk.value_to_string(user))\n     await request.session.aset(BACKEND_SESSION_KEY, backend)\n     await request.session.aset(HASH_SESSION_KEY, session_auth_hash)\n+    if hasattr(request, \""user\""):\n+        request.user = user\n\n文件: django/contrib/auth/__init__.py\n@@ -244,13 +246,21 @@ async def alogout(request):\n             user = None\n     await user_logged_out.asend(sender=user.__class__, request=request, user=user)\n     await request.session.aflush()\n-    if hasattr(request, \""auser\""):\n+\n+    has_user = hasattr(request, \""user\"")\n+    has_auser = hasattr(request, \""auser\"")\n+    if has_user or has_auser:\n         from django.contrib.auth.models import AnonymousUser\n \n-        async def auser():\n-            return AnonymousUser()\n+        anon = AnonymousUser()\n+        if has_user:\n+            request.user = anon\n+        if has_auser:\n \n-        request.auser = auser\n+            async def auser():\n+                return anon\n+\n+            request.auser = auser"",
+    ""advice"": ""代码变更已正确修复了此问题。在 `alogin` 中，如果 `request.user` 存在，则直接更新它。在 `alogout` 中，逻辑被重构以同时处理 `request.user` 和 `request.auser` 的更新，确保两者在登出后都指向匿名用户。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试用例以验证异步登录/登出后同步 user 属性的正确性。"",
+    ""description"": ""新增的测试类 `TestAsyncLoginLogoutAfterSyncMiddleware` 及其测试方法 `test_user_after_alogin` 和 `test_user_after_alogout` 有效地验证了修复后的行为。测试模拟了在同步中间件已设置 `request.user` 后，进行异步登录和登出操作，并断言 `request.user` 属性被正确更新。"",
+    ""evidence"": ""文件: tests/auth_tests/test_middleware.py\n@@ -77,6 +77,35 @@ async def test_auser_after_alogout(self):\n         self.assertTrue(auser_second.is_anonymous)\n \n \n+class TestAsyncLoginLogoutAfterSyncMiddleware(TestCase):\n+    @classmethod\n+    def setUpTestData(cls):\n+        cls.user = User.objects.create_user(\n+            \""test_user\"", \""test@example.com\"", \""test_password\""\n+        )\n+        cls.user2 = User.objects.create_user(\n+            \""test_user2\"", \""test2@example.com\"", \""test_password2\""\n+        )\n+\n+    def setUp(self):\n+        self.middleware = AuthenticationMiddleware(lambda req: HttpResponse())\n+        self.client.force_login(self.user)\n+        self.request = HttpRequest()\n+        self.request.session = self.client.session\n+        # Populate self.request.user.\n+        self.middleware(self.request)\n+        # .user is lazy, so materialize it by accessing an attribute.\n+        self.request.user.is_authenticated\n+\n+    async def test_user_after_alogin(self):\n+        await alogin(self.request, self.user2)\n+        self.assertEqual(self.request.user, self.user2)\n+\n+    async def test_user_after_alogout(self):\n+        await alogout(self.request)\n+        self.assertEqual(self.request.user, AnonymousUser())"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '72eb2fc46b2b40d51cd1c7e4a747b3323f8350bb', 'message': 'Fixed #37017 -- Fixed setting or clearing of request.user after alogin/alogout().\n\nRegression in 31a43c571f4d036827d4fd7a5f615591637dc1be.'}]","[""I wavered between this version and the flattened version:\n```py\nif has_user:\nif has_auser:\n```\n\nThe duplicate imports wouldn't be such a big deal. The duplicate anonymous users wouldn't be such a big deal either, since they are supposed to `__hash__` and `__eq__` to the same thing, but I don't know what people might be stashing on these instances directly, so using the same instance seemed slightly beneficial."", 'To give alternative test suggestions instead of adding a new test class, if you prefer:\n```diff\n--- a/tests/auth_tests/test_middleware.py\n+++ b/tests/auth_tests/test_middleware.py\n@@ -1,5 +1,7 @@\n+from asgiref.sync import sync_to_async\n+\n from django.conf import settings\n-from django.contrib.auth import REDIRECT_FIELD_NAME, alogin, alogout\n+from django.contrib.auth import REDIRECT_FIELD_NAME, aget_user, alogin, alogout\n from django.contrib.auth.middleware import (\n     AuthenticationMiddleware,\n     LoginRequiredMiddleware,\n@@ -68,6 +70,14 @@ class TestAuthenticationMiddleware(TestCase):\n         auser_second = await self.request.auser()\n         self.assertEqual(auser_second, self.user2)\n \n+    async def test_user_after_alogin(self):\n+        self.middleware(self.request)\n+        user = await aget_user(self.request)\n+        self.assertEqual(user, self.user)\n+        await alogin(self.request, self.user2)\n+        user_second = await aget_user(self.request)\n+        self.assertEqual(user_second, self.user2)\n+\n     async def test_auser_after_alogout(self):\n         self.middleware(self.request)\n         auser = await self.request.auser()\n@@ -76,6 +86,16 @@ class TestAuthenticationMiddleware(TestCase):\n         auser_second = await self.request.auser()\n         self.assertTrue(auser_second.is_anonymous)\n \n+    async def test_user_after_alogout(self):\n+        self.middleware(self.request)\n+        is_anonymous = lambda req: req.user.is_anonymous\n+        # As user attribute is lazy, materialize by accessing an attribute.\n+        user_is_anonymous = await sync_to_async(is_anonymous)(self.request)\n+        self.assertFalse(user_is_anonymous)\n+        await alogout(self.request)\n+        user_is_anonymous_2 = await sync_to_async(is_anonymous)(self.request)\n+        self.assertTrue(user_is_anonymous_2)\n```', ""I don't have a strong opinion. I am comfortable with this 👍 "", 'I wonder if we also should do something about about sync `logout()` and async `auser` 🤔 ', 'Just want to confirm if ""by sync middleware"" is required, is that the only place this can go out of sync? Looked like when checking `aget_user` after an `alogin` this also was out of sync', 'Yes I think this is a good point :thinking: \r\n\r\n```python\r\n    async def test_auser_after_logout(self):\r\n        self.middleware(self.request)\r\n        auser = await self.request.auser()\r\n        self.assertEqual(auser, self.user)\r\n        await sync_to_async(logout)(self.request)\r\n        auser_second = await self.request.auser()\r\n        self.assertTrue(auser_second.is_anonymous)\r\n```\r\n```\r\n  File ""/home/sarahboyce/Documents/django/tests/auth_tests/test_middleware.py"", line 105, in test_auser_after_logout\r\n    self.assertTrue(auser_second.is_anonymous)\r\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nAssertionError: False is not true\r\n``` ', ""Maybe we should do this in a separate ticket for 6.1, since it wasn't a regression in 6.0."", ""Oh that's a nifty idea to pass a lambda to sync_to_async 👍 \n\nThe first test passes on main so I'll take a look at what's up there."", ""Agreed, it's rather a bug in Django 5.0."", 'Sorry mine is passing too now! I must have misread a test failure when I was testing it 😬 \nWhat you already have is possibly nicer 👍 ', 'I can add ""e.g."" to clarify this may not be the only circumstance 👍 ', 'ticket-37019', 'Thank you Jacob! This looks great!\nAdded a couple of thoughts 😁 the only question mark is whether we should tweak the release note, the test suggestions are optional', 'Thank you, looks good to me 👍 ', 'Thanks for the reviews!']",2026-04-04 01:47:30
+django/django,21045,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了异步登录/登出后，同步中间件设置的request.user未更新的问题。"",
+    ""description"": ""在异步登录（alogin）和登出（alogout）函数中，代码变更增加了对同步属性`request.user`的更新逻辑。这修复了一个回归问题：当使用异步登录/登出后，如果请求对象上已经存在由同步中间件（如AuthenticationMiddleware）设置的`request.user`属性，该属性不会得到更新，导致后续同步视图或中间件看到的用户状态与实际会话状态不一致。"",
+    ""evidence"": ""文件: django/contrib/auth/__init__.py\n@@ -205,6 +205,8 @@ async def alogin(request, user, backend=None):\n     await request.session.aset(SESSION_KEY, user._meta.pk.value_to_string(user))\n     await request.session.aset(BACKEND_SESSION_KEY, backend)\n     await request.session.aset(HASH_SESSION_KEY, session_auth_hash)\n+    if hasattr(request, \""user\""):\n+        request.user = user\n\n文件: django/contrib/auth/__init__.py\n@@ -244,13 +246,21 @@ async def alogout(request):\n             user = None\n     await user_logged_out.asend(sender=user.__class__, request=request, user=user)\n     await request.session.aflush()\n-    if hasattr(request, \""auser\""):\n+\n+    has_user = hasattr(request, \""user\"")\n+    has_auser = hasattr(request, \""auser\"")\n+    if has_user or has_auser:\n         from django.contrib.auth.models import AnonymousUser\n \n-        async def auser():\n-            return AnonymousUser()\n+        anon = AnonymousUser()\n+        if has_user:\n+            request.user = anon\n+        if has_auser:\n \n-        request.auser = auser\n+            async def auser():\n+                return anon\n+\n+            request.auser = auser"",
+    ""advice"": ""代码变更逻辑正确。建议在alogin函数中，当设置`request.user`时，也考虑是否需要清除或覆盖可能存在的`request.auser`属性，以确保异步属性与同步属性的一致性。不过，在当前Django的上下文中，`request.user`和`request.auser`通常由不同的中间件设置（AuthenticationMiddleware和AuthenticationMiddlewareAsync），同时存在的情况可能由混合使用同步/异步中间件导致，现有处理（分别更新）是合理的。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了测试用例以验证修复。"",
+    ""description"": ""新增的测试类`TestAsyncLoginLogoutAfterSyncMiddleware`清晰地验证了在同步中间件设置`request.user`后，调用异步登录和登出函数能正确更新该属性的场景。测试用例结构清晰，覆盖了修复的核心问题。"",
+    ""evidence"": ""文件: tests/auth_tests/test_middleware.py\n@@ -77,6 +77,35 @@ async def test_auser_after_alogout(self):\n         self.assertTrue(auser_second.is_anonymous)\n \n \n+class TestAsyncLoginLogoutAfterSyncMiddleware(TestCase):\n+    @classmethod\n+    def setUpTestData(cls):\n+        cls.user = User.objects.create_user(\n+            \""test_user\"", \""test@example.com\"", \""test_password\""\n+        )\n+        cls.user2 = User.objects.create_user(\n+            \""test_user2\"", \""test2@example.com\"", \""test_password2\""\n+        )\n+\n+    def setUp(self):\n+        self.middleware = AuthenticationMiddleware(lambda req: HttpResponse())\n+        self.client.force_login(self.user)\n+        self.request = HttpRequest()\n+        self.request.session = self.client.session\n+        # Populate self.request.user.\n+        self.middleware(self.request)\n+        # .user is lazy, so materialize it by accessing an attribute.\n+        self.request.user.is_authenticated\n+\n+    async def test_user_after_alogin(self):\n+        await alogin(self.request, self.user2)\n+        self.assertEqual(self.request.user, self.user2)\n+\n+    async def test_user_after_alogout(self):\n+        await alogout(self.request)\n+        self.assertEqual(self.request.user, AnonymousUser())"",
+    ""advice"": ""无。测试用例很好地服务于本次修复的目的。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '72eb2fc46b2b40d51cd1c7e4a747b3323f8350bb', 'message': 'Fixed #37017 -- Fixed setting or clearing of request.user after alogin/alogout().\n\nRegression in 31a43c571f4d036827d4fd7a5f615591637dc1be.'}]","[""I wavered between this version and the flattened version:\n```py\nif has_user:\nif has_auser:\n```\n\nThe duplicate imports wouldn't be such a big deal. The duplicate anonymous users wouldn't be such a big deal either, since they are supposed to `__hash__` and `__eq__` to the same thing, but I don't know what people might be stashing on these instances directly, so using the same instance seemed slightly beneficial."", 'To give alternative test suggestions instead of adding a new test class, if you prefer:\n```diff\n--- a/tests/auth_tests/test_middleware.py\n+++ b/tests/auth_tests/test_middleware.py\n@@ -1,5 +1,7 @@\n+from asgiref.sync import sync_to_async\n+\n from django.conf import settings\n-from django.contrib.auth import REDIRECT_FIELD_NAME, alogin, alogout\n+from django.contrib.auth import REDIRECT_FIELD_NAME, aget_user, alogin, alogout\n from django.contrib.auth.middleware import (\n     AuthenticationMiddleware,\n     LoginRequiredMiddleware,\n@@ -68,6 +70,14 @@ class TestAuthenticationMiddleware(TestCase):\n         auser_second = await self.request.auser()\n         self.assertEqual(auser_second, self.user2)\n \n+    async def test_user_after_alogin(self):\n+        self.middleware(self.request)\n+        user = await aget_user(self.request)\n+        self.assertEqual(user, self.user)\n+        await alogin(self.request, self.user2)\n+        user_second = await aget_user(self.request)\n+        self.assertEqual(user_second, self.user2)\n+\n     async def test_auser_after_alogout(self):\n         self.middleware(self.request)\n         auser = await self.request.auser()\n@@ -76,6 +86,16 @@ class TestAuthenticationMiddleware(TestCase):\n         auser_second = await self.request.auser()\n         self.assertTrue(auser_second.is_anonymous)\n \n+    async def test_user_after_alogout(self):\n+        self.middleware(self.request)\n+        is_anonymous = lambda req: req.user.is_anonymous\n+        # As user attribute is lazy, materialize by accessing an attribute.\n+        user_is_anonymous = await sync_to_async(is_anonymous)(self.request)\n+        self.assertFalse(user_is_anonymous)\n+        await alogout(self.request)\n+        user_is_anonymous_2 = await sync_to_async(is_anonymous)(self.request)\n+        self.assertTrue(user_is_anonymous_2)\n```', ""I don't have a strong opinion. I am comfortable with this 👍 "", 'I wonder if we also should do something about about sync `logout()` and async `auser` 🤔 ', 'Just want to confirm if ""by sync middleware"" is required, is that the only place this can go out of sync? Looked like when checking `aget_user` after an `alogin` this also was out of sync', 'Yes I think this is a good point :thinking: \r\n\r\n```python\r\n    async def test_auser_after_logout(self):\r\n        self.middleware(self.request)\r\n        auser = await self.request.auser()\r\n        self.assertEqual(auser, self.user)\r\n        await sync_to_async(logout)(self.request)\r\n        auser_second = await self.request.auser()\r\n        self.assertTrue(auser_second.is_anonymous)\r\n```\r\n```\r\n  File ""/home/sarahboyce/Documents/django/tests/auth_tests/test_middleware.py"", line 105, in test_auser_after_logout\r\n    self.assertTrue(auser_second.is_anonymous)\r\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nAssertionError: False is not true\r\n``` ', ""Maybe we should do this in a separate ticket for 6.1, since it wasn't a regression in 6.0."", ""Oh that's a nifty idea to pass a lambda to sync_to_async 👍 \n\nThe first test passes on main so I'll take a look at what's up there."", ""Agreed, it's rather a bug in Django 5.0."", 'Sorry mine is passing too now! I must have misread a test failure when I was testing it 😬 \nWhat you already have is possibly nicer 👍 ', 'I can add ""e.g."" to clarify this may not be the only circumstance 👍 ', 'ticket-37019', 'Thank you Jacob! This looks great!\nAdded a couple of thoughts 😁 the only question mark is whether we should tweak the release note, the test suggestions are optional', 'Thank you, looks good to me 👍 ', 'Thanks for the reviews!']",2026-04-04 01:47:56
+django/django,21044,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对相关字段HTML渲染的回归测试"",
+    ""description"": ""未发现明显问题。新增的测试方法 `test_result_list_related_field_uses_html_representation` 旨在验证在管理后台列表视图中，相关模型字段（`list_display`）能正确保持其对象的HTML表示（`__html__`方法），而不是被转义。测试逻辑清晰，使用了mock来模拟`Parent.__html__`方法，并通过`assertInHTML`和`assertNotIn`进行断言验证。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '896e88eb061652d602417808632685a119523914', 'message': 'Format changelist HTML assertion for black/flake8.'}, {'sha': 'c313cee17b078ef991417f9b9e46b3888a9e4150', 'message': 'Refs #24580 -- Wrap HTML assert string to satisfy flake8 line length.'}, {'sha': '108f7c1854d22a1a881794c4d15db2ab7abb8fef', 'message': 'Refs #24580 -- Format admin changelist HTML assertion with black.'}]","['Hello! Thank you for your contribution 💪\n\nAs it\'s your first contribution be sure to check out the [patch review checklist](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/submitting-patches/#patch-review-checklist).\n\nIf you\'re fixing a ticket [from Trac](https://code.djangoproject.com/) make sure to set the _""Has patch""_ flag and include a link to this PR in the ticket!\n\nIf you have any design or process questions then you can ask in the [Django forum](https://forum.djangoproject.com/c/internals/5).\n\nWelcome aboard ⛵️!', 'Addressed CI lint failures by formatting the long  line in  to satisfy black + flake8 (commit 9df723205b). Please re-run checks.', 'Follow-up: the formatting fix is in commit 9df723205b and updates tests/admin_changelist/tests.py (wrapped the long assertNotIn call for black/flake8).', 'Updated commit message format to satisfy `check-commit-suffix` (now ends with a period): 896e88eb06.', 'Addressed the remaining flake8 failure (E501 at tests/admin_changelist/tests.py:390) by wrapping the HTML assertion string across lines without changing behavior. Pushed in commit c313cee17b. CI should re-run automatically.']",2026-04-04 01:48:05
+django/django,21044,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了测试相关字段在admin列表中的HTML表示"",
+    ""description"": ""未发现明显问题。新增的测试方法 `test_result_list_related_field_uses_html_representation` 旨在验证一个回归问题（#24580），即确保在管理后台的列表显示（list_display）中，相关模型字段能正确保留其对象的HTML渲染（通过 `__html__` 方法）。代码逻辑清晰，使用了mock来模拟 `Parent` 模型的 `__html__` 方法，并通过 `assertInHTML` 和 `assertNotIn` 进行断言验证。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '896e88eb061652d602417808632685a119523914', 'message': 'Format changelist HTML assertion for black/flake8.'}, {'sha': 'c313cee17b078ef991417f9b9e46b3888a9e4150', 'message': 'Refs #24580 -- Wrap HTML assert string to satisfy flake8 line length.'}, {'sha': '108f7c1854d22a1a881794c4d15db2ab7abb8fef', 'message': 'Refs #24580 -- Format admin changelist HTML assertion with black.'}]","['Hello! Thank you for your contribution 💪\n\nAs it\'s your first contribution be sure to check out the [patch review checklist](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/submitting-patches/#patch-review-checklist).\n\nIf you\'re fixing a ticket [from Trac](https://code.djangoproject.com/) make sure to set the _""Has patch""_ flag and include a link to this PR in the ticket!\n\nIf you have any design or process questions then you can ask in the [Django forum](https://forum.djangoproject.com/c/internals/5).\n\nWelcome aboard ⛵️!', 'Addressed CI lint failures by formatting the long  line in  to satisfy black + flake8 (commit 9df723205b). Please re-run checks.', 'Follow-up: the formatting fix is in commit 9df723205b and updates tests/admin_changelist/tests.py (wrapped the long assertNotIn call for black/flake8).', 'Updated commit message format to satisfy `check-commit-suffix` (now ends with a period): 896e88eb06.', 'Addressed the remaining flake8 failure (E501 at tests/admin_changelist/tests.py:390) by wrapping the HTML assertion string across lines without changing behavior. Pushed in commit c313cee17b. CI should re-run automatically.']",2026-04-04 01:48:12
+django/django,21041,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""集中化并清理了针对用户枚举定时攻击的缓解措施。"",
+    ""description"": ""新函数 `get_user_with_mitigation` 的文档字符串存在逻辑描述错误。文档说“If user is inactive return the object user.”，但根据代码逻辑，当用户不活跃时，函数仍然会返回用户对象，但会执行一次密码哈希以缓解定时攻击。这与文档描述不符，可能误导开发者理解函数的行为。"",
+    ""evidence"": ""def get_user_with_mitigation(username, password=\""\""):\n    \""\""\""\n    Return the UserModel instance for `username`.\n\n    If no matching user exists, return None,\n    If user is inactive return the object user.\n    in both case the default password hasher is run to mitigate timing attacks.\n    \""\""\"""",
+    ""advice"": ""修正文档字符串，准确描述函数行为。例如：“Return the UserModel instance for `username`. If no matching user exists, return None. In both cases (user does not exist OR user exists but is inactive), the default password hasher is run once to mitigate timing attacks.”"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""集中化并清理了针对用户枚举定时攻击的缓解措施。"",
+    ""description"": ""在 `get_user_with_mitigation` 函数中，变量名 `is_inactive` 的求值逻辑使用了 `not getattr(user, \""is_active\"", False)`。当 `user` 为 `None` 时，`getattr` 会返回默认值 `False`，然后 `not False` 得到 `True`。这意味着 `is_inactive` 在用户不存在时也为 `True`，这与变量名的字面意思“不活跃”不完全匹配，可能造成理解上的混淆。"",
+    ""evidence"": ""    is_inactive = not getattr(user, \""is_active\"", False)\n\n    if user is None or is_inactive:"",
+    ""advice"": ""考虑将变量名改为更具描述性的名称，例如 `should_mitigate` 或 `run_mitigation`，以更准确地反映其用途（即判断是否需要执行缓解措施），或者将逻辑拆分为更清晰的步骤。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了集中化定时攻击缓解逻辑。"",
+    ""description"": ""未发现明显问题。代码重构成功地将分散的定时攻击缓解逻辑集中到两个新的工具函数中，提高了代码的可维护性和一致性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '82b9ccedbac51ade4141d76be79c53cc715da523', 'message': 'Refs #36901 -- Centralized and cleaned_up mitigations against timing attacks targeting user enumeration.\n\nCreated two utility functions called get_user_with_mitigation() and aget_user_with_mitigation() in the file auth.__init__.py.\nRefactored auth.handlers.modwsgi.check_password(), auth.backend.authenticate() and auth.backend.aauthenticate().'}]","[""I may be misunderstanding the ticket, but this appears to be a behavior change for `ModelBackend`. Previously `UserModel().set_password(password)` was only called when the `get_by_natural_key` raised a DoesNotExist error. Here, that is covered with `user is None`, but then there's an additional path to hash the password if `user.is_inactive is False`.\r\n\r\nThis would mean we're hashing the password twice [for the inactive user flow], once here and then once again in the subsequent `check_password()` call in `ModelBackend`."", 'yes,  that is  true. we run the` UserModel().set_password(password)` for inactive state for only the ModWsgi handlers .  I will check that. Maybe i should also add some tests for the ModelBackend to make sure that is not called twice.']",2026-04-04 01:48:31
+django/django,21041,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""集中化针对用户枚举时序攻击的缓解措施，创建了两个工具函数。"",
+    ""description"": ""新函数 `get_user_with_mitigation` 和 `aget_user_with_mitigation` 的文档字符串存在语法和逻辑错误。文档字符串第一段说如果用户不存在返回 None，第二段又说如果用户不活跃返回用户对象。这造成了混淆，并且与函数实际行为不完全一致。函数实际行为是：用户不存在返回 None，用户存在但不活跃返回用户对象。文档字符串需要修正以准确反映行为。"",
+    ""evidence"": ""def get_user_with_mitigation(username, password=\""\""):\n    \""\""\""\n    Return the UserModel instance for `username`.\n\n    If no matching user exists, return None,\n    If user is inactive return the object user.\n    in both case the default password hasher is run to mitigate timing attacks.\n\n    \""\""\"""",
+    ""advice"": ""修正文档字符串，使其清晰准确地描述函数行为。例如：\""Return the UserModel instance for `username`. If no matching user exists, return None. If the user exists but is inactive, return the user object. In both of these cases (user does not exist OR user is inactive), the default password hasher is run once to mitigate timing attacks.\"""",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了集中化时序攻击缓解逻辑"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '82b9ccedbac51ade4141d76be79c53cc715da523', 'message': 'Refs #36901 -- Centralized and cleaned_up mitigations against timing attacks targeting user enumeration.\n\nCreated two utility functions called get_user_with_mitigation() and aget_user_with_mitigation() in the file auth.__init__.py.\nRefactored auth.handlers.modwsgi.check_password(), auth.backend.authenticate() and auth.backend.aauthenticate().'}]","[""I may be misunderstanding the ticket, but this appears to be a behavior change for `ModelBackend`. Previously `UserModel().set_password(password)` was only called when the `get_by_natural_key` raised a DoesNotExist error. Here, that is covered with `user is None`, but then there's an additional path to hash the password if `user.is_inactive is False`.\r\n\r\nThis would mean we're hashing the password twice [for the inactive user flow], once here and then once again in the subsequent `check_password()` call in `ModelBackend`."", 'yes,  that is  true. we run the` UserModel().set_password(password)` for inactive state for only the ModWsgi handlers .  I will check that. Maybe i should also add some tests for the ModelBackend to make sure that is not called twice.']",2026-04-04 01:48:41
+django/django,21037,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修改迁移操作以使用ModelState检查是否允许迁移，避免不必要的模型渲染。"",
+    ""description"": ""在`django/contrib/postgres/operations.py`文件的`database_backwards`方法中，`from_model_state`变量错误地从`to_state`获取，而不是从`from_state`获取。这可能导致在回滚操作时检查错误的模型状态，从而错误地允许或拒绝迁移。"",
+    ""evidence"": ""文件: django/contrib/postgres/operations.py\n@@ -142,7 +142,7 @@ def database_backwards(self, app_label, schema_editor, from_state, to_state):\n     def database_backwards(self, app_label, schema_editor, from_state, to_state):\n         self._ensure_not_in_transaction(schema_editor)\n-        from_model_state = to_state.get_model(app_label, self.model_name)\n+        from_model_state = to_state.get_model(app_label, self.model_name)"",
+    ""advice"": ""应将`from_model_state = to_state.get_model(app_label, self.model_name)`改为`from_model_state = from_state.get_model(app_label, self.model_name)`，以正确获取回滚前的模型状态。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修改迁移操作以使用ModelState检查是否允许迁移，避免不必要的模型渲染。"",
+    ""description"": ""在`django/db/migrations/operations/fields.py`文件的`database_backwards`方法中，`from_model_state`变量错误地从`to_state`获取，而不是从`from_state`获取。这可能导致在回滚操作时检查错误的模型状态，从而错误地允许或拒绝迁移。"",
+    ""evidence"": ""文件: django/db/migrations/operations/fields.py\n@@ -124,7 +124,7 @@ def database_backwards(self, app_label, schema_editor, from_state, to_state):\n \n     def database_backwards(self, app_label, schema_editor, from_state, to_state):\n-        from_model_state = to_state.get_model(app_label, self.model_name)\n+        from_model_state = to_state.get_model(app_label, self.model_name)"",
+    ""advice"": ""应将`from_model_state = to_state.get_model(app_label, self.model_name)`改为`from_model_state = from_state.get_model(app_label, self.model_name)`，以正确获取回滚前的模型状态。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  }
+]
+```","[{'sha': 'c12049dfaed0ab8e627d85649c1455df10f057a1', 'message': 'Refs #29898 change to using ModelState to check if migrate allowed.\n\nIntroduced ModelStateOptions class to mirror Options that are used\nfor Model in order to allow `Model` or `ModelState` to be provided\nas inputs to this function.\n\nChanged `database_forwards` and `database_backwards` functions to\nonly render the models after checking whether migration is allowed.'}]","['Interested in feedback on whether this (and the equivalent changes) are a possible performance hit / duplicated functionality until the need to actually have the model passed in to the schema function is removed.\n\nWas attempting to test locally to see if this change had any imprvoement on the run time for migrations that would always return false from `allow_migrate_model` (see closed ticket here: https://code.djangoproject.com/ticket/36992), but found the `state_forwards` model rendering (https://code.djangoproject.com/ticket/27737) was still the culprit for the worst of the performance in my specific usecase.']",2026-04-04 01:48:59
+django/django,21037,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修改迁移操作，使用ModelState检查迁移许可，延迟模型渲染。"",
+    ""description"": ""在 `RemoveIndexConcurrently` 操作的 `database_backwards` 方法中，错误地从 `to_state` 获取了 `from_model_state`。这会导致在回滚操作时，用于检查迁移许可的模型状态对象不正确，可能基于错误的状态做出决策。"",
+    ""evidence"": ""文件: django/contrib/postgres/operations.py\n@@ -142,7 +142,7 @@ def database_backwards(self, app_label, schema_editor, from_state, to_state):\n     def database_backwards(self, app_label, schema_editor, from_state, to_state):\n         self._ensure_not_in_transaction(schema_editor)\n-        from_model_state = to_state.get_model(app_label, self.model_name)\n+        from_model_state = to_state.get_model(app_label, self.model_name)"",
+    ""advice"": ""应将 `from_model_state = to_state.get_model(...)` 改为 `from_model_state = from_state.get_model(...)`，以获取回滚起始状态的模型状态。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修改迁移操作，使用ModelState检查迁移许可，延迟模型渲染。"",
+    ""description"": ""在 `RemoveField` 操作的 `database_backwards` 方法中，错误地从 `to_state` 获取了 `from_model_state`。这会导致在回滚操作（即重新添加字段）时，用于检查迁移许可的模型状态对象不正确，可能基于错误的状态做出决策。"",
+    ""evidence"": ""文件: django/db/migrations/operations/fields.py\n@@ -124,7 +124,7 @@ def database_backwards(self, app_label, schema_editor, from_state, to_state):\n \n     def database_backwards(self, app_label, schema_editor, from_state, to_state):\n-        from_model_state = to_state.get_model(app_label, self.model_name)\n+        from_model_state = to_state.get_model(app_label, self.model_name)"",
+    ""advice"": ""应将 `from_model_state = to_state.get_model(...)` 改为 `from_model_state = from_state.get_model(...)`，以获取回滚起始状态的模型状态。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  }
+]","[{'sha': 'c12049dfaed0ab8e627d85649c1455df10f057a1', 'message': 'Refs #29898 change to using ModelState to check if migrate allowed.\n\nIntroduced ModelStateOptions class to mirror Options that are used\nfor Model in order to allow `Model` or `ModelState` to be provided\nas inputs to this function.\n\nChanged `database_forwards` and `database_backwards` functions to\nonly render the models after checking whether migration is allowed.'}]","['Interested in feedback on whether this (and the equivalent changes) are a possible performance hit / duplicated functionality until the need to actually have the model passed in to the schema function is removed.\n\nWas attempting to test locally to see if this change had any imprvoement on the run time for migrations that would always return false from `allow_migrate_model` (see closed ticket here: https://code.djangoproject.com/ticket/36992), but found the `state_forwards` model rendering (https://code.djangoproject.com/ticket/27737) was still the culprit for the worst of the performance in my specific usecase.']",2026-04-04 01:49:14
+django/django,21036,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了BaseModelFormSet.get_queryset()中回退排序逻辑，确保稳定排序。"",
+    ""description"": ""变更将回退排序逻辑从仅检查`qs.ordered`升级为检查`qs.totally_ordered`。当查询集未完全排序时，新的逻辑会尝试保留现有的排序字段（来自查询集、模型Meta或空列表），并附加主键（'pk'）以确保排序的稳定性和唯一性。然而，在获取`current_ordering`时，如果`qs.query.order_by`为`False`（表示显式地`order_by()`未调用），代码会将其视为空元组/列表。但在Django中，当未指定排序时，`qs.query.order_by`是一个空元组`()`，而不是`False`。虽然`or`操作符能正确处理空元组（视为Falsey），但变量名`current_ordering`可能引起误解，且逻辑依赖于`or`的短路求值，可读性稍差。此外，当`current_ordering`为空时，`qs.order_by(*current_ordering, \""pk\"")`等价于`qs.order_by(\""pk\"")`，这是正确的。"",
+    ""evidence"": ""if not qs.totally_ordered:\n    current_ordering = qs.query.order_by or qs.model._meta.ordering or []\n    qs = qs.order_by(*current_ordering, \""pk\"")"",
+    ""advice"": ""建议将`current_ordering`的赋值逻辑写得更明确，例如使用三元表达式或条件判断，以提高可读性。例如：`current_ordering = qs.query.order_by if qs.query.order_by else (qs.model._meta.ordering or ())`。同时，考虑添加注释说明`qs.query.order_by`在未排序时为`()`。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了四个测试用例，覆盖了get_queryset()回退排序的各种场景。"",
+    ""description"": ""测试用例分别验证了：1) 当模型无Meta.ordering且查询集无显式排序时，回退到按'pk'排序；2) 当查询集有显式非唯一字段排序时，会附加'pk'；3) 当模型有Meta.ordering但非唯一时，会附加'pk'；4) 当查询集已按'pk'排序（完全排序）时，不会重复添加'pk'。这些测试全面覆盖了变更逻辑，确保了功能的正确性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '83065aed4cf60d3f87e53fbba399c1309417e987', 'message': 'Refs #37004 -- Added coverage for BaseModelFormSet.get_queryset() fallback ordering.'}, {'sha': '5a1f7691b323df4a7295eaba9b56aa9e72587063', 'message': 'Fixed #37004 -- Used QuerySet.totally_ordered in BaseModelFormSet.get_queryset() for stable ordering.'}]","['Django\'s [style guide](https://docs.djangoproject.com/en/6.0/internals/contributing/writing-code/coding-style/#:~:text=assertIs%28%E2%80%A6%2C%20True/False%29%20for%20testing) suggests preferring assertIs over assertTrue (with the possible exception of asserting over values produced from python\'s stdlib, although opinions differ on this).\r\n\r\nBut while here, I\'m realizing this is here just for ""self-documentation"", no?\r\n\r\nIn that case, I would not assert the final status of the queryset property, but perhaps the initial status of the queryset property, so that you are self-documenting why the ""pk"" needs to be appended (or not). (All of the test cases show that ""pk"" is appended to the ordering, so by asserting that\'s it\'s `totally_ordered`, we\'re kind of re-testing that property instead of unit testing your changes.)', ""This test adds coverage for the existing feature (which was merged without a test). I would organize your PR with two commits: one commit (first) that is `Refs #37004 -- Added coverage for ...` containing only this test, and then a second commit `Fixed #37004 -- ...` for the rest.\n\nYour last test also passes without your changes, but I see that it's mostly here to check an edge case in your changes, so I don't really mind having it in either commit."", 'Yes last test is a bit to self-documentation too, but a bit on the overkill side :P \r\nPlease let me know if I didn\'t get your suggestions right regarding the commits. I\'m still struggling a bit here especially because the checklist mentions ""the commit"" in singular.', 'Thanks! Makes a lot of sense.', ""Commits look great. Last needed tweak: we want the test to pass when I check out your first commit. It fails like this because of the rename:\n\n```py\nAssertionError: Tuples differ: ('id',) != ('pk',)\n\nFirst differing element 0:\n'id'\n'pk'\n\n- ('id',)\n+ ('pk',)\n```\n\nSo we need to adjust both commits."", 'determisnistic -> deterministic', ""Done thanks. I didn't know this approach for commits, really interesting."", ""Yeah, let's say we merge a nasty bug here. We can revert your second commit while keeping the coverage you added without any change."", 'A lot of people bisect Django to find behavior changes, so we try to leave the tests passing at every commit.', ""Thanks @rodbv 👍 -- nice tests!\n\nSome cosmetic comments for you on how to organize the commits. If not self-evident, I'll offer that when doing this, I find it helpful to do `git reset --soft HEAD~n`.\n\nGive some thought to the PR title/commit msg also; should be phrased in past tense to  blend in."", 'Looks great!', ""> Thanks @rodbv 👍 -- nice tests!\r\n> \r\n> Some cosmetic comments for you on how to organize the commits. If not self-evident, I'll offer that when doing this, I find it helpful to do `git reset --soft HEAD~n`.\r\n> \r\n> Give some thought to the PR title/commit msg also; should be phrased in past tense to blend in.\r\n\r\nThanks for the tip using `git reset --soft HEAD~n`, I didn't know this, I was about to do the hard way with rebase :D "", 'Welcome aboard! ⛵ ', '> Welcome aboard! ⛵ \n\n\U0001f979 Thanks! ']",2026-04-04 01:49:32
+django/django,21036,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了在BaseModelFormSet.get_queryset()中，当查询集未完全排序时，回退到使用模型元数据排序并附加主键进行稳定排序。"",
+    ""description"": ""未发现明显问题。代码变更逻辑清晰，新增的测试用例覆盖了不同排序场景，确保了功能的正确性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '83065aed4cf60d3f87e53fbba399c1309417e987', 'message': 'Refs #37004 -- Added coverage for BaseModelFormSet.get_queryset() fallback ordering.'}, {'sha': '5a1f7691b323df4a7295eaba9b56aa9e72587063', 'message': 'Fixed #37004 -- Used QuerySet.totally_ordered in BaseModelFormSet.get_queryset() for stable ordering.'}]","['Django\'s [style guide](https://docs.djangoproject.com/en/6.0/internals/contributing/writing-code/coding-style/#:~:text=assertIs%28%E2%80%A6%2C%20True/False%29%20for%20testing) suggests preferring assertIs over assertTrue (with the possible exception of asserting over values produced from python\'s stdlib, although opinions differ on this).\r\n\r\nBut while here, I\'m realizing this is here just for ""self-documentation"", no?\r\n\r\nIn that case, I would not assert the final status of the queryset property, but perhaps the initial status of the queryset property, so that you are self-documenting why the ""pk"" needs to be appended (or not). (All of the test cases show that ""pk"" is appended to the ordering, so by asserting that\'s it\'s `totally_ordered`, we\'re kind of re-testing that property instead of unit testing your changes.)', ""This test adds coverage for the existing feature (which was merged without a test). I would organize your PR with two commits: one commit (first) that is `Refs #37004 -- Added coverage for ...` containing only this test, and then a second commit `Fixed #37004 -- ...` for the rest.\n\nYour last test also passes without your changes, but I see that it's mostly here to check an edge case in your changes, so I don't really mind having it in either commit."", 'Yes last test is a bit to self-documentation too, but a bit on the overkill side :P \r\nPlease let me know if I didn\'t get your suggestions right regarding the commits. I\'m still struggling a bit here especially because the checklist mentions ""the commit"" in singular.', 'Thanks! Makes a lot of sense.', ""Commits look great. Last needed tweak: we want the test to pass when I check out your first commit. It fails like this because of the rename:\n\n```py\nAssertionError: Tuples differ: ('id',) != ('pk',)\n\nFirst differing element 0:\n'id'\n'pk'\n\n- ('id',)\n+ ('pk',)\n```\n\nSo we need to adjust both commits."", 'determisnistic -> deterministic', ""Done thanks. I didn't know this approach for commits, really interesting."", ""Yeah, let's say we merge a nasty bug here. We can revert your second commit while keeping the coverage you added without any change."", 'A lot of people bisect Django to find behavior changes, so we try to leave the tests passing at every commit.', ""Thanks @rodbv 👍 -- nice tests!\n\nSome cosmetic comments for you on how to organize the commits. If not self-evident, I'll offer that when doing this, I find it helpful to do `git reset --soft HEAD~n`.\n\nGive some thought to the PR title/commit msg also; should be phrased in past tense to  blend in."", 'Looks great!', ""> Thanks @rodbv 👍 -- nice tests!\r\n> \r\n> Some cosmetic comments for you on how to organize the commits. If not self-evident, I'll offer that when doing this, I find it helpful to do `git reset --soft HEAD~n`.\r\n> \r\n> Give some thought to the PR title/commit msg also; should be phrased in past tense to blend in.\r\n\r\nThanks for the tip using `git reset --soft HEAD~n`, I didn't know this, I was about to do the hard way with rebase :D "", 'Welcome aboard! ⛵ ', '> Welcome aboard! ⛵ \n\n\U0001f979 Thanks! ']",2026-04-04 01:49:38

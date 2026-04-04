@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+spring-projects/spring-framework,baseline,0.2438,0.125,8
+spring-projects/spring-framework,with_readme,0.1938,0.125,8

@@ -1,0 +1,987 @@
+repo,pr,strategy,review,commits,review_comments,time
+fastapi/fastapi,15281,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为异常处理器、安全工具和工具函数添加了文档字符串"",
+    ""description"": ""本次变更主要为多个函数添加了文档字符串（docstrings），这极大地提高了代码的可读性和可维护性。文档字符串清晰地说明了函数的目的、行为、参数和返回值，有助于开发者理解和使用这些内部API。"",
+    ""evidence"": ""文件 `fastapi/exception_handlers.py` 中为 `http_exception_handler`、`request_validation_exception_handler`、`websocket_request_validation_exception_handler` 添加了文档字符串；文件 `fastapi/security/utils.py` 中为 `get_authorization_scheme_param` 添加了文档字符串；文件 `fastapi/utils.py` 中为 `is_body_allowed_for_status_code`、`get_path_param_names`、`create_model_field`、`generate_unique_id`、`deep_dict_update` 添加了文档字符串。"",
+    ""advice"": ""文档字符串质量很高，无需修改。建议保持此良好实践，为所有公共或内部重要的函数和类添加清晰的文档。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '04393d27948599deb92244ed244ace2cee5fe169', 'message': '📝 Add docstrings to exception handlers, security utils, and utility functions'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>mastash3ff:docs/add-docstrings-exception-handlers</code> (04393d2) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/mastash3ff%3Adocs%2Fadd-docstrings-exception-handlers?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'This was marked as potentially AI generated and will be closed now. If this is an error, please provide additional details, make sure to read the docs about contributing and AI.']",2026-04-02 17:51:10
+fastapi/fastapi,15281,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为异常处理器、安全工具和工具函数添加了文档字符串。"",
+    ""description"": ""新增的文档字符串清晰、准确，遵循了项目的文档风格，并包含了指向官方文档的链接，这极大地提升了代码的可读性和可维护性。"",
+    ""evidence"": ""文件: fastapi/exception_handlers.py\n@@ -9,6 +9,16 @@\n \n \n async def http_exception_handler(request: Request, exc: HTTPException) -> Response:\n+    \""\""\""\n+    Default exception handler for `HTTPException`.\n+\n+    Returns a JSON response with the exception `detail` and the appropriate\n+    status code and headers. For status codes that do not allow a response body\n+    (1xx, 204, 205, 304), a plain `Response` without a body is returned.\n+\n+    Read more about it in the\n+    [FastAPI docs for Handling Errors](https://fastapi.tiangolo.com/tutorial/handling-errors/).\n+    \""\""\"""",
+    ""advice"": ""无。这是一个优秀的改进，符合项目对高质量文档的追求。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '04393d27948599deb92244ed244ace2cee5fe169', 'message': '📝 Add docstrings to exception handlers, security utils, and utility functions'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>mastash3ff:docs/add-docstrings-exception-handlers</code> (04393d2) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/mastash3ff%3Adocs%2Fadd-docstrings-exception-handlers?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'This was marked as potentially AI generated and will be closed now. If this is an error, please provide additional details, make sure to read the docs about contributing and AI.']",2026-04-02 17:51:23
+fastapi/fastapi,15280,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""新增了一个会抛出异常且无实际功能的装饰器方法 `vibe`。"",
+    ""description"": ""`FastAPI` 类中新增的 `vibe` 方法，其实现仅仅是抛出一个 `FastAPIError` 异常，并带有玩笑信息。这意味着任何使用 `@app.vibe()` 装饰器的路由都无法正常工作，会立即导致服务器错误。这是一个破坏性的变更，除非其目的是作为一个玩笑或占位符，否则它没有实现任何预期的功能（如处理请求、与LLM交互）。"",
+    ""evidence"": ""```python\ndef vibe(\n    self,\n    path: Annotated[\n        str,\n        Doc(\n            \""\""\""\n            The URL path to be used for this *path operation*.\n\n            For example, in `http://example.com/vibes`, the path is `/vibes`.\n            \""\""\""\n        ],\n    ],\n    *,\n    prompt: Annotated[\n        str,\n        Doc(\n            \""\""\""\n            The prompt to send to the LLM provider along with the payload.\n\n            This tells the LLM what to do with the request body.\n            \""\""\""\n        ],\n    ] = \""\"",\n) -> Callable[[DecoratedCallable], DecoratedCallable]:\n    ...\n    raise FastAPIError(\""Are you kidding me? Happy April Fool's\"")\n```"",
+    ""advice"": ""如果这是一个玩笑或愚人节彩蛋，应确保它不会在生产环境中被意外启用，或者添加明确的注释和版本控制说明。如果这是一个真实功能的占位符，应实现其核心逻辑，使其能够处理请求并将负载转发给LLM提供者。目前，它只是一个会抛出异常的空壳。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""文档示例代码与实现行为不符，具有误导性。"",
+    ""description"": ""在 `vibe` 方法的文档字符串中，包含了一个完整的示例，展示了如何使用 `@app.vibe()` 装饰器。然而，该方法的实际实现是抛出异常。这会导致开发者根据文档编写代码后，程序无法运行，造成困惑和误导。文档应与代码的实际行为保持一致。"",
+    ""evidence"": ""```python\n        ## Example\n\n        ```python\n        from typing import Any\n\n        from fastapi import FastAPI\n\n        app = FastAPI()\n\n\n        @app.vibe(\n            \""/vibe/\"",\n            prompt=\""pls return json of users from database. make no mistakes\"",\n        )\n        async def ai_vibes(body: Any):\n            ...\n        ```\n        \""\""\""\n        raise FastAPIError(\""Are you kidding me? Happy April Fool's\"")\n```"",
+    ""advice"": ""如果这是一个玩笑功能，应在文档示例中明确指出其玩笑性质，或者不提供看似可运行的示例。如果这是一个真实功能，应实现其功能，使示例代码能够正常工作。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': 'b40650aef46d4874e203e175011b69781db6b390', 'message': '✨ Add support for `@app.vibe()`'}, {'sha': '479c53611c923ca3639c30eef99ff8691584040f', 'message': '✅ Tweak test converage'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>vibe</code> (479c536) with <code>master</code> (3e72c09)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/vibe?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (6ee8747) during the generation of this report, so 3e72c09 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '## 📝 Docs preview\n\nLast commit 479c53611c923ca3639c30eef99ff8691584040f at: https://aed77049.fastapitiangolo.pages.dev\n\n### Modified Pages\n\n* https://aed77049.fastapitiangolo.pages.dev/advanced/vibe/ - ([before](https://fastapi.tiangolo.com/advanced/vibe/))\n', 'was just having some ideas till i saw the raise FastAPIError(""Are you kidding me? Happy April Fool\'s"") :( ']",2026-04-02 17:51:53
+fastapi/fastapi,15280,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""新增了一个名为`vibe`的装饰器方法，用于处理AI/LLM请求，但该方法会立即抛出异常。"",
+    ""description"": ""`vibe`方法的主体实现仅为`raise FastAPIError(\""Are you kidding me? Happy April Fool's\"")`。这意味着任何使用此装饰器的路由在运行时都会立即失败，抛出异常。这显然不是一个可用的功能实现，可能是一个占位符、玩笑或未完成的功能。"",
+    ""evidence"": ""def vibe(...):\n        ...\n        raise FastAPIError(\""Are you kidding me? Happy April Fool's\"")"",
+    ""advice"": ""如果这是一个玩笑功能（如提交信息暗示的愚人节玩笑），应确保其不会影响生产代码，并考虑在文档中明确说明。如果这是一个真实功能的占位符，需要实现其核心逻辑，例如：处理请求、调用LLM服务并返回响应。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了一个名为`vibe`的装饰器方法，用于处理AI/LLM请求，但该方法会立即抛出异常。"",
+    ""description"": ""`vibe`方法的文档字符串（docstring）描述了一个功能（接收任意HTTP方法和负载，发送给LLM提供商），但其实现却直接抛出异常，这与文档描述严重不符，会误导开发者。"",
+    ""evidence"": ""\""\""\""\n        Add a *vibe coding path operation* that receives any HTTP method\n        and any payload.\n\n        It's intended to receive the request and send the payload directly\n        to an LLM provider, and return the response as is.\n        ...\n        \""\""\""\n        raise FastAPIError(\""Are you kidding me? Happy April Fool's\"")"",
+    ""advice"": ""文档应与实现保持一致。如果这是一个玩笑，应在文档开头明确标注（例如“# April Fool's Joke”）。如果这是一个真实功能，应移除抛出异常的代码，实现文档中描述的逻辑。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增了一个名为`vibe`的装饰器方法，用于处理AI/LLM请求，但该方法会立即抛出异常。"",
+    ""description"": ""`vibe`方法的参数设计（`path`, `prompt`）暗示了其意图，但方法签名中缺少了关键的依赖项，例如如何配置或注入LLM客户端（如OpenAI、Anthropic等）。这使得该方法在实际中无法使用，即使移除了抛出异常的代码。"",
+    ""evidence"": ""def vibe(\n        self,\n        path: Annotated[str, Doc(...)],\n        *,\n        prompt: Annotated[str, Doc(...)] = \""\"",\n    ) -> Callable[[DecoratedCallable], DecoratedCallable]:"",
+    ""advice"": ""应考虑如何将LLM提供商集成进来。例如，可以通过依赖注入（`Depends`）在路由处理函数中获取客户端，或者在`FastAPI`应用或`vibe`装饰器中配置一个默认的LLM客户端。需要设计一个完整的、可用的接口。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'b40650aef46d4874e203e175011b69781db6b390', 'message': '✨ Add support for `@app.vibe()`'}, {'sha': '479c53611c923ca3639c30eef99ff8691584040f', 'message': '✅ Tweak test converage'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>vibe</code> (479c536) with <code>master</code> (3e72c09)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/vibe?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (6ee8747) during the generation of this report, so 3e72c09 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '## 📝 Docs preview\n\nLast commit 479c53611c923ca3639c30eef99ff8691584040f at: https://aed77049.fastapitiangolo.pages.dev\n\n### Modified Pages\n\n* https://aed77049.fastapitiangolo.pages.dev/advanced/vibe/ - ([before](https://fastapi.tiangolo.com/advanced/vibe/))\n', 'was just having some ideas till i saw the raise FastAPIError(""Are you kidding me? Happy April Fool\'s"") :( ']",2026-04-02 17:52:21
+fastapi/fastapi,15273,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为APIRouter添加mount方法，使其支持挂载子应用，并修复include_router时对Mount路由的处理。"",
+    ""description"": ""新增的`APIRouter.mount`方法直接调用了父类`Starlette.router`的`mount`方法，但拼接路径时使用了`self.prefix + path`。这可能导致路径拼接错误，因为`self.prefix`可能为空字符串或已包含斜杠，而`path`参数也可能以斜杠开头或结尾，从而产生双斜杠或缺少斜杠的问题。这会影响挂载子应用的正确路径匹配。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""建议在拼接路径前对`self.prefix`和`path`进行规范化处理，确保路径格式正确。例如，可以使用`urljoin`或手动处理斜杠，确保路径格式为`/prefix/path`且没有重复或缺失的斜杠。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试验证了APIRouter.mount功能及在include_router中处理Mount路由的正确性。"",
+    ""description"": ""新增的测试文件`test_router_mount.py`包含两个测试用例，分别测试了在APIRouter下挂载FastAPI子应用和普通ASGI应用，并验证了通过组合前缀（router prefix和include prefix）后的路径访问正常。测试覆盖了主要场景，未发现明显问题。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4a7b6d72ee412f9df023a83287836b1f73feeca8', 'message': 'fix: support mounted sub-apps under APIRouter include'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:fix/issue-10180-apirouter-mount</code> (4a7b6d7) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Afix%2Fissue-10180-apirouter-mount?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Please, review existing PRs before opening new PR.\r\nThis one is a duplicate of https://github.com/fastapi/fastapi/pull/14793']",2026-04-02 17:52:40
+fastapi/fastapi,15273,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在APIRouter下挂载子应用时路径前缀未正确应用的问题。"",
+    ""description"": ""在APIRouter的`include_router`方法中，当处理`routing.Mount`类型的路由时，直接使用了`route.path`，但未考虑当前路由器的`prefix`。这会导致挂载的子应用路径不正确，无法正确匹配请求。"",
+    ""evidence"": ""elif isinstance(route, routing.Mount):\n                self.mount(prefix + route.path, route.app, name=route.name)"",
+    ""advice"": ""代码变更已正确修复此问题，在`include_router`中处理`Mount`时，将当前路由器的`prefix`与`route.path`拼接后传递给`self.mount`方法。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为APIRouter添加了mount方法，以支持挂载子应用。"",
+    ""description"": ""新增的`mount`方法重写了父类`Starlette`的`mount`方法，在挂载路径前自动添加了APIRouter自身的`prefix`。这确保了在APIRouter下挂载的子应用能正确继承路由器的前缀。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""实现合理，符合FastAPI的设计模式，确保了API路由前缀的一致性。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4a7b6d72ee412f9df023a83287836b1f73feeca8', 'message': 'fix: support mounted sub-apps under APIRouter include'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:fix/issue-10180-apirouter-mount</code> (4a7b6d7) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Afix%2Fissue-10180-apirouter-mount?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Please, review existing PRs before opening new PR.\r\nThis one is a duplicate of https://github.com/fastapi/fastapi/pull/14793']",2026-04-02 17:52:55
+fastapi/fastapi,15272,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复生成操作ID时方法后缀的非确定性问题"",
+    ""description"": ""原代码使用`list(route.methods)[0]`获取HTTP方法，但Python集合是无序的，导致生成的operation_id可能不一致（例如可能是`_post`或`_delete`）。这会影响OpenAPI文档的稳定性和客户端代码生成。"",
+    ""evidence"": ""operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\"""",
+    ""advice"": ""已修复为使用`sorted(route.methods)[0]`确保按字母顺序选择第一个方法，使生成结果确定。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加测试验证修复后的确定性行为"",
+    ""description"": ""新增测试用例验证当路由包含多个HTTP方法时，生成的operation_id是确定性的（始终为`items_items_delete`）。"",
+    ""evidence"": ""assert generate_unique_id(route) == \""items_items_delete\"""",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '804fbbb505f9d8d5c41bae49ccc90e18a150f9b2', 'message': 'fix: make generated operation id method suffix deterministic'}]","['CI fail is only from label check. This PR needs one label from: breaking/security/feature/bug/refactor/upgrade/docs/lang-all/internal. I do not have permission to add labels on upstream from a fork. Could a maintainer add bug (or another matching label) to unblock checks? All test/pre-commit jobs are passing.', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:fix/deterministic-generate-unique-id</code> (804fbbb) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Afix%2Fdeterministic-generate-unique-id?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Thanks for the heads-up! ✅\n\nThe CI failure is from `check-labels` only:\n- required one of: `breaking`, `security`, `feature`, `bug`, `refactor`, `upgrade`, `docs`, `lang-all`, `internal`\n- this PR currently has none\n\nI don’t have permission to add labels on `fastapi/fastapi` from my fork side (403).\nCould a maintainer please add `bug` (or another matching label)?\n\nAll code checks are already green or running.\n', 'Please, before opining PRs review existing PRs linked to the issue: https://github.com/fastapi/fastapi/issues/13175\r\n\r\nThis approach is wrong as operation IDs of both path operations will be the same, but they have to be unique']",2026-04-02 17:53:10
+fastapi/fastapi,15272,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了生成操作ID时方法后缀的非确定性问题。"",
+    ""description"": ""当路由包含多个HTTP方法时，`route.methods` 是一个集合（set）。集合是无序的，因此 `list(route.methods)[0]` 返回的元素顺序是不确定的，这会导致生成的 `operation_id` 在不同运行或环境中可能不同。这违反了确定性原则，可能影响依赖稳定操作ID的功能（如客户端代码生成、文档链接等）。"",
+    ""evidence"": ""operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\"""",
+    ""advice"": ""将 `list(route.methods)[0]` 改为 `sorted(route.methods)[0]` 以确保总是选择按字母顺序排序后的第一个方法。此变更已正确实施。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了生成操作ID时方法后缀的非确定性问题。"",
+    ""description"": ""新增的测试函数名称 `test_generate_unique_id_with_multiple_methods_is_deterministic` 非常清晰，准确描述了测试目的。测试用例设计良好，直接验证了修复的核心逻辑。"",
+    ""evidence"": ""def test_generate_unique_id_with_multiple_methods_is_deterministic():"",
+    ""advice"": ""无。测试代码清晰且有效。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '804fbbb505f9d8d5c41bae49ccc90e18a150f9b2', 'message': 'fix: make generated operation id method suffix deterministic'}]","['CI fail is only from label check. This PR needs one label from: breaking/security/feature/bug/refactor/upgrade/docs/lang-all/internal. I do not have permission to add labels on upstream from a fork. Could a maintainer add bug (or another matching label) to unblock checks? All test/pre-commit jobs are passing.', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:fix/deterministic-generate-unique-id</code> (804fbbb) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Afix%2Fdeterministic-generate-unique-id?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Thanks for the heads-up! ✅\n\nThe CI failure is from `check-labels` only:\n- required one of: `breaking`, `security`, `feature`, `bug`, `refactor`, `upgrade`, `docs`, `lang-all`, `internal`\n- this PR currently has none\n\nI don’t have permission to add labels on `fastapi/fastapi` from my fork side (403).\nCould a maintainer please add `bug` (or another matching label)?\n\nAll code checks are already green or running.\n', 'Please, before opining PRs review existing PRs linked to the issue: https://github.com/fastapi/fastapi/issues/13175\r\n\r\nThis approach is wrong as operation IDs of both path operations will be the same, but they have to be unique']",2026-04-02 17:53:24
+fastapi/fastapi,15271,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复多方法路由生成操作ID时后缀方法名不确定的问题。"",
+    ""description"": ""在`generate_unique_id`函数中，当路由包含多个HTTP方法（如`methods=[\""POST\"", \""DELETE\""]`）时，原代码使用`list(route.methods)[0]`来获取第一个方法名作为操作ID的后缀。由于`route.methods`是一个集合（`set`），其迭代顺序是不确定的（尤其在Python 3.7+中，虽然字典插入顺序被保留，但集合的顺序仍然是不保证的）。这导致生成的`operation_id`可能在不同运行环境或Python版本下不一致（例如，可能是`items_items_post`或`items_items_delete`），破坏了操作的唯一性和确定性，可能影响API文档生成、客户端代码生成等依赖稳定操作ID的工具。"",
+    ""evidence"": ""@@ -96,7 +96,7 @@ def generate_unique_id(route: \""APIRoute\"") -> str:\n     operation_id = f\""{route.name}{route.path_format}\""\n     operation_id = re.sub(r\""\\W\"", \""_\"", operation_id)\n     assert route.methods\n-    operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\""\n+    operation_id = f\""{operation_id}_{sorted(route.methods)[0].lower()}\"""",
+    ""advice"": ""已通过将`list(route.methods)[0]`改为`sorted(route.methods)[0]`来修复。这确保了总是选择按字母顺序排序后的第一个方法名（例如，`DELETE`会排在`POST`之前），从而使生成的`operation_id`是确定且可预测的。这是一个正确的修复。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了测试用例以验证修复后的确定性行为。"",
+    ""description"": ""新增的测试`test_generate_unique_id_with_multiple_methods_is_deterministic`验证了当路由使用`methods=[\""POST\"", \""DELETE\""]`时，`generate_unique_id`函数总是生成`\""items_items_delete\""`（因为`DELETE`按字母顺序排在`POST`之前）。这确保了修复的有效性。"",
+    ""evidence"": ""@@ -1697,3 +1698,19 @@ def post_third(item1: Item):\n         ]\n         assert len(duplicate_warnings) > 0\n         assert \""Duplicate Operation ID\"" in str(duplicate_warnings[0].message)\n+\n+\n+def test_generate_unique_id_with_multiple_methods_is_deterministic():\n+    app = FastAPI()\n+\n+    @app.api_route(\""/items\"", methods=[\""POST\"", \""DELETE\""])\n+    def items():\n+        return {}  # pragma: nocover\n+\n+    route = next(\n+        route\n+        for route in app.routes\n+        if isinstance(route, APIRoute) and route.path == \""/items\""\n+    )\n+\n+    assert generate_unique_id(route) == \""items_items_delete\"""",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'e439ab81c703ee267c2abaf06ce21946f08e0cd5', 'message': 'docs: clarify operation_id conflicts for multi-method api_route'}, {'sha': '8c15509fc6fcfad2828f6ad58f4cae5b74199015', 'message': 'fix: make generated operation id method suffix deterministic'}, {'sha': '3f9f1fd648d6a45583c214601dd6b882e6c5091b', 'message': '📝 Clarify multi-method operation_id note in docs'}]","['How would you set ""explicit unique `operation_id` values"" to avoid operation IDs conflict?\nI think that adding routes separately for each method is the only way to solve this for now', 'Thanks! Great point — wording updated in the latest commit.\n\nI removed the implication that users can reliably solve this with explicit `operation_id` values when one function is bound to multiple methods.\nNow it clearly recommends separate path operation decorators (`@app.get()`, `@app.post()`) so each operation can define its own `operation_id`.\n', '## 📝 Docs preview\n\nLast commit 3f9f1fd648d6a45583c214601dd6b882e6c5091b at: https://aa5ee013.fastapitiangolo.pages.dev\n\n### Modified Pages\n\n* https://aa5ee013.fastapitiangolo.pages.dev/advanced/path-operation-advanced-configuration/ - ([before](https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/))\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:docs/13175-clarify-operation-id-multi-method-routes</code> (3f9f1fd) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Adocs%2F13175-clarify-operation-id-multi-method-routes?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""Let's close this for now to keep the list of PRs cleaner.\r\nWe will get back to this question later when Sebastian has time to review the issue and take decision.\r\n\r\nThanks!""]",2026-04-02 17:53:55
+fastapi/fastapi,15271,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了多方法路由生成operation_id时后缀方法名不确定的问题。"",
+    ""description"": ""在`generate_unique_id`函数中，当路由包含多个HTTP方法（如`methods=[\""POST\"", \""DELETE\""]`）时，原始代码使用`list(route.methods)[0]`来获取第一个方法名。由于Python集合（`route.methods`）是无序的，`list(route.methods)`的顺序在不同Python解释器运行或不同环境下可能不同，导致生成的`operation_id`后缀（例如`_post`或`_delete`）不确定。这违反了确定性原则，可能导致OpenAPI文档、客户端代码生成工具或依赖稳定operation_id的系统出现不一致的行为。"",
+    ""evidence"": ""operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\"""",
+    ""advice"": ""将`list(route.methods)[0]`改为`sorted(route.methods)[0]`是一个正确的修复，确保了无论集合内部顺序如何，总是选择按字母顺序排序后的第一个方法名（例如`DELETE`在`POST`之前）。这保证了生成的operation_id是确定性的。代码变更已经实现了这一点。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了为多方法路由生成确定性operation_id的功能。"",
+    ""description"": ""未发现明显问题。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'e439ab81c703ee267c2abaf06ce21946f08e0cd5', 'message': 'docs: clarify operation_id conflicts for multi-method api_route'}, {'sha': '8c15509fc6fcfad2828f6ad58f4cae5b74199015', 'message': 'fix: make generated operation id method suffix deterministic'}, {'sha': '3f9f1fd648d6a45583c214601dd6b882e6c5091b', 'message': '📝 Clarify multi-method operation_id note in docs'}]","['How would you set ""explicit unique `operation_id` values"" to avoid operation IDs conflict?\nI think that adding routes separately for each method is the only way to solve this for now', 'Thanks! Great point — wording updated in the latest commit.\n\nI removed the implication that users can reliably solve this with explicit `operation_id` values when one function is bound to multiple methods.\nNow it clearly recommends separate path operation decorators (`@app.get()`, `@app.post()`) so each operation can define its own `operation_id`.\n', '## 📝 Docs preview\n\nLast commit 3f9f1fd648d6a45583c214601dd6b882e6c5091b at: https://aa5ee013.fastapitiangolo.pages.dev\n\n### Modified Pages\n\n* https://aa5ee013.fastapitiangolo.pages.dev/advanced/path-operation-advanced-configuration/ - ([before](https://fastapi.tiangolo.com/advanced/path-operation-advanced-configuration/))\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>wwenrr:docs/13175-clarify-operation-id-multi-method-routes</code> (3f9f1fd) with <code>master</code> (cb4fe1b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/wwenrr%3Adocs%2F13175-clarify-operation-id-multi-method-routes?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (681146d) during the generation of this report, so cb4fe1b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""Let's close this for now to keep the list of PRs cleaner.\r\nWe will get back to this question later when Sebastian has time to review the issue and take decision.\r\n\r\nThanks!""]",2026-04-02 17:54:09
+fastapi/fastapi,15269,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复模型参数默认值处理逻辑，确保缺失字段不被标记为已设置"",
+    ""description"": ""代码变更的主要目的是修复当模型参数（如Query、Header、Cookie、Form包装的Pydantic模型）的字段在请求中缺失时，不应将字段的默认值视为用户显式提供的值，从而避免错误地标记`model_fields_set`。变更通过新增`use_default_when_missing`参数控制是否在字段缺失时返回默认值。对于模型参数，当字段缺失时，不返回默认值（`use_default_when_missing=False`），让Pydantic在后续验证阶段应用默认值，这样该字段就不会被标记为已设置。这修复了之前的行为，即缺失字段的默认值被提前注入，导致Pydantic认为该字段已被用户显式提供。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -751,7 +751,11 @@ def _is_json_field(field: ModelField) -> bool:\n \n \n def _get_multidict_value(\n-    field: ModelField, values: Mapping[str, Any], alias: str | None = None\n+    field: ModelField,\n+    values: Mapping[str, Any],\n+    alias: str | None = None,\n+    *,\n+    use_default_when_missing: bool = True,\n ) -> Any:\n ...\n     ):\n         if field.field_info.is_required():\n             return\n-        else:\n+        if use_default_when_missing:\n             return deepcopy(field.default)\n+        return\n     return value"",
+    ""advice"": ""设计合理，无需修改。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复模型参数默认值处理逻辑，确保缺失字段不被标记为已设置"",
+    ""description"": ""在`request_params_to_args`函数中，当处理单个模型参数（如`Query(model)`）时，需要正确设置`use_default_when_missing`参数。变更中通过新增`is_model_param`标志来标识这种情况，并在调用`_get_multidict_value`时传递`use_default_when_missing=not is_model_param`。然而，`is_model_param`仅在`len(fields) == 1`且第一个字段的注解是`BaseModel`子类时才被设置为`True`。这确保了对于单个模型参数，缺失字段不会提前注入默认值。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -795,11 +800,13 @@ def request_params_to_args(\n     fields_to_extract = fields\n     single_not_embedded_field = False\n     default_convert_underscores = True\n+    is_model_param = False\n     if len(fields) == 1 and lenient_issubclass(\n         first_field.field_info.annotation, BaseModel\n     ):\n         fields_to_extract = get_cached_model_fields(first_field.field_info.annotation)\n         single_not_embedded_field = True\n+        is_model_param = True\n ...\n         value = _get_multidict_value(\n             field,\n             received_params,\n             alias=alias,\n             use_default_when_missing=not is_model_param,\n         )"",
+    ""advice"": ""实现正确，逻辑清晰。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复模型参数默认值处理逻辑，确保缺失字段不被标记为已设置"",
+    ""description"": ""在`request_body_to_args`函数中，当处理表单数据且是单个模型参数时，需要将`use_default_when_missing`设置为`False`，以确保缺失字段的默认值不被提前注入。变更中通过一个条件判断来设置该参数：`use_default_when_missing=not (single_not_embedded_field and lenient_issubclass(first_field.field_info.annotation, BaseModel))`。这个逻辑是正确的，但需要注意`single_not_embedded_field`在函数开头已根据`len(fields) == 1`和第一个字段是否为`BaseModel`子类设置。这里直接复用了该标志，确保了逻辑一致性。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -970,7 +986,16 @@ async def request_body_to_args(\n         fields_to_extract = get_cached_model_fields(first_field.field_info.annotation)\n \n     if isinstance(received_body, FormData):\n-        body_to_process = await _extract_form_body(fields_to_extract, received_body)\n+        body_to_process = await _extract_form_body(\n+            fields_to_extract,\n+            received_body,\n+            # Keep omitted fields absent so Pydantic can apply defaults without\n+            # marking them as explicitly provided on the resulting model.\n+            use_default_when_missing=not (\n+                single_not_embedded_field\n+                and lenient_issubclass(first_field.field_info.annotation, BaseModel)\n+            ),\n+        )"",
+    ""advice"": ""实现正确，注释清晰。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复模型参数默认值处理逻辑，确保缺失字段不被标记为已设置"",
+    ""description"": ""在`_extract_form_body`函数签名中新增了`use_default_when_missing`参数，并设置为仅关键字参数(`*`之后)。这提高了函数的可扩展性和清晰度，因为调用者必须显式指定该参数名，避免了位置参数可能引起的混淆。"",
+    ""evidence"": ""文件: fastapi/dependencies/utils.py\n@@ -912,11 +924,15 @@ def _should_embed_body_fields(fields: list[ModelField]) -> bool:\n async def _extract_form_body(\n     body_fields: list[ModelField],\n     received_body: FormData,\n+    *,\n+    use_default_when_missing: bool = True,\n ) -> dict[str, Any]:"",
+    ""advice"": ""良好的API设计实践。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了修复模型参数默认值处理逻辑"",
+    ""description"": ""未发现明显问题。代码变更逻辑清晰，新增参数和条件判断正确，测试用例覆盖了相关场景（查询参数、头部、Cookie、表单数据中的模型参数），并且更新了快照测试以反映修复后的行为（错误响应中的`input`字段不再包含缺失字段的默认值）。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}, {'sha': '9ff48f076b95b6fbc71f0a511788c9aef895d22d', 'message': ""Merge branch 'master' into fix/model-param-defaults""}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (9ff48f0) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-02 17:55:03
+fastapi/fastapi,15269,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了当模型参数缺失时，不应将默认值标记为已设置的问题。"",
+    ""description"": ""在之前的实现中，当请求参数（如查询参数、头部、Cookie、表单）是一个Pydantic模型且某个字段缺失时，代码会返回该字段的默认值。这导致Pydantic在处理模型时，会将此默认值视为由用户显式提供的值，从而错误地将该字段标记为已设置（包含在 `model_fields_set` 中）。这破坏了Pydantic模型关于字段是否由用户提供的语义，并可能导致依赖 `model_fields_set` 的逻辑出错。"",
+    ""evidence"": ""在 `_get_multidict_value` 函数中新增了 `use_default_when_missing` 参数，并在 `request_params_to_args` 和 `_extract_form_body` 函数中，当处理模型参数时，将此参数设置为 `False`，从而在字段缺失时返回 `None` 而不是默认值。\n```python\ndef _get_multidict_value(\n    field: ModelField,\n    values: Mapping[str, Any],\n    alias: str | None = None,\n    *,\n    use_default_when_missing: bool = True,\n) -> Any:\n    ...\n    if use_default_when_missing:\n        return deepcopy(field.default)\n    return\n```\n```python\nvalue = _get_multidict_value(\n    field,\n    received_params,\n    alias=alias,\n    use_default_when_missing=not is_model_param,\n)\n```\n```python\nbody_to_process = await _extract_form_body(\n    fields_to_extract,\n    received_body,\n    # Keep omitted fields absent so Pydantic can apply defaults without\n    # marking them as explicitly provided on the resulting model.\n    use_default_when_missing=not (\n        single_not_embedded_field\n        and lenient_issubclass(first_field.field_info.annotation, BaseModel)\n    ),\n)\n```"",
+    ""advice"": ""代码变更逻辑正确，修复了核心问题。建议在相关函数（如 `_extract_form_body`）的文档字符串中简要说明 `use_default_when_missing` 参数的行为，以增强代码可读性。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了测试用例以验证模型参数默认值的行为。"",
+    ""description"": ""新增的测试文件 `test_model_param_defaults.py` 结构清晰，覆盖了查询参数、头部、Cookie和表单等多种场景，并验证了字段缺失时默认值不被标记为已设置，以及显式提供值时被正确标记。这有助于确保修复的健壮性。"",
+    ""evidence"": ""```python\n@pytest.mark.parametrize(\n    (\""method\"", \""path\"", \""kwargs\""),\n    [\n        (\""get\"", \""/query\"", {}),\n        (\""get\"", \""/header\"", {}),\n        (\""get\"", \""/cookie\"", {}),\n        (\""post\"", \""/form\"", {\""data\"": {}}),\n    ],\n)\ndef test_missing_model_defaults_not_marked_as_set(\n    method: str, path: str, kwargs: dict[str, object]\n) -> None:\n    ...\n    assert response.json() == {\n        \""fields_set\"": [],\n        \""model\"": {\""field_1\"": True},\n    }\n```"",
+    ""advice"": ""无。测试用例设计良好。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""更新了相关测试的快照以反映修复后的正确行为。"",
+    ""description"": ""由于修复改变了模型参数缺失时的处理逻辑（不再返回默认值，而是让字段缺失），这影响了Pydantic验证错误信息中的 `input` 字段。多个测试文件中的错误响应快照需要更新，以移除那些不再被错误地包含在 `input` 中的字段（例如 `\""x_tag\"": []`）。"",
+    ""evidence"": ""在 `tests/test_forms_single_model.py` 和多个 `test_tutorial` 文件中，更新了错误响应断言中的 `input` 字典，移除了因之前错误逻辑而存在的字段。\n```python\n# test_forms_single_model.py\n-                \""input\"": {\""tags\"": [\""foo\"", \""bar\""], \""with\"": \""nothing\""},\n+                \""input\"": {},\n```\n```python\n# test_tutorial001.py\n-                        \""x_tag\"": [],\n```"",
+    ""advice"": ""这些更新是必要的，以确保测试与代码的实际行为保持一致。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '57d36dbef2615ac9da80fc4b5000722b5e41c094', 'message': ""Merge branch 'master' into fix/model-param-defaults""}, {'sha': 'd5fc96dcfd72d5a56f8326a2cc6ab40d841e8933', 'message': 'Update header model snapshots for omitted defaults'}, {'sha': '9ff48f076b95b6fbc71f0a511788c9aef895d22d', 'message': ""Merge branch 'master' into fix/model-param-defaults""}]","['Hi, I investigated this and found the issue is broader than form models.\r\n\r\nThe root cause is that FastAPI was pre-filling defaults while building input for single `BaseModel` parameters from query, header, cookie, and form data. That made omitted fields look like they were explicitly provided, which broke `model_fields_set` and also caused the form-only validation failure for omitted invalid defaults.\r\n\r\nI implemented a fix that keeps omitted fields absent and lets Pydantic apply defaults itself, and I added regression tests. I’m opening a PR on a clean branch.\r\n\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/model-param-defaults</code> (9ff48f0) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmodel-param-defaults?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'I fixed the failing regression and pushed the update in `d5fc96dcf`.\r\n\r\nThe failure was due to stale snapshots in the header-model tutorial tests, not a new logic issue. I updated:\r\n\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial001.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial002.py`\r\n* `tests/test_tutorial/test_header_param_models/test_tutorial003.py`\r\n\r\nLocally verified with:\r\n\r\n* `32 passed` for the affected tutorial tests\r\n* `3160 passed, 2 skipped, 5 xfailed` for the full test suite\r\n\r\nSo after checks rerun, the remaining failing check should only be the required PR label unless something unrelated flakes.\r\n']",2026-04-02 17:55:42
+fastapi/fastapi,15258,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复表单模型预填充默认值导致model_fields_set错误的问题"",
+    ""description"": ""代码变更主要解决了当Pydantic BaseModel作为Form参数时，未提交或提交空字符串的字段被预填充默认值，导致model_fields_set不正确的问题。通过新增form_input参数，确保这两种情况返回None，让Pydantic正确应用默认值。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f818eac7d79ca6843d2cb7885eed1b52d5d41c34', 'message': 'Fix form model pre-filling defaults, breaking model_fields_set\n\nWhen a Pydantic BaseModel is used as a Form() parameter, fields that\nwere absent from the submission or submitted as blank strings ("""") were\nbeing pre-filled with their default values before model construction.\nPydantic then treated those pre-filled defaults as explicitly-set values,\nmaking model_fields_set incorrect and preventing model validators from\ndistinguishing unset fields from fields set to their default.\n\nTwo cases needed fixing:\n\n1. Absent fields - the field key is not in the form data at all\n   (e.g. an unchecked HTML checkbox, which browsers omit entirely).\n\n2. Blank string fields - the field key is present but with value """"\n   (e.g. a cleared text input, which browsers send as key=).\n\nFix: add form_input=True parameter to _get_multidict_value. When set,\nboth absent and blank-string values return None rather than the field\ndefault. _extract_form_body now calls _get_multidict_value(form_input=True)\nso neither case gets pre-populated into the values dict. Pydantic then\napplies defaults through its own mechanism, which correctly leaves those\nfields out of model_fields_set.\n\nRequired fields are unaffected: Pydantic still raises a validation error\nwhen a required field is absent from the submitted data.\n\nCloses #13399\n\nCo-authored-by: sneakers-the-rat <sneakers-the-rat@protonmail.com>'}, {'sha': '6edfbcaf7d36d647bd777859293417bb6b0832cf', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-defaults-13399</code> (6edfbca) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-defaults-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@saitarrun, Why are you opening duplicate PRs (see https://github.com/fastapi/fastapi/pull/15249)?\r\nPlease, stop or you may get banned']",2026-04-02 17:55:51
+fastapi/fastapi,15258,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复表单字段默认值预填充导致 model_fields_set 错误的问题"",
+    ""description"": ""当 Pydantic BaseModel 作为 Form() 参数时，未提交或提交为空字符串的字段会被预填充默认值，导致 Pydantic 将这些默认值视为显式设置的值，使得 model_fields_set 不正确，并阻止模型验证器区分未设置字段和设置为默认值的字段。"",
+    ""evidence"": ""在 _get_multidict_value 函数中，当 value 为 None 或（field.field_info 是 params.Form 或 form_input 为 True）且 value 是空字符串时，如果 field.field_info.is_required() 为 False，会返回 deepcopy(field.default)。这导致未提交的字段在模型构建前就被填充了默认值。"",
+    ""advice"": ""已通过添加 form_input=True 参数并在 _extract_form_body 中调用 _get_multidict_value(form_input=True) 来修复。当 form_input=True 时，对于未提交或空字符串的字段，返回 None 而不是默认值，让 Pydantic 通过其自身机制应用默认值，从而正确设置 model_fields_set。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""添加了 form_input 参数以区分表单输入处理"",
+    ""description"": ""_get_multidict_value 函数新增了 form_input 参数，但函数签名和逻辑中的条件判断可能对初次阅读者不够清晰。特别是 (isinstance(field.field_info, params.Form) or form_input) 这个条件，虽然功能正确，但可读性可以进一步优化。"",
+    ""evidence"": ""def _get_multidict_value(\n    field: ModelField,\n    values: Mapping[str, Any],\n    alias: str | None = None,\n    form_input: bool = False,\n) -> Any:\n    ...\n    if (\n        value is None\n        or (\n            (isinstance(field.field_info, params.Form) or form_input)\n            and isinstance(value, str)  # For type checks\n            and value == \""\""\n        )\n        or (\n            isinstance(field.field_info, params.File)\n            and len(value) == 0\n        )\n    ):"",
+    ""advice"": ""考虑将条件重构以提高可读性，例如：is_form_input = isinstance(field.field_info, params.Form) or form_input。同时，在函数文档字符串中明确说明 form_input 参数的作用，特别是它如何影响空字符串和未提交字段的处理。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了全面的测试用例以验证修复"",
+    ""description"": ""新增的测试文件 test_forms_defaults.py 覆盖了关键场景：未提交字段、空字符串字段、必需字段验证、与 JSON 端点的行为一致性以及别名处理。测试用例设计良好，验证了修复的核心目标。"",
+    ""evidence"": ""测试文件包含了 BoolModel、StringModel、MixedModel、RequiredModel 等模型，以及对应的端点。测试函数如 test_absent_bool_field_not_in_fields_set、test_blank_string_treated_as_unset、test_required_field_absent_returns_422 等，都直接验证了修复后 model_fields_set 的正确性。"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f818eac7d79ca6843d2cb7885eed1b52d5d41c34', 'message': 'Fix form model pre-filling defaults, breaking model_fields_set\n\nWhen a Pydantic BaseModel is used as a Form() parameter, fields that\nwere absent from the submission or submitted as blank strings ("""") were\nbeing pre-filled with their default values before model construction.\nPydantic then treated those pre-filled defaults as explicitly-set values,\nmaking model_fields_set incorrect and preventing model validators from\ndistinguishing unset fields from fields set to their default.\n\nTwo cases needed fixing:\n\n1. Absent fields - the field key is not in the form data at all\n   (e.g. an unchecked HTML checkbox, which browsers omit entirely).\n\n2. Blank string fields - the field key is present but with value """"\n   (e.g. a cleared text input, which browsers send as key=).\n\nFix: add form_input=True parameter to _get_multidict_value. When set,\nboth absent and blank-string values return None rather than the field\ndefault. _extract_form_body now calls _get_multidict_value(form_input=True)\nso neither case gets pre-populated into the values dict. Pydantic then\napplies defaults through its own mechanism, which correctly leaves those\nfields out of model_fields_set.\n\nRequired fields are unaffected: Pydantic still raises a validation error\nwhen a required field is absent from the submitted data.\n\nCloses #13399\n\nCo-authored-by: sneakers-the-rat <sneakers-the-rat@protonmail.com>'}, {'sha': '6edfbcaf7d36d647bd777859293417bb6b0832cf', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-defaults-13399</code> (6edfbca) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-defaults-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@saitarrun, Why are you opening duplicate PRs (see https://github.com/fastapi/fastapi/pull/15249)?\r\nPlease, stop or you may get banned']",2026-04-02 17:56:19
+fastapi/fastapi,15249,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复表单模型预填充默认值导致model_fields_set错误的问题"",
+    ""description"": ""代码变更主要修复了当Pydantic BaseModel作为Form参数时，未提交或提交空字符串的字段被预填充默认值，导致model_fields_set不正确的问题。新增了form_input参数来区分处理，确保Pydantic能正确应用默认值机制。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f818eac7d79ca6843d2cb7885eed1b52d5d41c34', 'message': 'Fix form model pre-filling defaults, breaking model_fields_set\n\nWhen a Pydantic BaseModel is used as a Form() parameter, fields that\nwere absent from the submission or submitted as blank strings ("""") were\nbeing pre-filled with their default values before model construction.\nPydantic then treated those pre-filled defaults as explicitly-set values,\nmaking model_fields_set incorrect and preventing model validators from\ndistinguishing unset fields from fields set to their default.\n\nTwo cases needed fixing:\n\n1. Absent fields - the field key is not in the form data at all\n   (e.g. an unchecked HTML checkbox, which browsers omit entirely).\n\n2. Blank string fields - the field key is present but with value """"\n   (e.g. a cleared text input, which browsers send as key=).\n\nFix: add form_input=True parameter to _get_multidict_value. When set,\nboth absent and blank-string values return None rather than the field\ndefault. _extract_form_body now calls _get_multidict_value(form_input=True)\nso neither case gets pre-populated into the values dict. Pydantic then\napplies defaults through its own mechanism, which correctly leaves those\nfields out of model_fields_set.\n\nRequired fields are unaffected: Pydantic still raises a validation error\nwhen a required field is absent from the submitted data.\n\nCloses #13399\n\nCo-authored-by: sneakers-the-rat <sneakers-the-rat@protonmail.com>'}, {'sha': '6edfbcaf7d36d647bd777859293417bb6b0832cf', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-defaults-13399</code> (6edfbca) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-defaults-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""Thanks, but there is no need to create duplicates. We will rebase that PR if it's needed""]",2026-04-02 17:56:29
+fastapi/fastapi,15249,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复表单字段默认值预填充导致的 model_fields_set 错误"",
+    ""description"": ""当 Pydantic BaseModel 作为 Form() 参数时，未提交或提交为空字符串的字段会被预填充默认值，导致 Pydantic 将其视为显式设置的值，使得 model_fields_set 不正确，并阻止模型验证器区分未设置字段和设置为默认值的字段。"",
+    ""evidence"": ""提交信息中详细描述了问题：'When a Pydantic BaseModel is used as a Form() parameter, fields that were absent from the submission or submitted as blank strings (\""\"") were being pre-filled with their default values before model construction. Pydantic then treated those pre-filled defaults as explicitly-set values, making model_fields_set incorrect and preventing model validators from distinguishing unset fields from fields set to their default.'"",
+    ""advice"": ""已通过添加 form_input=True 参数并在 _extract_form_body 中调用 _get_multidict_value(form_input=True) 来修复，确保未提交和空字符串字段返回 None 而不是默认值，让 Pydantic 通过其自身机制应用默认值。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增测试文件验证表单默认值处理"",
+    ""description"": ""新增的测试文件 test_forms_defaults.py 结构清晰，注释详细，但部分测试函数命名可以更具体地反映测试场景。"",
+    ""evidence"": ""测试函数名如 'test_absent_bool_field_not_in_fields_set' 和 'test_blank_string_treated_as_unset' 描述了行为，但可以更精确。"",
+    ""advice"": ""建议将测试函数名调整为更具体的场景描述，例如 'test_checkbox_absent_from_form_data_not_in_fields_set' 和 'test_empty_text_input_submitted_as_blank_string_not_in_fields_set'，以提高可读性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""通过 form_input 参数扩展 _get_multidict_value 功能"",
+    ""description"": ""在 _get_multidict_value 函数中添加了 form_input 布尔参数来控制表单输入的特殊处理逻辑，这增加了函数的复杂性和职责。"",
+    ""evidence"": ""def _get_multidict_value(\n    field: ModelField,\n    values: Mapping[str, Any],\n    alias: str | None = None,\n    form_input: bool = False,\n) -> Any:"",
+    ""advice"": ""考虑将表单特定的逻辑提取到一个单独的函数中，或者通过更明确的参数名（如 treat_empty_as_unset）来增强可读性，避免布尔标志参数导致的逻辑分支复杂化。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了测试中错误的预期输入数据"",
+    ""description"": ""在 test_forms_single_model.py 的 test_no_data 测试中，错误地期望验证错误信息中包含未提交的字段数据。修复后，验证错误中的 input 字段正确地显示为空字典 {}。"",
+    ""evidence"": ""在 test_no_data 测试中，错误信息从 'input': {\""tags\"": [\""foo\"", \""bar\""], \""with\"": \""nothing\""} 修正为 'input': {}"",
+    ""advice"": ""此修复是正确的，确保了测试的准确性，反映了表单未提交任何数据时的实际行为。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'f818eac7d79ca6843d2cb7885eed1b52d5d41c34', 'message': 'Fix form model pre-filling defaults, breaking model_fields_set\n\nWhen a Pydantic BaseModel is used as a Form() parameter, fields that\nwere absent from the submission or submitted as blank strings ("""") were\nbeing pre-filled with their default values before model construction.\nPydantic then treated those pre-filled defaults as explicitly-set values,\nmaking model_fields_set incorrect and preventing model validators from\ndistinguishing unset fields from fields set to their default.\n\nTwo cases needed fixing:\n\n1. Absent fields - the field key is not in the form data at all\n   (e.g. an unchecked HTML checkbox, which browsers omit entirely).\n\n2. Blank string fields - the field key is present but with value """"\n   (e.g. a cleared text input, which browsers send as key=).\n\nFix: add form_input=True parameter to _get_multidict_value. When set,\nboth absent and blank-string values return None rather than the field\ndefault. _extract_form_body now calls _get_multidict_value(form_input=True)\nso neither case gets pre-populated into the values dict. Pydantic then\napplies defaults through its own mechanism, which correctly leaves those\nfields out of model_fields_set.\n\nRequired fields are unaffected: Pydantic still raises a validation error\nwhen a required field is absent from the submitted data.\n\nCloses #13399\n\nCo-authored-by: sneakers-the-rat <sneakers-the-rat@protonmail.com>'}, {'sha': '6edfbcaf7d36d647bd777859293417bb6b0832cf', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-defaults-13399</code> (6edfbca) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-defaults-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""Thanks, but there is no need to create duplicates. We will rebase that PR if it's needed""]",2026-04-02 17:56:57
+fastapi/fastapi,15246,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在APIRouter下挂载子应用时，通过include_router包含后路径丢失的问题。"",
+    ""description"": ""在APIRouter中挂载子应用时，如果该路由器通过include_router()被包含到另一个应用或路由器中，挂载的子应用路径会丢失，导致404错误。根本原因是APIRouter.mount()方法没有像add_api_route那样考虑路由器自身的prefix，且include_router()在处理Mount类型路由时缺少相应逻辑。"",
+    ""evidence"": ""1. APIRouter.mount() 覆盖方法：`super().mount(self.prefix + path, app=app, name=name)`\n2. include_router() 中新增的Mount分支：`elif isinstance(route, routing.Mount): self.mount(prefix + route.path, route.app, route.name)`"",
+    ""advice"": ""代码变更正确解决了问题。建议确保所有路由类型（包括可能的未来新增类型）在include_router中都有相应的处理分支，以保持一致性。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了覆盖方法和路由处理逻辑，修复了路径组合问题。"",
+    ""description"": ""APIRouter.mount()方法的文档字符串很好地解释了覆盖的目的和行为，说明了前缀的组合逻辑。include_router()中新增的Mount分支与现有的Route、APIRoute、WebSocketRoute处理方式保持一致，提高了代码的一致性。"",
+    ""evidence"": ""APIRouter.mount()的文档字符串：`Overrides `Router.mount` so that the router's own prefix is applied, matching the behaviour of `add_api_route`.  The stored route path will be `self.prefix + path`, which is then further prefixed by any `prefix` argument passed to `include_router` when this router is included into another router or application.`"",
+    ""advice"": ""无。文档清晰，逻辑一致。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了全面的单元测试，验证了修复的正确性。"",
+    ""description"": ""新增的测试文件test_router_mount.py覆盖了多种场景：路由器自身前缀、include_router前缀、两者组合、嵌套路由器、OpenAPI可访问性以及不影响直接挂载的原有行为。测试用例设计良好，验证了修复的核心逻辑。"",
+    ""evidence"": ""测试文件包含了多个测试函数，如`test_router_prefix_mount_routing`, `test_include_router_prefix_mount_routing`, `test_combined_prefix_mount_routing`, `test_nested_router_mount_routing`等。"",
+    ""advice"": ""无。测试覆盖全面。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '0d5ecfae6747bcf2b13ffe1a440eaf860b7930b6', 'message': 'Fix mounting sub-applications under APIRouter (#10180)\n\nSub-apps mounted on an APIRouter were silently dropped when the router\nwas included into a FastAPI app via include_router(), causing 404s for\nany path under the mount (e.g. GET /api/subapi/sub).\n\nTwo changes:\n\n1. APIRouter.mount() override — prepends self.prefix to the path before\n   delegating to Router.mount(), matching the behaviour of add_api_route\n   which already does `self.prefix + path`. This ensures the stored\n   route.path is consistent whether the mount is registered on the router\n   or on the app directly.\n\n2. include_router() Mount branch — a new `elif isinstance(route, routing.Mount)`\n   case forwards mounted sub-applications with `prefix + route.path`,\n   exactly as is done for every other route type (Route, APIRoute,\n   WebSocketRoute).\n\nBoth prefixes compose correctly: router-level prefix and include_router\nprefix stack in the same way as for ordinary endpoints.\n\nFixes #10180'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/mount-subapps-apirouter-10180</code> (0d5ecfa) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fmount-subapps-apirouter-10180?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Duplicate of https://github.com/fastapi/fastapi/pull/15233\r\n\r\nBut I think we should go with https://github.com/fastapi/fastapi/pull/13944']",2026-04-02 17:57:21
+fastapi/fastapi,15246,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了APIRouter中挂载子应用时路径前缀丢失的问题。"",
+    ""description"": ""在APIRouter上使用mount()挂载子应用时，如果该router通过include_router()被包含到另一个应用或router中，挂载的子应用路径前缀（router.prefix）会丢失，导致子应用路由返回404。这是因为APIRouter.mount()方法没有像add_api_route那样自动添加router自身的prefix。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        \""\""\""\n        Mount a sub-application at the given path.\n\n        Overrides `Router.mount` so that the router's own prefix is applied,\n        matching the behaviour of `add_api_route`.  The stored route path will\n        be `self.prefix + path`, which is then further prefixed by any\n        `prefix` argument passed to `include_router` when this router is\n        included into another router or application.\n        \""\""\""\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""新增的APIRouter.mount()覆盖方法正确地将router.prefix前置到挂载路径上，确保了路径一致性。这是一个必要的修复。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了include_router()在处理Mount类型路由时路径前缀丢失的问题。"",
+    ""description"": ""在include_router()函数中，当遍历router.routes时，对于Mount类型的路由，没有像处理Route、APIRoute、WebSocketRoute那样应用传入的prefix参数，导致挂载的子应用路径前缀丢失。"",
+    ""evidence"": ""elif isinstance(route, routing.Mount):\n                self.mount(prefix + route.path, route.app, route.name)"",
+    ""advice"": ""新增的代码分支正确地处理了Mount类型的路由，将include_router的prefix参数添加到挂载路径上。这是修复问题的关键部分。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了全面的单元测试，覆盖了多种前缀组合场景。"",
+    ""description"": ""新增的测试文件test_router_mount.py覆盖了修复的核心场景：router自身前缀、include_router前缀、两者组合、嵌套router以及OpenAPI文档的可访问性。测试用例清晰，验证了修复的有效性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '0d5ecfae6747bcf2b13ffe1a440eaf860b7930b6', 'message': 'Fix mounting sub-applications under APIRouter (#10180)\n\nSub-apps mounted on an APIRouter were silently dropped when the router\nwas included into a FastAPI app via include_router(), causing 404s for\nany path under the mount (e.g. GET /api/subapi/sub).\n\nTwo changes:\n\n1. APIRouter.mount() override — prepends self.prefix to the path before\n   delegating to Router.mount(), matching the behaviour of add_api_route\n   which already does `self.prefix + path`. This ensures the stored\n   route.path is consistent whether the mount is registered on the router\n   or on the app directly.\n\n2. include_router() Mount branch — a new `elif isinstance(route, routing.Mount)`\n   case forwards mounted sub-applications with `prefix + route.path`,\n   exactly as is done for every other route type (Route, APIRoute,\n   WebSocketRoute).\n\nBoth prefixes compose correctly: router-level prefix and include_router\nprefix stack in the same way as for ordinary endpoints.\n\nFixes #10180'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/mount-subapps-apirouter-10180</code> (0d5ecfa) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fmount-subapps-apirouter-10180?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Duplicate of https://github.com/fastapi/fastapi/pull/15233\r\n\r\nBut I think we should go with https://github.com/fastapi/fastapi/pull/13944']",2026-04-02 17:57:44
+fastapi/fastapi,15245,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复多方法路由下operation_id重复的问题"",
+    ""description"": ""未发现明显问题。代码变更的主要目的是解决当路由定义多个HTTP方法时，所有方法会生成相同operation_id后缀的问题。通过修改`generate_unique_id`函数，使其接受可选的`method`参数，并在生成ID时包含特定方法名，确保了每个HTTP方法都有唯一的operation_id。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'f6f4c7d0dae134e5d1cf147ba64f9222d7a789ae', 'message': ""fix: include method in operation_id to prevent duplicates with multi-method routes\n\nWhen a route is defined with multiple HTTP methods (e.g., methods=['POST', 'DELETE']),\nthe operation_id generation was only using the first method name, causing all\nmethods to get the same operation_id suffix. This resulted in duplicate operation IDs\nin the OpenAPI schema and incorrect warnings.\n\nChanges:\n- Modified generate_unique_id() to accept an optional 'method' parameter\n- When a specific method is provided, it includes that method in the operation_id\n- Updated get_openapi_operation_metadata() in openapi/utils.py to pass the method\n- Each HTTP method now gets its own unique operation_id\n\nFixes #13175""}, {'sha': '97acb87acfb8e183e74874e8aec4f21f109bd776', 'message': 'test: add test for duplicate operation ID fix with multi-method routes'}, {'sha': 'a93a92f187a8c985e71870f06624c4d2c01e12c5', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>mokshagnachintha:fix/duplicate-operation-id</code> (a93a92f) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/mokshagnachintha%3Afix%2Fduplicate-operation-id?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'This was marked as potentially AI generated and will be closed now. If this is an error, please provide additional details, make sure to read the docs about contributing and AI.']",2026-04-02 17:57:53
+fastapi/fastapi,15245,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复多方法路由中operation_id重复的问题"",
+    ""description"": ""当路由使用多个HTTP方法（如methods=['POST', 'DELETE']）时，原来的generate_unique_id函数只使用第一个方法名，导致所有方法生成相同的operation_id后缀。这会造成OpenAPI schema中出现重复的操作ID，并引发错误的警告。"",
+    ""evidence"": ""def generate_unique_id(route: \""APIRoute\"") -> str:\n    operation_id = f\""{route.name}{route.path_format}\""\n    operation_id = re.sub(r\""\\W\"", \""_\"", operation_id)\n    assert route.methods\n    operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\""\n    return operation_id"",
+    ""advice"": ""已通过修改generate_unique_id函数接受可选的method参数来解决此问题。当提供特定方法时，会将该方法包含在operation_id中。同时更新了get_openapi_operation_metadata函数以传递method参数，确保每个HTTP方法都有自己唯一的operation_id。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""改进函数签名以支持可选参数"",
+    ""description"": ""generate_unique_id函数现在接受可选的method参数，这提高了函数的灵活性和可读性。函数内部逻辑清晰地区分了有method参数和无method参数的情况。"",
+    ""evidence"": ""def generate_unique_id(route: \""APIRoute\"", method: str | None = None) -> str:\n    operation_id = f\""{route.name}{route.path_format}\""\n    operation_id = re.sub(r\""\\W\"", \""_\"", operation_id)\n    assert route.methods\n    if method:\n        # Include the specific method being generated\n        operation_id = f\""{operation_id}_{method.lower()}\""\n    else:\n        # When no specific method is provided, include all methods (for backwards compatibility)\n        methods_str = \""_\"".join(sorted(m.lower() for m in route.methods))\n        operation_id = f\""{operation_id}_{methods_str}\""\n    return operation_id"",
+    ""advice"": ""代码实现良好，注释清晰解释了两种情况的处理逻辑。建议保持当前实现。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""确保向后兼容性"",
+    ""description"": ""修改后的generate_unique_id函数在未提供method参数时，会包含所有方法名（按字母顺序排序），这保持了向后兼容性。但需要注意，这种默认行为可能与某些现有代码的期望不一致。"",
+    ""evidence"": ""else:\n    # When no specific method is provided, include all methods (for backwards compatibility)\n    methods_str = \""_\"".join(sorted(m.lower() for m in route.methods))\n    operation_id = f\""{operation_id}_{methods_str}\"""",
+    ""advice"": ""当前实现是合理的，因为它确保了不破坏现有代码。但需要确保所有调用generate_unique_id的地方都了解这一行为变化，或者考虑是否需要在文档中明确说明。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了完整的测试用例验证修复"",
+    ""description"": ""新增的测试文件test_duplicate_operation_id.py全面测试了多方法路由下operation_id的唯一性，验证了每个方法都有不同的operation_id，并且符合预期的命名模式。"",
+    ""evidence"": ""def test_no_duplicate_operation_ids_with_multiple_methods():\n    \""\""\""Test that routes with multiple methods generate unique operation IDs for each method.\""\""\""\n    app = FastAPI()\n\n    @app.api_route(\""/items/\"", methods=[\""GET\"", \""POST\"", \""DELETE\""])\n    def handle_items():\n        return {\""message\"": \""handled\""}\n\n    # ... 验证逻辑 ..."",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f6f4c7d0dae134e5d1cf147ba64f9222d7a789ae', 'message': ""fix: include method in operation_id to prevent duplicates with multi-method routes\n\nWhen a route is defined with multiple HTTP methods (e.g., methods=['POST', 'DELETE']),\nthe operation_id generation was only using the first method name, causing all\nmethods to get the same operation_id suffix. This resulted in duplicate operation IDs\nin the OpenAPI schema and incorrect warnings.\n\nChanges:\n- Modified generate_unique_id() to accept an optional 'method' parameter\n- When a specific method is provided, it includes that method in the operation_id\n- Updated get_openapi_operation_metadata() in openapi/utils.py to pass the method\n- Each HTTP method now gets its own unique operation_id\n\nFixes #13175""}, {'sha': '97acb87acfb8e183e74874e8aec4f21f109bd776', 'message': 'test: add test for duplicate operation ID fix with multi-method routes'}, {'sha': 'a93a92f187a8c985e71870f06624c4d2c01e12c5', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>mokshagnachintha:fix/duplicate-operation-id</code> (a93a92f) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/mokshagnachintha%3Afix%2Fduplicate-operation-id?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'This was marked as potentially AI generated and will be closed now. If this is an error, please provide additional details, make sure to read the docs about contributing and AI.']",2026-04-02 17:58:23
+fastapi/fastapi,15244,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复表单模型中未提交字段错误包含在model_fields_set中的问题"",
+    ""description"": ""当使用Pydantic BaseModel作为Form参数时，表单中未提交的字段会被预先填充默认值，导致Pydantic将这些默认值视为显式设置的值，从而使model_fields_set错误地包含了客户端从未发送的字段。这破坏了model_fields_set的语义一致性，与JSON端点行为不一致。"",
+    ""evidence"": ""if alias not in received_body:\n            continue"",
+    ""advice"": ""已正确修复：在_extract_form_body中跳过未出现在表单数据中的字段，让Pydantic通过其自身的默认机制处理，这确保了model_fields_set只包含客户端实际提交的字段。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""添加了alias变量提高代码可读性"",
+    ""description"": ""将get_validation_alias(field)的结果存储在alias变量中，避免了后续重复调用，提高了代码的可读性和性能。"",
+    ""evidence"": ""alias = get_validation_alias(field)\n...\nif alias not in received_body:\n    continue\n...\nvalues[alias] = value"",
+    ""advice"": ""这是一个良好的改进，保持了代码的DRY原则。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了全面的测试用例验证修复效果"",
+    ""description"": ""新增的测试文件test_form_model_fields_set.py包含了多个测试用例，验证了表单端点与JSON端点在model_fields_set行为上的一致性，包括空提交、部分提交和完全提交等场景。"",
+    ""evidence"": ""def test_form_empty_submission_no_fields_set():\n    \""\""\""Form with no fields submitted → fields_set should be empty (like JSON).\""\""\""\n    resp = client.post(\""/form\"", data={})\n    assert resp.status_code == 200, resp.text\n    assert resp.json()[\""fields_set\""] == []"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了测试用例中的错误预期"",
+    ""description"": ""在test_forms_single_model.py的test_no_data测试中，错误响应中的input字段之前错误地包含了测试数据，现在修正为空字典，这更准确地反映了当没有表单数据提交时的实际情况。"",
+    ""evidence"": ""\""input\"": {\""tags\"": [\""foo\"", \""bar\""], \""with\"": \""nothing\""}, 改为 \""input\"": {},"",
+    ""advice"": ""这是一个正确的修正，使测试断言与实际行为保持一致。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '158d52945a256d66369a98a0d667121905290bf5', 'message': 'Fix form model losing model_fields_set for unsubmitted fields\n\nWhen a Pydantic BaseModel is used as a Form parameter, fields absent from\nthe form submission were being pre-filled with their default values before\nthe model was constructed. This caused Pydantic to treat those defaults as\nexplicitly-set values, so model_fields_set incorrectly included fields the\nclient never sent.\n\nThe fix skips absent fields in _extract_form_body entirely, letting Pydantic\napply defaults through its own mechanism (which correctly leaves them out of\nmodel_fields_set), matching the behaviour of JSON body endpoints.\n\nFixes #13399'}]","[""doesn't actually solve the problem - blank input fields in actual html forms are present as blank strings and still dodge the pydantic defaults.\n\nthe correct solution is already in https://github.com/fastapi/fastapi/pull/13464 , see the now more than a years worth of discussion in that PR, the quoted issue, and the initial discussion https://github.com/fastapi/fastapi/discussions/13380 that also has documentation and more robust tests. "", '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-model-fields-set-13399</code> (158d529) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-model-fields-set-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""All CI checks are green. The `check-labels` failure requires a maintainer to add the `bug` label — external contributors don't have label permissions on the upstream repo. Could a maintainer please add it? Thanks\\!"", 'Thanks, for your interest!\r\n\r\nI think this problem is a bit more complex than it seems to be. I think we should start from creating a set of tests that cover all use cases around parameters with default values.\r\nI started working on such set of tests, you can review this draft PR https://github.com/fastapi/fastapi/pull/14829\r\n']",2026-04-02 17:58:49
+fastapi/fastapi,15244,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了表单模型中未提交字段错误地出现在 model_fields_set 中的问题。"",
+    ""description"": ""在修复代码中，当表单字段未提交时，通过 `continue` 跳过该字段的处理，这确保了 Pydantic 的默认值机制能正确工作，使得未提交的字段不会出现在 `model_fields_set` 中。然而，对于 `File` 类型的字段，如果它未提交，代码会跳过整个字段的处理，包括其默认值。如果 `File` 字段有默认值（例如 `None`），并且期望在未提交时使用该默认值，那么当前的修复可能会导致该字段的默认值不被应用，因为 `continue` 语句会完全跳过该字段。这可能导致模型验证失败或模型状态与预期不符。"",
+    ""evidence"": ""if alias not in received_body:\n            continue"",
+    ""advice"": ""建议检查 `File` 字段的处理逻辑。如果 `File` 字段有默认值且允许为空，应考虑在跳过之前，显式地将其默认值（例如 `None`）添加到 `values` 字典中，或者修改逻辑，使得对于 `File` 字段，即使未提交，也能应用其默认值。这需要仔细权衡，因为 `File` 字段的默认值可能不是简单的标量值。一个更安全的方法是，仅在字段不是 `File` 类型且未提交时跳过；对于 `File` 字段，即使未提交，也显式地设置其值为 `None`（如果其注解允许）。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了表单模型中未提交字段错误地出现在 model_fields_set 中的问题。"",
+    ""description"": ""在修复代码中，变量 `alias` 被计算出来，但在后续的 `_get_multidict_value` 调用中，`field` 参数被传递，而 `alias` 没有被使用。然而，`_get_multidict_value` 函数内部可能依赖于 `field` 的别名信息。虽然这本身不是错误，但为了代码清晰和一致性，可以考虑将 `alias` 作为参数传递给 `_get_multidict_value`（如果其签名允许），或者至少确保 `_get_multidict_value` 的内部逻辑与当前的别名获取方式一致。目前，`alias` 仅在检查字段是否存在和最终赋值时使用，这可能导致读者困惑，认为 `alias` 在 `_get_multidict_value` 中也被需要。"",
+    ""evidence"": ""alias = get_validation_alias(field)\n...\nvalue = _get_multidict_value(field, received_body)"",
+    ""advice"": ""建议审查 `_get_multidict_value` 函数的实现，确认它是否正确地使用了 `field` 的别名信息。如果 `_get_multidict_value` 内部也调用 `get_validation_alias(field)`，那么当前的写法是没问题的。但为了代码的清晰度，可以在注释中说明这一点，或者重构代码，使别名的获取和使用更加一致和透明。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了测试用例以验证修复的正确性。"",
+    ""description"": ""新增的测试文件 `test_form_model_fields_set.py` 全面覆盖了修复的场景，包括空表单提交、部分字段提交、全部字段提交，以及与 JSON 端点行为的对比。测试用例清晰，断言明确，有效地验证了修复的目标：确保表单模型的 `model_fields_set` 只包含实际提交的字段。"",
+    ""evidence"": ""def test_form_empty_submission_no_fields_set():\n    \""\""\""Form with no fields submitted → fields_set should be empty (like JSON).\""\""\""\n    resp = client.post(\""/form\"", data={})\n    assert resp.status_code == 200, resp.text\n    assert resp.json()[\""fields_set\""] == []"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '158d52945a256d66369a98a0d667121905290bf5', 'message': 'Fix form model losing model_fields_set for unsubmitted fields\n\nWhen a Pydantic BaseModel is used as a Form parameter, fields absent from\nthe form submission were being pre-filled with their default values before\nthe model was constructed. This caused Pydantic to treat those defaults as\nexplicitly-set values, so model_fields_set incorrectly included fields the\nclient never sent.\n\nThe fix skips absent fields in _extract_form_body entirely, letting Pydantic\napply defaults through its own mechanism (which correctly leaves them out of\nmodel_fields_set), matching the behaviour of JSON body endpoints.\n\nFixes #13399'}]","[""doesn't actually solve the problem - blank input fields in actual html forms are present as blank strings and still dodge the pydantic defaults.\n\nthe correct solution is already in https://github.com/fastapi/fastapi/pull/13464 , see the now more than a years worth of discussion in that PR, the quoted issue, and the initial discussion https://github.com/fastapi/fastapi/discussions/13380 that also has documentation and more robust tests. "", '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>saitarrun:fix/form-model-fields-set-13399</code> (158d529) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/saitarrun%3Afix%2Fform-model-fields-set-13399?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""All CI checks are green. The `check-labels` failure requires a maintainer to add the `bug` label — external contributors don't have label permissions on the upstream repo. Could a maintainer please add it? Thanks\\!"", 'Thanks, for your interest!\r\n\r\nI think this problem is a bit more complex than it seems to be. I think we should start from creating a set of tests that cover all use cases around parameters with default values.\r\nI started working on such set of tests, you can review this draft PR https://github.com/fastapi/fastapi/pull/14829\r\n']",2026-04-02 17:59:22
+fastapi/fastapi,15243,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为FastAPI应用添加启动时生成UUID的功能。"",
+    ""description"": ""新增的`generate_startup_uuid`和`startup_uuid_version`参数逻辑存在设计缺陷。当`generate_startup_uuid=False`时，`self.startup_uuid`属性不会被定义，这可能导致后续访问该属性时引发`AttributeError`。属性应在所有代码路径下保持一致的存在性。"",
+    ""evidence"": ""if self.generate_startup_uuid:\n            if self.startup_uuid_version == \""v4\"":\n                self.startup_uuid = uuid.uuid4()\n            elif self.startup_uuid_version == \""v7\"":\n                if hasattr(uuid, \""uuid7\""):\n                    self.startup_uuid = uuid.uuid7()\n                else:\n                    raise ValueError(\""UUID v7 requires Python 3.12 or later\"")\n            else:\n                raise ValueError(\n                    f\""Unsupported UUID version: {self.startup_uuid_version}\""\n                )"",
+    ""advice"": ""建议在`__init__`方法开始时，为`self.startup_uuid`设置一个默认值（例如`None`），然后在条件分支中根据`generate_startup_uuid`的值进行赋值。这样可以确保`self.startup_uuid`属性始终存在，避免潜在的`AttributeError`。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为FastAPI应用添加启动时生成UUID的功能。"",
+    ""description"": ""`startup_uuid_version`参数的默认值类型与文档描述不符。参数被定义为`str`类型，默认值为`\""v4\""`，但文档中说明支持`'v4'`和`'v7'`。虽然当前实现没有问题，但使用枚举（`Enum`）或字面量类型（`Literal`）可以更清晰地表达允许的值，并提供更好的IDE支持和类型检查。"",
+    ""evidence"": ""startup_uuid_version: Annotated[\n            str,\n            Doc(\n                \""\""\""\n                The version of UUID to generate on startup if `generate_startup_uuid` is True.\n\n                Supported versions: 'v4' (random UUID), 'v7' (time-based UUID with random component, requires Python 3.12+).\n                \""\""\""\n            ),\n        ] = \""v4\"","",
+    ""advice"": ""考虑使用`typing.Literal[\""v4\"", \""v7\""]`来注解`startup_uuid_version`参数的类型，以明确其允许的取值。这能提升代码的可读性和健壮性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'a74243c907836de028f17e125f01f3bfd35b0a81', 'message': '✨ Add support for generating a UUID on application startup'}, {'sha': 'c92228c36f8b422d5c73214127e552ff2c553438', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>fadyNabil16:master</code> (c92228c) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/fadyNabil16%3Amaster?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""@fadyNabil16, thanks for your interest in project!\r\n\r\nI think we don't need to add this. You can easily add such unique ID in the lifespan event.\r\nIf you still think this feature would be useful, please start a discussion and ask for feedback from community.\r\n\r\nLet's close this for now\r\n""]",2026-04-02 17:59:48
+fastapi/fastapi,15243,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""为FastAPI应用添加启动时生成UUID的功能。"",
+    ""description"": ""在`__init__`方法中，当`generate_startup_uuid`为True时，会根据`startup_uuid_version`生成UUID并赋值给`self.startup_uuid`。然而，当`generate_startup_uuid`为False时，`self.startup_uuid`属性不会被定义。这可能导致在后续代码中访问`app.startup_uuid`时引发`AttributeError`。"",
+    ""evidence"": ""if self.generate_startup_uuid:\n            if self.startup_uuid_version == \""v4\"":\n                self.startup_uuid = uuid.uuid4()\n            elif self.startup_uuid_version == \""v7\"":\n                if hasattr(uuid, \""uuid7\""):\n                    self.startup_uuid = uuid.uuid7()\n                else:\n                    raise ValueError(\""UUID v7 requires Python 3.12 or later\"")\n            else:\n                raise ValueError(\n                    f\""Unsupported UUID version: {self.startup_uuid_version}\""\n                )"",
+    ""advice"": ""应在`__init__`方法的开头或结尾，为`self.startup_uuid`设置一个默认值（例如`None`），以确保无论`generate_startup_uuid`为何值，该属性都存在。例如：`self.startup_uuid = None`，然后在条件分支中覆盖它。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为FastAPI应用添加启动时生成UUID的功能。"",
+    ""description"": ""`startup_uuid_version`参数的Docstring中，对于版本`v7`的描述是“time-based UUID with random component, requires Python 3.12+”。然而，在代码实现中，仅检查了`uuid`模块是否具有`uuid7`属性。虽然Python 3.12+的`uuid`模块确实包含`uuid7`，但更健壮和清晰的检查应该是验证Python版本。当前实现依赖于`hasattr`，这在未来如果`uuid7`被反向移植到旧版本时可能不准确。"",
+    ""evidence"": ""elif self.startup_uuid_version == \""v7\"":\n                if hasattr(uuid, \""uuid7\""):\n                    self.startup_uuid = uuid.uuid7()\n                else:\n                    raise ValueError(\""UUID v7 requires Python 3.12 or later\"")"",
+    ""advice"": ""建议将版本检查与功能检查结合。可以导入`sys`模块，使用`if sys.version_info >= (3, 12):`来明确检查Python版本，或者保留`hasattr`检查但更新文档以反映其实际行为。为了更清晰，可以同时检查Python版本和`hasattr`。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'a74243c907836de028f17e125f01f3bfd35b0a81', 'message': '✨ Add support for generating a UUID on application startup'}, {'sha': 'c92228c36f8b422d5c73214127e552ff2c553438', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>fadyNabil16:master</code> (c92228c) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/fadyNabil16%3Amaster?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', ""@fadyNabil16, thanks for your interest in project!\r\n\r\nI think we don't need to add this. You can easily add such unique ID in the lifespan event.\r\nIf you still think this feature would be useful, please start a discussion and ask for feedback from community.\r\n\r\nLet's close this for now\r\n""]",2026-04-02 18:00:11
+fastapi/fastapi,15235,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复了在APIRouter中挂载子应用时，路径前缀未正确传播的问题。"",
+    ""description"": ""在`include_router`方法中，当遍历路由器的路由时，新增了对`routing.Mount`类型的处理。然而，在处理`Mount`时，代码将`router.prefix`和`route.path`直接拼接，这可能导致路径前缀重复或错误。`router.prefix`是APIRouter的路径前缀，而`route.path`是Mount对象自身的路径。在`include_router`的上下文中，`prefix`参数已经包含了`router.prefix`，因此直接拼接`router.prefix`会导致路径前缀被添加两次。"",
+    ""evidence"": ""self.mount(\n                    prefix + router.prefix + route.path,\n                    app=route.app,\n                    name=route.name,\n                )"",
+    ""advice"": ""建议将代码修改为 `self.mount(prefix + route.path, app=route.app, name=route.name)`。因为`prefix`参数在调用`include_router`时已经包含了`router.prefix`（例如，在`app.include_router(api_router, prefix=\""/api\"")`中，`prefix`就是`\""/api\""`，而`api_router.prefix`可能是`\""\""`）。当前的实现会导致路径错误。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了测试用例以验证Mount在APIRouter中的行为。"",
+    ""description"": ""新增的测试文件`test_mount_subrouter.py`包含了三个测试函数，分别测试了子应用在APIRouter下的可访问性、文档生成以及多个子应用的情况。测试用例清晰，覆盖了主要的使用场景。"",
+    ""evidence"": ""文件: test_mount_subrouter.py 的全部新增内容。"",
+    ""advice"": ""无。测试用例设计良好，符合需求。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '8c8bd3d5141b92858e188a7167036339a60c497b', 'message': 'update tests: mount before include_router'}, {'sha': '9bd49b3ec6e8c54440232e8e7395e52294773a48', 'message': 'research: propagate Mount with router.prefix in include_router'}, {'sha': 'fc21d83c5c9a269640137637e0d178f5a7896b6a', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>garagon:fix/mount-subapp-under-router</code> (fc21d83) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/garagon%3Afix%2Fmount-subapp-under-router?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@garagon, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '@YuriiMotov thanks for the pointer. I reviewed all related PRs:\n\n- #13944 (yours, open): supports StaticFiles only, raises `FastAPIError` for other ASGI apps\n- #14032 (sujin502, closed): generic Mount support, closed for inactivity\n- #14924, #14926 (kimchikingdom, closed): generic Mount, you redirected to #13944\n- #14793 (jonathan-fulton, open): generic Mount support\n- #14984 (fcarvajalbrown, closed), #15014 (Anandesh-Sharma, closed): same approach as ours\n\nI understand your position: sub-apps should be mounted to the root app, and only StaticFiles makes sense on a sub-router.\n\nLooking at the issue comments, there are real use cases beyond StaticFiles that users are requesting:\n\n- Mounting v1/v2 API versions under a shared prefix router\n- Serving Dash dashboards alongside API routes on the same router\n- Adding authentication dependencies to third-party ASGI apps via router\n- Modular app composition where teams own routers with their own sub-apps\n\nThe current behavior silently drops Mount routes with no error and no warning. Your PR (#13944) solves this for StaticFiles and raises a clear error for everything else, which is better than silent failure.\n\nOur approach propagates all Mount routes with the correct prefix. The technical difference is one line: `self.mount(prefix + router.prefix + route.path, app=route.app, name=route.name)`. The reason `router.prefix` is needed is that `APIRoute.path` has the prefix baked in at creation time, but `Mount.path` does not.\n\nBoth approaches are valid. If Sebastian decides StaticFiles-only is the right scope, #13944 is the right PR. If full Mount support is desired, the approach in this PR (and #14793) handles it.\n\nHappy to close this if #13944 is the direction the project wants to take.']",2026-04-02 18:00:31
+fastapi/fastapi,15235,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在APIRouter中挂载子应用时路径拼接错误的问题。"",
+    ""description"": ""在APIRouter中挂载Mount路由时，路径拼接逻辑有误。当前代码将router.prefix和route.path直接拼接，但route.path已经包含了Mount的路径前缀。这会导致最终路径重复包含router.prefix，使得子应用无法通过正确路径访问。"",
+    ""evidence"": ""self.mount(\n    prefix + router.prefix + route.path,\n    app=route.app,\n    name=route.name,\n)"",
+    ""advice"": ""应该只使用prefix + route.path，因为route.path已经包含了Mount的完整路径。参考背景中FastAPI的路由处理逻辑，Mount的路径应该是相对于router的完整路径。建议修改为：self.mount(prefix + route.path, app=route.app, name=route.name)"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了Mount路由在APIRouter中的支持。"",
+    ""description"": ""新增的测试文件命名和测试函数命名清晰，但测试文件缺少必要的导入和文档字符串。测试文件应该导入相关的模块，并且测试函数应该有更详细的文档说明。"",
+    ""evidence"": ""文件: test_mount_subrouter.py\n@@ -0,0 +1,77 @@\n+\""\""\""Test for issue #10180: Mounting sub-applications under APIRouter.\""\""\"""",
+    ""advice"": ""建议在测试文件中添加更多注释说明测试的目的，特别是针对路径拼接的测试。同时确保所有必要的导入都已包含。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""扩展了APIRouter的include_router功能以支持Mount路由。"",
+    ""description"": ""新增的逻辑处理了Mount类型的路由，但在设计上需要考虑路径前缀的传播逻辑是否一致。当前实现可能与其他路由类型（如APIRoute、WebSocketRoute）的路径处理方式不一致。"",
+    ""evidence"": ""elif isinstance(route, routing.Mount):\n    self.mount(\n        prefix + router.prefix + route.path,\n        app=route.app,\n        name=route.name,\n    )"",
+    ""advice"": ""需要验证Mount路由的路径处理是否与APIRoute和WebSocketRoute保持一致。建议检查其他路由类型的路径拼接逻辑，确保设计一致性。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '8c8bd3d5141b92858e188a7167036339a60c497b', 'message': 'update tests: mount before include_router'}, {'sha': '9bd49b3ec6e8c54440232e8e7395e52294773a48', 'message': 'research: propagate Mount with router.prefix in include_router'}, {'sha': 'fc21d83c5c9a269640137637e0d178f5a7896b6a', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>garagon:fix/mount-subapp-under-router</code> (fc21d83) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/garagon%3Afix%2Fmount-subapp-under-router?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@garagon, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '@YuriiMotov thanks for the pointer. I reviewed all related PRs:\n\n- #13944 (yours, open): supports StaticFiles only, raises `FastAPIError` for other ASGI apps\n- #14032 (sujin502, closed): generic Mount support, closed for inactivity\n- #14924, #14926 (kimchikingdom, closed): generic Mount, you redirected to #13944\n- #14793 (jonathan-fulton, open): generic Mount support\n- #14984 (fcarvajalbrown, closed), #15014 (Anandesh-Sharma, closed): same approach as ours\n\nI understand your position: sub-apps should be mounted to the root app, and only StaticFiles makes sense on a sub-router.\n\nLooking at the issue comments, there are real use cases beyond StaticFiles that users are requesting:\n\n- Mounting v1/v2 API versions under a shared prefix router\n- Serving Dash dashboards alongside API routes on the same router\n- Adding authentication dependencies to third-party ASGI apps via router\n- Modular app composition where teams own routers with their own sub-apps\n\nThe current behavior silently drops Mount routes with no error and no warning. Your PR (#13944) solves this for StaticFiles and raises a clear error for everything else, which is better than silent failure.\n\nOur approach propagates all Mount routes with the correct prefix. The technical difference is one line: `self.mount(prefix + router.prefix + route.path, app=route.app, name=route.name)`. The reason `router.prefix` is needed is that `APIRoute.path` has the prefix baked in at creation time, but `Mount.path` does not.\n\nBoth approaches are valid. If Sebastian decides StaticFiles-only is the right scope, #13944 is the right PR. If full Mount support is desired, the approach in this PR (and #14793) handles it.\n\nHappy to close this if #13944 is the direction the project wants to take.']",2026-04-02 18:00:52
+fastapi/fastapi,15234,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复mypy内置类型查找，并添加宽松的ForwardRef解析回退机制。"",
+    ""description"": ""新增的 `_LenientTypeResolutionDict` 类在 `__missing__` 方法中，当键不在字典中时，会先尝试从 `builtins` 模块查找，如果找不到则返回一个 `ForwardRef(key)`。然而，在 `get_typed_annotation` 函数中使用这个类时，创建实例的方式是 `_LenientTypeResolutionDict(globalns)`。这会将 `globalns` 字典作为初始数据传入。`__missing__` 方法仅在键不存在于字典中时被调用。如果 `globalns` 中已经包含了某个键（例如，用户定义的类或导入的模块），`__missing__` 方法将不会被触发，因此不会尝试从 `builtins` 中查找。这可能导致在 `globalns` 包含同名但非内置对象时，内置类型的解析被意外覆盖或忽略，与设计意图（优先使用 `globalns`，回退到 `builtins`，最后回退到 `ForwardRef`）不完全一致。"",
+    ""evidence"": ""class _LenientTypeResolutionDict(dict[str, Any]):\n    def __missing__(self, key: str) -> Any:\n        return vars(builtins).get(key, ForwardRef(key))\n\n...\n                annotation = eval(  # noqa: S307\n                    annotation.__forward_arg__, _LenientTypeResolutionDict(globalns)\n                )"",
+    ""advice"": ""建议明确 `_LenientTypeResolutionDict` 的设计意图：它应该是一个合并了 `globalns` 和 `builtins` 的命名空间，且 `builtins` 的查找优先级低于 `globalns` 但高于创建新的 `ForwardRef`。当前的实现逻辑（先查 `globalns`，缺失时查 `builtins`，再缺失则返回 `ForwardRef`）是正确的。但为了更清晰，可以考虑在 `__init__` 方法中显式合并 `builtins` 到字典中（作为后备），或者保持现状但确保文档说明此行为。当前实现的风险较低，因为 `globalns` 通常由用户控制，覆盖内置类型是明确的行为。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""修复mypy内置类型查找，并添加宽松的ForwardRef解析回退机制。"",
+    ""description"": ""在 `get_typed_annotation` 函数中，新增的代码使用 `eval()` 来尝试解析 `ForwardRef`。虽然使用了 `noqa: S307` 来抑制安全扫描器的警告，并且将执行环境限制在 `_LenientTypeResolutionDict(globalns)` 构建的字典中，但这仍然引入了潜在的安全风险。`globalns` 可能包含用户提供的或不可信的字典（尽管在FastAPI的上下文中，`globalns` 通常是模块的全局符号表）。如果攻击者能够控制 `globalns` 的内容，他们可能注入恶意代码。虽然异常被捕获 (`except Exception: pass`)，但这是一种静默失败，可能掩盖问题。"",
+    ""evidence"": ""                annotation = eval(  # noqa: S307\n                    annotation.__forward_arg__, _LenientTypeResolutionDict(globalns)\n                )\n            except Exception:\n                pass"",
+    ""advice"": ""1. 评估 `globalns` 的来源是否可信。在FastAPI依赖解析的上下文中，`globalns` 通常是函数定义所在模块的 `globals()`，相对可信。2. 考虑是否可以使用更安全的替代方案，例如 `ast.literal_eval()`（但可能不适用于类型表达式）。3. 至少，应将捕获的异常类型具体化（例如 `except (NameError, SyntaxError):`），避免掩盖其他潜在错误。4. 确保有充分的注释或文档说明此处使用 `eval` 的原因和安全性假设。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复mypy内置类型查找，并添加宽松的ForwardRef解析回退机制。"",
+    ""description"": ""在 `get_typed_annotation` 函数中，新增的 `if isinstance(annotation, ForwardRef):` 块嵌套在 `if isinstance(annotation, str):` 块之后，但逻辑上，`annotation` 在经过第一个 `if` 块后可能已经是 `ForwardRef` 实例（如果输入是字符串）。然而，代码结构使得两种情况（输入是字符串和输入已经是 `ForwardRef`）都进入同一个处理 `ForwardRef` 的块，这是合理的。但代码的嵌套和流程可以进一步优化以提高清晰度。例如，可以先将字符串转换为 `ForwardRef`，然后统一处理 `ForwardRef` 逻辑。"",
+    ""evidence"": ""    if isinstance(annotation, str):\n        annotation = ForwardRef(annotation)\n    if isinstance(annotation, ForwardRef):\n        annotation = evaluate_forwardref(  # ty: ignore[deprecated]\n            annotation, globalns, globalns\n        )\n        if isinstance(annotation, ForwardRef):\n            ..."",
+    ""advice"": ""可以考虑重构代码，使用更线性的流程：\n1. 如果 `annotation` 是字符串，转换为 `ForwardRef`。\n2. 如果 `annotation` 是 `ForwardRef`，尝试用 `evaluate_forwardref` 解析。\n3. 如果解析后仍是 `ForwardRef`，尝试用新的宽松机制解析。\n4. 处理 `type(None)` 特殊情况。\n当前代码已经基本遵循此流程，但两个 `if` 块是顺序的而非嵌套，这没问题。保持现状也可接受。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ed5ace87adfcbfb1f72d4c592771a1a0104fc1b2', 'message': 'Fix mypy builtins lookup in annotation resolution'}, {'sha': '87063e8046b9669fc7486c9e7eda4f9f5b2ad5b6', 'message': '🎨 Auto format'}, {'sha': '380c4161e46474120473f7feaae996a7779c6389', 'message': 'Use lenient ForwardRef resolution as fallback'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/annotated-forwardref-dependency</code> (380c416) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fannotated-forwardref-dependency?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.', '> @abishekgiri, thanks for your interest!\r\n> \r\n> Please, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nI reviewed the PRs linked to #13056: #14952, #14557, #14703, #14872, #15096, #15131, and #15142.\r\n\r\nMy understanding is:\r\n\r\n- #14952 adds only a regression test.\r\n- #14703 moves resolution later via `get_type_hints(..., include_extras=True)` in `get_dependant()`, but the exact reproducer still failed there.\r\n- #14872 and #15142 try to resolve `ForwardRef` later in the pipeline, but in this bug the outer `Annotated[...]` structure has already been lost too early, so FastAPI never extracts `Depends(...)` correctly.\r\n- #15131 addresses the later OpenAPI failure in the Pydantic compat layer, but it does not fix the earlier dependency-extraction problem and changes a much broader area.\r\n- #14557 is closer, but it relies on manual parsing of `Annotated[...]` strings plus substring `eval`, which felt heavier and more fragile than necessary.\r\n- #15096 is the closest implementation-wise. The main difference is that it replaces unresolved inner names with `Any`.\r\n\r\nI chose this approach because it fixes the problem at the earliest shared point: `get_typed_annotation()`.\r\n\r\nInstead of keeping the whole annotation unresolved, or converting missing inner names to `Any`, this PR evaluates with a lenient namespace that preserves unresolved inner names as nested `ForwardRef(...)` objects. That means FastAPI still sees the outer `Annotated[...]` structure, can still extract `Depends(...)`, and does not lose the original type information unnecessarily.\r\n\r\nI think that is better because:\r\n- it is a smaller and more local change\r\n- it fixes both runtime dependency extraction and OpenAPI generation from the same root cause\r\n- it avoids special-case parsing of `Annotated[...]`\r\n- it preserves unresolved types as `ForwardRef(...)` instead of degrading them to `Any`\r\n\r\nI also added a focused regression test for the exact issue shape from #13056, covering both runtime behavior and OpenAPI generation.\r\n', ""I looked into this and ended up with the same `dict.__missing__` → `ForwardRef` idea.\n\nOne thing worth considering: using the lenient dict as a fallback instead of replacing the existing eval path. Right now you're routing *all* annotations through `_LenientTypeResolutionDict`, but `evaluate_forwardref` already works fine for the common case. The lenient path only needs to kick in when normal resolution returns an unresolved `ForwardRef`:\n\n```python\ndef get_typed_annotation(annotation: Any, globalns: dict[str, Any]) -> Any:\n    if isinstance(annotation, str):\n        annotation = ForwardRef(annotation)\n        annotation = evaluate_forwardref(annotation, globalns, globalns)\n        if isinstance(annotation, ForwardRef):\n            try:\n                annotation = eval(\n                    annotation.__forward_arg__,\n                    _LenientTypeResolutionDict(globalns),\n                )\n            except Exception:\n                pass\n        if annotation is type(None):\n            return None\n    return annotation\n```\n\nAlso — `self[key] = value` in `__missing__` caches into the dict during eval. If `evaluate_forwardref` does multiple passes internally, a cached `ForwardRef` could shadow a name that would resolve on a later pass. Probably fine since the dict is single-use, but worth checking."", ""> I looked into this and ended up with the same `dict.__missing__` → `ForwardRef` idea.\r\n> \r\n> One thing worth considering: using the lenient dict as a fallback instead of replacing the existing eval path. Right now you're routing _all_ annotations through `_LenientTypeResolutionDict`, but `evaluate_forwardref` already works fine for the common case. The lenient path only needs to kick in when normal resolution returns an unresolved `ForwardRef`:\r\n> \r\n> ```python\r\n> def get_typed_annotation(annotation: Any, globalns: dict[str, Any]) -> Any:\r\n>     if isinstance(annotation, str):\r\n>         annotation = ForwardRef(annotation)\r\n>         annotation = evaluate_forwardref(annotation, globalns, globalns)\r\n>         if isinstance(annotation, ForwardRef):\r\n>             try:\r\n>                 annotation = eval(\r\n>                     annotation.__forward_arg__,\r\n>                     _LenientTypeResolutionDict(globalns),\r\n>                 )\r\n>             except Exception:\r\n>                 pass\r\n>         if annotation is type(None):\r\n>             return None\r\n>     return annotation\r\n> ```\r\n> \r\n> Also — `self[key] = value` in `__missing__` caches into the dict during eval. If `evaluate_forwardref` does multiple passes internally, a cached `ForwardRef` could shadow a name that would resolve on a later pass. Probably fine since the dict is single-use, but worth checking.\r\n\r\nThanks, that makes sense. I updated the implementation to keep the normal `evaluate_forwardref(..., globalns, globalns)` path first and only fall back to the lenient namespace when strict resolution still returns a `ForwardRef`.\r\n\r\nI also removed the cache write from `__missing__` so unresolved placeholders don’t get memoized during eval.\r\n\r\nAdded a focused unit test for the fallback branch and re-ran the regression tests plus mypy.\r\n""]",2026-04-02 18:01:42
+fastapi/fastapi,15234,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在解析字符串注解时，对内置类型（如list, dict）的查找失败问题。"",
+    ""description"": ""在 `get_typed_annotation` 函数中，当注解是字符串或 `ForwardRef` 时，会尝试使用 `evaluate_forwardref` 进行解析。如果解析失败（例如，当注解引用了一个尚未定义的类型，如 `Potato`），代码会回退到使用 `eval` 和一个自定义的命名空间字典 `_LenientTypeResolutionDict` 来尝试解析。这个自定义字典的 `__missing__` 方法旨在当键在全局命名空间 `globalns` 中找不到时，先查找内置命名空间 `builtins`，如果仍未找到，则返回一个 `ForwardRef(key)`。然而，在 `eval` 调用中，传入的命名空间是 `_LenientTypeResolutionDict(globalns)`。问题在于，`_LenientTypeResolutionDict` 的 `__missing__` 方法只在键不存在于字典本身时被调用。当使用 `_LenientTypeResolutionDict(globalns)` 构造时，`globalns` 中的键（例如 `Annotated`, `Depends`）会直接成为字典的键，因此 `__missing__` 不会被调用。但是，对于 `globalns` 中不存在的键（例如 `Potato`），`__missing__` 会被调用，并正确返回 `ForwardRef('Potato')`。然而，对于内置类型（如 `list`, `dict`），它们存在于 `builtins` 模块中，但通常不在 `globalns` 中。`__missing__` 方法会从 `builtins` 中查找并返回它们，这似乎是正确的。但是，`eval` 的第二个参数应该是一个字典，用于全局和局部命名空间。如果 `__missing__` 返回的是一个 `ForwardRef` 对象（例如 `ForwardRef('Potato')`），那么 `eval` 将尝试对这个 `ForwardRef` 对象求值，这可能会导致错误，因为 `ForwardRef` 不是一个有效的 Python 表达式。实际上，`__missing__` 返回 `ForwardRef(key)` 的目的是让 `eval` 在遇到未定义的名称时，将其视为一个 `ForwardRef` 对象。但是，`eval` 期望的是表达式字符串，而不是一个对象。这里的设计意图可能是：当 `__missing__` 返回 `ForwardRef(key)` 时，`eval` 会将其作为表达式 `'Potato'` 的求值结果？不，`eval` 是对字符串 `annotation.__forward_arg__`（例如 `'Potato'`）进行求值。在求值过程中，当遇到名称 `Potato` 时，会从提供的命名空间字典（即 `_LenientTypeResolutionDict(globalns)`）中查找。由于 `Potato` 不在字典中，会触发 `__missing__` 方法，该方法返回 `ForwardRef('Potato')`。然后，`eval` 会将这个 `ForwardRef` 对象作为名称 `Potato` 的值。因此，整个 `eval` 表达式的结果将是 `ForwardRef('Potato')`。这似乎与预期一致：当无法解析类型时，保留为 `ForwardRef`。然而，`__missing__` 方法中对于内置类型的处理（`return vars(builtins).get(key, ForwardRef(key))`）存在一个潜在问题：如果 `key` 是 `'list'`，`vars(builtins).get('list')` 会返回 `<class 'list'>`。但是，`eval` 的命名空间字典中键 `'list'` 对应的值应该是 `<class 'list'>` 吗？实际上，当 `eval` 对表达式 `'list'` 求值时，它会从命名空间字典中查找键 `'list'`。如果字典中没有 `'list'`，`__missing__` 会被调用，并返回 `<class 'list'>`。然后 `eval` 会将 `<class 'list'>` 作为表达式 `'list'` 的结果。这似乎是正确的。但是，如果 `globalns` 中已经有一个名为 `'list'` 的变量（覆盖了内置的 `list`），那么 `_LenientTypeResolutionDict(globalns)` 会直接使用 `globalns` 中的值，而不会回退到内置的 `list`。这可能不是期望的行为，因为类型注解通常期望使用内置类型。然而，在 FastAPI 的上下文中，`globalns` 通常是模块的全局命名空间，用户可能确实覆盖了内置名称。这是一个权衡。总体来看，这个变更的主要目的是为了更宽松地解析前向引用，特别是对于尚未定义的类（如 `Potato`），允许依赖项函数返回前向引用类型。变更本身看起来是合理的，但 `__missing__` 的实现和 `eval` 的使用需要仔细考虑。"",
+    ""evidence"": ""class _LenientTypeResolutionDict(dict[str, Any]):\n    def __missing__(self, key: str) -> Any:\n        return vars(builtins).get(key, ForwardRef(key))\n\n...\n            try:\n                annotation = eval(  # noqa: S307\n                    annotation.__forward_arg__, _LenientTypeResolutionDict(globalns)\n                )\n            except Exception:\n                pass"",
+    ""advice"": ""1. 确保 `__missing__` 方法的行为符合预期：当键不在字典中时，先查找内置模块，如果找到则返回内置对象，否则返回 `ForwardRef(key)`。这看起来是正确的。\n2. 注意 `eval` 的使用安全：虽然添加了 `# noqa: S307` 来忽略安全警告，但 `eval` 的参数 `annotation.__forward_arg__` 来自用户代码（例如路由处理函数的类型注解），理论上可能包含恶意代码。然而，在 FastAPI 的上下文中，这些注解通常是开发人员编写的，风险较低。但为了绝对安全，可以考虑对 `annotation.__forward_arg__` 进行验证，确保它是一个简单的标识符（可能带有模块前缀）。不过，这可能会破坏一些合法用例。\n3. 考虑性能：`eval` 调用可能有一定开销，但仅在常规前向引用解析失败时作为回退，影响应该有限。\n4. 测试覆盖：新增的测试用例 `test_get_typed_annotation_falls_back_to_lenient_forwardref_resolution` 和 `test_stringified_annotated_forwardref_dependency` 验证了回退机制和实际路由功能，这很好。\n建议：保持当前实现，但可以在文档中说明这种宽松解析的行为和潜在的安全考虑（尽管风险很低）。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""代码变更增强了前向引用解析的健壮性。"",
+    ""description"": ""在 `get_typed_annotation` 函数中，对 `ForwardRef` 的处理逻辑被扩展了。原来，如果 `annotation` 是字符串，会转换为 `ForwardRef` 然后调用 `evaluate_forwardref`。现在，即使 `annotation` 已经是 `ForwardRef`，也会尝试用 `evaluate_forwardref` 解析。如果解析后仍然是 `ForwardRef`（即解析失败），则尝试使用 `eval` 和一个更宽松的命名空间进行二次解析。这个逻辑是合理的，但代码结构可以稍微优化以提高可读性。目前，`if isinstance(annotation, str):` 和 `if isinstance(annotation, ForwardRef):` 是两个独立的 `if` 语句，这意味着一个字符串注解会先被转换为 `ForwardRef`，然后第一个 `if` 块结束，接着进入第二个 `if` 块（因为此时 `annotation` 是 `ForwardRef`）。这没问题，但可能让人困惑。可以考虑将两个条件合并，或者使用 `elif` 来更清晰地表达逻辑流程。"",
+    ""evidence"": ""if isinstance(annotation, str):\n    annotation = ForwardRef(annotation)\nif isinstance(annotation, ForwardRef):\n    annotation = evaluate_forwardref(  # ty: ignore[deprecated]\n        annotation, globalns, globalns\n    )\n    if isinstance(annotation, ForwardRef):\n        ..."",
+    ""advice"": ""可以将两个 `if` 语句合并，或者将第二个 `if` 改为 `elif`，以明确表示：如果是字符串则转换为 `ForwardRef`，然后如果是 `ForwardRef` 则进行解析。例如：\n```python\nif isinstance(annotation, str):\n    annotation = ForwardRef(annotation)\nif isinstance(annotation, ForwardRef):  # 这里保持 if 也可以，因为上一步可能转换了\n    ...\n```\n或者更明确地：\n```python\nif isinstance(annotation, str):\n    annotation = ForwardRef(annotation)\nelif not isinstance(annotation, ForwardRef):\n    # 如果不是字符串也不是 ForwardRef，直接返回\n    return annotation\n# 现在 annotation 是 ForwardRef\n...\n```\n但考虑到函数末尾有 `return annotation`，当前结构也能工作。建议至少添加注释说明逻辑步骤。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ed5ace87adfcbfb1f72d4c592771a1a0104fc1b2', 'message': 'Fix mypy builtins lookup in annotation resolution'}, {'sha': '87063e8046b9669fc7486c9e7eda4f9f5b2ad5b6', 'message': '🎨 Auto format'}, {'sha': '380c4161e46474120473f7feaae996a7779c6389', 'message': 'Use lenient ForwardRef resolution as fallback'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/annotated-forwardref-dependency</code> (380c416) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fannotated-forwardref-dependency?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', 'This PR fixes a bug in annotation resolution and dependency handling, so the appropriate label should be `bug`.\r\n\r\nCould a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.', '> @abishekgiri, thanks for your interest!\r\n> \r\n> Please, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nI reviewed the PRs linked to #13056: #14952, #14557, #14703, #14872, #15096, #15131, and #15142.\r\n\r\nMy understanding is:\r\n\r\n- #14952 adds only a regression test.\r\n- #14703 moves resolution later via `get_type_hints(..., include_extras=True)` in `get_dependant()`, but the exact reproducer still failed there.\r\n- #14872 and #15142 try to resolve `ForwardRef` later in the pipeline, but in this bug the outer `Annotated[...]` structure has already been lost too early, so FastAPI never extracts `Depends(...)` correctly.\r\n- #15131 addresses the later OpenAPI failure in the Pydantic compat layer, but it does not fix the earlier dependency-extraction problem and changes a much broader area.\r\n- #14557 is closer, but it relies on manual parsing of `Annotated[...]` strings plus substring `eval`, which felt heavier and more fragile than necessary.\r\n- #15096 is the closest implementation-wise. The main difference is that it replaces unresolved inner names with `Any`.\r\n\r\nI chose this approach because it fixes the problem at the earliest shared point: `get_typed_annotation()`.\r\n\r\nInstead of keeping the whole annotation unresolved, or converting missing inner names to `Any`, this PR evaluates with a lenient namespace that preserves unresolved inner names as nested `ForwardRef(...)` objects. That means FastAPI still sees the outer `Annotated[...]` structure, can still extract `Depends(...)`, and does not lose the original type information unnecessarily.\r\n\r\nI think that is better because:\r\n- it is a smaller and more local change\r\n- it fixes both runtime dependency extraction and OpenAPI generation from the same root cause\r\n- it avoids special-case parsing of `Annotated[...]`\r\n- it preserves unresolved types as `ForwardRef(...)` instead of degrading them to `Any`\r\n\r\nI also added a focused regression test for the exact issue shape from #13056, covering both runtime behavior and OpenAPI generation.\r\n', ""I looked into this and ended up with the same `dict.__missing__` → `ForwardRef` idea.\n\nOne thing worth considering: using the lenient dict as a fallback instead of replacing the existing eval path. Right now you're routing *all* annotations through `_LenientTypeResolutionDict`, but `evaluate_forwardref` already works fine for the common case. The lenient path only needs to kick in when normal resolution returns an unresolved `ForwardRef`:\n\n```python\ndef get_typed_annotation(annotation: Any, globalns: dict[str, Any]) -> Any:\n    if isinstance(annotation, str):\n        annotation = ForwardRef(annotation)\n        annotation = evaluate_forwardref(annotation, globalns, globalns)\n        if isinstance(annotation, ForwardRef):\n            try:\n                annotation = eval(\n                    annotation.__forward_arg__,\n                    _LenientTypeResolutionDict(globalns),\n                )\n            except Exception:\n                pass\n        if annotation is type(None):\n            return None\n    return annotation\n```\n\nAlso — `self[key] = value` in `__missing__` caches into the dict during eval. If `evaluate_forwardref` does multiple passes internally, a cached `ForwardRef` could shadow a name that would resolve on a later pass. Probably fine since the dict is single-use, but worth checking."", ""> I looked into this and ended up with the same `dict.__missing__` → `ForwardRef` idea.\r\n> \r\n> One thing worth considering: using the lenient dict as a fallback instead of replacing the existing eval path. Right now you're routing _all_ annotations through `_LenientTypeResolutionDict`, but `evaluate_forwardref` already works fine for the common case. The lenient path only needs to kick in when normal resolution returns an unresolved `ForwardRef`:\r\n> \r\n> ```python\r\n> def get_typed_annotation(annotation: Any, globalns: dict[str, Any]) -> Any:\r\n>     if isinstance(annotation, str):\r\n>         annotation = ForwardRef(annotation)\r\n>         annotation = evaluate_forwardref(annotation, globalns, globalns)\r\n>         if isinstance(annotation, ForwardRef):\r\n>             try:\r\n>                 annotation = eval(\r\n>                     annotation.__forward_arg__,\r\n>                     _LenientTypeResolutionDict(globalns),\r\n>                 )\r\n>             except Exception:\r\n>                 pass\r\n>         if annotation is type(None):\r\n>             return None\r\n>     return annotation\r\n> ```\r\n> \r\n> Also — `self[key] = value` in `__missing__` caches into the dict during eval. If `evaluate_forwardref` does multiple passes internally, a cached `ForwardRef` could shadow a name that would resolve on a later pass. Probably fine since the dict is single-use, but worth checking.\r\n\r\nThanks, that makes sense. I updated the implementation to keep the normal `evaluate_forwardref(..., globalns, globalns)` path first and only fall back to the lenient namespace when strict resolution still returns a `ForwardRef`.\r\n\r\nI also removed the cache write from `__missing__` so unresolved placeholders don’t get memoized during eval.\r\n\r\nAdded a focused unit test for the fallback branch and re-ran the regression tests plus mypy.\r\n""]",2026-04-02 18:02:54
+fastapi/fastapi,15233,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复APIRouter中挂载子应用时路由前缀处理不正确的问题"",
+    ""description"": ""在APIRouter中新增mount方法，确保挂载子应用时能正确处理路由前缀。但实现方式存在设计问题：mount方法直接修改传入的path参数，这可能导致调用方对路径的预期与实际行为不一致。当调用router.mount('/subapi', app)时，传入的'/subapi'会被修改为self.prefix + '/subapi'，这可能违反最小惊讶原则。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n    super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""建议在方法内部创建新的路径变量，而不是直接修改传入的path参数。或者至少添加文档说明该方法会自动添加路由前缀。更好的做法是：new_path = self.prefix + path; super().mount(new_path, app=app, name=name)"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了APIRouter.mount方法并完善路由包含逻辑"",
+    ""description"": ""新增的mount方法允许在APIRouter中挂载子应用，并在include_router时正确处理Mount类型的路由。测试用例覆盖了主要场景，代码功能基本正确。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'ff36995ebe5ba19385dd0ae2ac60fe70fe37f869', 'message': ""Merge branch 'master' into fix/mount-subapps-apirouter""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/mount-subapps-apirouter</code> (ff36995) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmount-subapps-apirouter?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Hi, this PR fixes a bug in router mounting behavior, so the appropriate label should be `bug`.\r\n\r\nI don’t have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '> @abishekgiri, thanks for your interest!\r\n> \r\n> Please, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n> \r\n> See #13944\r\n\r\nI reviewed the related PRs: #13944, #14793, #14032, #14924, #14926, #14984, and #15014.\r\n\r\nMy understanding is that the closed PRs were mostly closed for one of two reasons:\r\n- they were partial fixes that only handled `Mount` propagation in `include_router()`\r\n- or the discussion shifted toward a `StaticFiles`-only scope (`#13944`) rather than general mounted ASGI apps\r\n\r\nThat is why I chose this approach.\r\n\r\nThe include-only fixes (`#14032`, `#14984`, `#15014`) solve one symptom, but they do not fix the underlying inconsistency: `APIRouter.mount()` still does not apply the router prefix when the `Mount` is created. In contrast, this PR fixes both pieces together:\r\n1. `APIRouter.mount()` applies the router prefix when creating the mount\r\n2. `include_router()` preserves `Mount` routes instead of silently dropping them\r\n\r\nI think that is cleaner because it makes `Mount` behave more like other route types: the route is normalized when it is added, and then inclusion just carries it forward.\r\n\r\nCompared with `#13944`, this PR is intentionally broader. `#13944` is the right PR if the project decision is to support only `StaticFiles` on sub-routers and reject other ASGI apps. My PR instead keeps the existing `APIRouter.mount()` API working for general mounted sub-applications.\r\n\r\nCompared with `#14793`, the core implementation is very close, so I do not want to overstate a difference there. The main extra value I tried to add here is regression coverage for mounted sub-app OpenAPI behavior, since the original issue also mentioned docs/spec URLs not working as expected.\r\n\r\nSo my view is:\r\n- if the intended direction is `StaticFiles`-only, then `#13944` is the correct direction\r\n- if the intent is to make the existing `APIRouter.mount()` API work for general mounted sub-applications, then I think the two-part fix in this PR is the right approach\r\n\r\nIf you prefer consolidating on `#14793` instead, I’m also fine with that.\r\n', ""Thanks for your reply!\r\n\r\nIf the only difference with #14793 is the test for `/api/subapi/openapi.json`, I'd prefer to close this PR in order not to have duplicates.\r\nIf you think having such test is important, you can suggest adding this test in the review comment to that PR.\r\n\r\nThank you!""]",2026-04-02 18:03:12
+fastapi/fastapi,15233,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在APIRouter中挂载子应用时路径前缀未正确应用的问题。"",
+    ""description"": ""在APIRouter中挂载子应用时，如果APIRouter本身有前缀（通过`prefix`参数或`include_router`的`prefix`参数设置），之前代码没有将这个前缀应用到挂载路径上，导致子应用的实际访问路径错误。新增的`mount`方法将APIRouter的`self.prefix`与传入的`path`拼接，确保了路径前缀的正确性。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""实现正确，确保了APIRouter的`prefix`属性被正确应用到挂载路径上。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在`include_router`时，对已包含的`Mount`路由的处理逻辑。"",
+    ""description"": ""在`APIRouter.include_router`方法中，当遍历被包含路由器的路由时，如果遇到`Mount`类型的路由，之前代码没有处理，导致挂载的子应用路径前缀错误。新增的逻辑调用了`self.mount`方法，并正确拼接了前缀。"",
+    ""evidence"": ""elif isinstance(route, routing.Mount):\n                self.mount(prefix + route.path, route.app, route.name)"",
+    ""advice"": ""实现正确，确保了在嵌套包含路由器时，挂载的子应用路径前缀能够被正确处理。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了测试文件以验证修复的功能。"",
+    ""description"": ""新增的测试文件`test_router_mount.py`包含了三个测试用例，分别测试了：1. APIRouter自带前缀时挂载子应用；2. 通过`include_router`传入前缀时挂载子应用；3. 验证挂载子应用的OpenAPI文档生成。测试用例清晰，覆盖了主要场景。"",
+    ""evidence"": ""def test_mount_sub_application_with_router_prefix():\n    router = APIRouter(prefix=\""/api\"")\n    router.mount(\""/subapi\"", get_sub_app())\n\n    app = FastAPI()\n    app.include_router(router)\n\n    client = TestClient(app)\n    response = client.get(\""/api/subapi/sub\"")\n\n    assert response.status_code == 200, response.text\n    assert response.json() == {\""message\"": \""Hello World from sub API\""}"",
+    ""advice"": ""测试用例设计良好，建议可以增加一些边界或错误场景的测试，例如测试路径拼接时是否会产生双斜杠`//`等问题。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'ff36995ebe5ba19385dd0ae2ac60fe70fe37f869', 'message': ""Merge branch 'master' into fix/mount-subapps-apirouter""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/mount-subapps-apirouter</code> (ff36995) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmount-subapps-apirouter?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Hi, this PR fixes a bug in router mounting behavior, so the appropriate label should be `bug`.\r\n\r\nI don’t have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label so the required checks can pass?\r\n', '@abishekgiri, thanks for your interest!\r\n\r\nPlease, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n\r\nSee https://github.com/fastapi/fastapi/pull/13944', '> @abishekgiri, thanks for your interest!\r\n> \r\n> Please, review existing PRs linked to the issue (including closed PRs, to understand the reasons they were closed) before opening your PRs. And provide an explanation why you think your approach is better.\r\n> \r\n> See #13944\r\n\r\nI reviewed the related PRs: #13944, #14793, #14032, #14924, #14926, #14984, and #15014.\r\n\r\nMy understanding is that the closed PRs were mostly closed for one of two reasons:\r\n- they were partial fixes that only handled `Mount` propagation in `include_router()`\r\n- or the discussion shifted toward a `StaticFiles`-only scope (`#13944`) rather than general mounted ASGI apps\r\n\r\nThat is why I chose this approach.\r\n\r\nThe include-only fixes (`#14032`, `#14984`, `#15014`) solve one symptom, but they do not fix the underlying inconsistency: `APIRouter.mount()` still does not apply the router prefix when the `Mount` is created. In contrast, this PR fixes both pieces together:\r\n1. `APIRouter.mount()` applies the router prefix when creating the mount\r\n2. `include_router()` preserves `Mount` routes instead of silently dropping them\r\n\r\nI think that is cleaner because it makes `Mount` behave more like other route types: the route is normalized when it is added, and then inclusion just carries it forward.\r\n\r\nCompared with `#13944`, this PR is intentionally broader. `#13944` is the right PR if the project decision is to support only `StaticFiles` on sub-routers and reject other ASGI apps. My PR instead keeps the existing `APIRouter.mount()` API working for general mounted sub-applications.\r\n\r\nCompared with `#14793`, the core implementation is very close, so I do not want to overstate a difference there. The main extra value I tried to add here is regression coverage for mounted sub-app OpenAPI behavior, since the original issue also mentioned docs/spec URLs not working as expected.\r\n\r\nSo my view is:\r\n- if the intended direction is `StaticFiles`-only, then `#13944` is the correct direction\r\n- if the intent is to make the existing `APIRouter.mount()` API work for general mounted sub-applications, then I think the two-part fix in this PR is the right approach\r\n\r\nIf you prefer consolidating on `#14793` instead, I’m also fine with that.\r\n', ""Thanks for your reply!\r\n\r\nIf the only difference with #14793 is the test for `/api/subapi/openapi.json`, I'd prefer to close this PR in order not to have duplicates.\r\nIf you think having such test is important, you can suggest adding this test in the review comment to that PR.\r\n\r\nThank you!""]",2026-04-02 18:03:38
+fastapi/fastapi,15232,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为APIRouter添加mount方法，支持挂载子应用。"",
+    ""description"": ""新增的`mount`方法在APIRouter中覆盖了父类的`mount`方法，其实现是将路由器的前缀（`self.prefix`）与传入的路径（`path`）拼接后，再调用父类的`mount`方法。然而，`self.prefix`可能为`None`（当APIRouter实例化时未指定`prefix`参数时），将`None`与字符串直接拼接会导致TypeError。"",
+    ""evidence"": ""def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n        super().mount(self.prefix + path, app=app, name=name)"",
+    ""advice"": ""在拼接路径前，应检查`self.prefix`是否为`None`。如果是`None`，则直接使用传入的`path`；否则，将`self.prefix`与`path`拼接。例如：`effective_path = (self.prefix or \""\"") + path`。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试验证APIRouter挂载子应用的功能。"",
+    ""description"": ""新增的测试文件`test_router_mount.py`包含了三个测试用例，分别测试了在APIRouter上挂载子应用，并结合`prefix`参数和`include_router`的`prefix`参数进行验证，以及验证OpenAPI文档的生成。测试覆盖了主要的使用场景。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'b041772fb1c8bf49709236af41c3009f711289df', 'message': ""Merge branch 'master' into codex/apirouter-mount-subapps""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:codex/apirouter-mount-subapps</code> (b041772) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Acodex%2Fapirouter-mount-subapps?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-04-02 18:03:58
+fastapi/fastapi,15232,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了在APIRouter下挂载子应用时路径前缀处理的问题。"",
+    ""description"": ""在APIRouter中新增了`mount`方法，并修改了`include_router`逻辑以正确处理挂载的子应用。新增的`mount`方法将路由器的前缀（`self.prefix`）与传入的挂载路径（`path`）拼接后，调用父类的`mount`方法。这确保了当路由器有前缀时，挂载的子应用路径能正确包含该前缀。同时，在`include_router`中增加了对`routing.Mount`类型路由的处理，将其路径与传入的`prefix`拼接后，调用主应用的`mount`方法。这解决了之前版本中，在APIRouter下挂载子应用时，路由器的前缀或`include_router`的`prefix`参数未被正确应用到子应用路径上的问题。"",
+    ""evidence"": ""文件: fastapi/routing.py\n@@ -1499,6 +1499,9 @@ def add_api_websocket_route(\n         self.routes.append(route)\n \n+    def mount(self, path: str, app: ASGIApp, name: str | None = None) -> None:\n+        super().mount(self.prefix + path, app=app, name=name)\n+\n     def websocket(\n         self,\n         path: Annotated[\n@@ -1803,6 +1806,8 @@ def read_users():\n                     include_in_schema=route.include_in_schema,\n                     name=route.name,\n                 )\n+            elif isinstance(route, routing.Mount):\n+                self.mount(prefix + route.path, route.app, route.name)\n             elif isinstance(route, APIWebSocketRoute):\n                 current_dependencies = []\n                 if dependencies:"",
+    ""advice"": ""实现正确，无需修改。新增的测试用例覆盖了两种场景：1. 路由器自身有`prefix`；2. `include_router`时传入`prefix`。这确保了功能在各种使用方式下都能正常工作。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '88223ea7ca6f0fc86547ff677c0e2a6cb15c2576', 'message': 'Fix mounting sub-applications under APIRouter'}, {'sha': 'b041772fb1c8bf49709236af41c3009f711289df', 'message': ""Merge branch 'master' into codex/apirouter-mount-subapps""}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:codex/apirouter-mount-subapps</code> (b041772) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Acodex%2Fapirouter-mount-subapps?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-04-02 18:04:17
+fastapi/fastapi,15227,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了为多方法路由生成确定性操作ID"",
+    ""description"": ""未发现明显问题。代码变更将 `list(route.methods)[0]` 改为 `sorted(route.methods)[0]`，确保了无论 `route.methods` 集合的迭代顺序如何，生成的 `operation_id` 后缀都基于排序后的第一个方法，从而保证了唯一ID的确定性。新增的测试用例也验证了这一行为。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'abb4ef9284a2359ad2efeeda2cc09bbf10bcac7c', 'message': 'Fix unstable operation IDs for multi-method routes\nMake generated operation IDs deterministic when a route is registered with\nmultiple HTTP methods. This avoids depending on set iteration order and adds\na regression test to keep the behavior stable.'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Esubaalew:fix-stable-operation-ids</code> (abb4ef9) with <code>master</code> (8238446)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Esubaalew%3Afix-stable-operation-ids?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (937d307) during the generation of this report, so 8238446 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@Esubaalew, thanks for your interest.\r\n\r\nThis way operation IDs will be duplicated for both methods, but they should be unique.\r\n\r\nAlso, please review existing PRs linked to the [issue](https://github.com/fastapi/fastapi/issues/13175) before opening PR']",2026-04-02 18:04:27
+fastapi/fastapi,15227,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复多方法路由生成不稳定operation ID的问题"",
+    ""description"": ""原代码使用`list(route.methods)[0]`获取第一个方法名，但`route.methods`是一个集合（set），其迭代顺序是不确定的（尤其在Python 3.3+中哈希随机化）。这导致同一个路由在不同运行或不同Python进程中可能生成不同的operation ID（例如`handler_items_post`或`handler_items_delete`），破坏了OpenAPI文档的稳定性和客户端代码生成的确定性。"",
+    ""evidence"": ""operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\"""",
+    ""advice"": ""已修复为使用`sorted(route.methods)[0]`，确保始终按字母顺序选择第一个方法名（如DELETE在POST之前），使operation ID生成变得确定。这是正确的解决方案。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为修复的问题添加了回归测试"",
+    ""description"": ""新增的测试函数`test_generate_unique_id_with_multiple_methods_is_stable`使用了自定义的`MethodsSet`类来模拟集合的不同迭代顺序，验证`generate_unique_id`函数在不同迭代顺序下能产生相同的结果。虽然测试有效，但`MethodsSet`的实现方式（通过`__iter__`控制迭代顺序）有些hacky，且`SimpleNamespace`的使用降低了类型安全性。"",
+    ""evidence"": ""class MethodsSet(set[str]):\n    def __init__(self, values: set[str], iteration_order: list[str]) -> None:\n        super().__init__(values)\n        self.iteration_order = iteration_order\n\n    def __iter__(self):\n        return iter(self.iteration_order)\n\nroute_a = SimpleNamespace(\n    name=\""handler\"",\n    path_format=\""/items\"",\n    methods=MethodsSet({\""POST\"", \""DELETE\""}, [\""POST\"", \""DELETE\""]),\n)"",
+    ""advice"": ""建议考虑更清晰的测试方式，例如直接测试`sorted(route.methods)[0]`的逻辑，或者使用`unittest.mock`来模拟`route.methods`的迭代行为。不过当前测试能有效捕获回归问题，且位于测试文件中，可接受。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'abb4ef9284a2359ad2efeeda2cc09bbf10bcac7c', 'message': 'Fix unstable operation IDs for multi-method routes\nMake generated operation IDs deterministic when a route is registered with\nmultiple HTTP methods. This avoids depending on set iteration order and adds\na regression test to keep the behavior stable.'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Esubaalew:fix-stable-operation-ids</code> (abb4ef9) with <code>master</code> (8238446)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Esubaalew%3Afix-stable-operation-ids?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (937d307) during the generation of this report, so 8238446 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '@Esubaalew, thanks for your interest.\r\n\r\nThis way operation IDs will be duplicated for both methods, but they should be unique.\r\n\r\nAlso, please review existing PRs linked to the [issue](https://github.com/fastapi/fastapi/issues/13175) before opening PR']",2026-04-02 18:04:48
+fastapi/fastapi,15226,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了多部分版本比较的逻辑，以正确处理类似0.0.100的新版本。"",
+    ""description"": ""原代码使用字符串比较（`__version__ > \""0.0.12\""`）来检查python-multipart版本。字符串比较是字典序的，会导致'0.0.100' < '0.0.12'，因为'1' < '2'。这错误地将较新的版本（如0.0.100）视为比0.0.12更旧，可能导致不必要的警告或错误。"",
+    ""evidence"": ""assert __version__ > \""0.0.12\"""",
+    ""advice"": ""已通过引入`_version_str_to_tuple`函数将版本字符串转换为数字元组进行比较，修复了此问题。新代码`assert _version_str_to_tuple(__version__) > (0, 0, 12)`能正确比较版本号。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了版本字符串解析函数和相应的测试用例。"",
+    ""description"": ""`_version_str_to_tuple`函数内部逻辑清晰，但函数名和实现可以进一步优化以提高可读性。函数名`_version_str_to_tuple`暗示了其功能，但实现中对于非数字字符的处理（如'1.2.3a1'）会截断并忽略后续字符，这符合PEP 440版本规范中预发布标识符的处理方式，但函数注释或文档字符串可以更明确地说明这一点。"",
+    ""evidence"": ""def _version_str_to_tuple(version: str) -> tuple[int, ...]:\n    version_tuple = []\n    for part in version.split(\"".\""):\n        numeric_prefix = \""\""\n        for char in part:\n            if not char.isdigit():\n                break\n            numeric_prefix += char\n        if not numeric_prefix:\n            break\n        version_tuple.append(int(numeric_prefix))\n    return tuple(version_tuple)"",
+    ""advice"": ""建议为`_version_str_to_tuple`函数添加文档字符串，说明其行为（例如，它只解析数字部分，忽略非数字后缀，这对于比较主版本号是合适的）。也可以考虑使用更标准的库（如`packaging.version`）进行版本解析，但这会增加依赖。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了回归测试以确保版本比较和解析函数正常工作。"",
+    ""description"": ""新增的测试用例`test_version_str_to_tuple`和`test_new_multipart_version_without_multipart_alias`有效地验证了修复的正确性。测试覆盖了边界情况（如空字符串、带字母后缀的版本）和关键场景（版本0.0.100不被误判为旧版本）。"",
+    ""evidence"": ""def test_version_str_to_tuple():\n    assert _version_str_to_tuple(\""0.0.12\"") == (0, 0, 12)\n    assert _version_str_to_tuple(\""0.0.100\"") == (0, 0, 100)\n    assert _version_str_to_tuple(\""1.2.3a1\"") == (1, 2, 3)\n    assert _version_str_to_tuple(\""\"") == ()\n\ndef test_new_multipart_version_without_multipart_alias(monkeypatch):\n    monkeypatch.setattr(\""python_multipart.__version__\"", \""0.0.100\"")"",
+    ""advice"": ""测试用例设计良好，无需修改。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'f075cae22515a9b44054c3fd11e4465e681a8719', 'message': 'Fix multipart version comparison for newer releases\nUse numeric version parsing instead of string comparison so valid python-multipart\nversions like 0.0.100 are not treated as older than 0.0.12. Add regression tests\nfor the multipart check and the version parser helper.'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Esubaalew:fix-multipart-version-check</code> (f075cae) with <code>master</code> (8238446)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Esubaalew%3Afix-multipart-version-check?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (937d307) during the generation of this report, so 8238446 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-04-02 18:05:20
+fastapi/fastapi,15226,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了python-multipart版本字符串比较的逻辑错误。"",
+    ""description"": ""原代码使用字符串直接比较版本号（如 '0.0.100' > '0.0.12'），这会导致错误的比较结果，因为字符串比较是按字典序进行的，'0.0.100' 会被认为小于 '0.0.12'。这可能导致在安装了较新版本（如 0.0.100）的 python-multipart 时，错误地触发版本过旧的警告或异常。"",
+    ""evidence"": ""assert __version__ > \""0.0.12\"""",
+    ""advice"": ""已通过新增的 `_version_str_to_tuple` 函数将版本字符串转换为数字元组进行比较，这是正确的修复方式。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了版本字符串解析的辅助函数。"",
+    ""description"": ""`_version_str_to_tuple` 函数内部逻辑清晰，但变量命名 `numeric_prefix` 可能引起误解，因为它并非“前缀”，而是从版本号部分提取的数字字符串。"",
+    ""evidence"": ""numeric_prefix = \""\""\n        for char in part:\n            if not char.isdigit():\n                break\n            numeric_prefix += char"",
+    ""advice"": ""建议将变量名 `numeric_prefix` 改为更具描述性的名称，例如 `numeric_part` 或 `digits`，以更准确地反映其内容。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为版本解析函数和修复逻辑添加了回归测试。"",
+    ""description"": ""新增的测试用例 `test_version_str_to_tuple` 和 `test_new_multipart_version_without_multipart_alias` 有效地验证了版本解析函数的正确性以及修复后的版本比较逻辑，覆盖了边界情况（如带字母后缀的版本、空字符串）。"",
+    ""evidence"": ""def test_version_str_to_tuple():\n    assert _version_str_to_tuple(\""0.0.12\"") == (0, 0, 12)\n    assert _version_str_to_tuple(\""0.0.100\"") == (0, 0, 100)\n    assert _version_str_to_tuple(\""1.2.3a1\"") == (1, 2, 3)\n    assert _version_str_to_tuple(\""\"") == ()"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f075cae22515a9b44054c3fd11e4465e681a8719', 'message': 'Fix multipart version comparison for newer releases\nUse numeric version parsing instead of string comparison so valid python-multipart\nversions like 0.0.100 are not treated as older than 0.0.12. Add regression tests\nfor the multipart check and the version parser helper.'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Esubaalew:fix-multipart-version-check</code> (f075cae) with <code>master</code> (8238446)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Esubaalew%3Afix-multipart-version-check?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (937d307) during the generation of this report, so 8238446 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n']",2026-04-02 18:05:42
+fastapi/fastapi,15222,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复多方法路由的Operation ID重复问题"",
+    ""description"": ""当同一个路由支持多个HTTP方法时，之前会为所有方法生成相同的operation_id，导致OpenAPI规范中出现重复的operationId，违反OpenAPI规范要求。"",
+    ""evidence"": ""文件: fastapi/openapi/utils.py\n@@ -233,6 +233,13 @@ def generate_operation_summary(*, route: routing.APIRoute, method: str) -> str:\n     return route.name.replace(\""_\"", \"" \"").title()\n \n \n+def get_openapi_operation_id(*, route: routing.APIRoute, method: str) -> str:\n+    operation_id = route.operation_id or route.unique_id\n+    if route.operation_id is None and route.methods and len(route.methods) > 1:\n+        operation_id = f\""{operation_id}_{method.lower()}\""\n+    return operation_id"",
+    ""advice"": ""实现正确，新增的get_openapi_operation_id函数能正确区分多方法路由的不同HTTP方法。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复单方法路由的Operation ID生成逻辑"",
+    ""description"": ""在generate_unique_id函数中，当路由只有一个方法时，之前使用list(route.methods)[0]获取方法名，但集合是无序的，可能导致生成的operation_id不一致。现在使用sorted()确保确定性。"",
+    ""evidence"": ""文件: fastapi/utils.py\n@@ -96,7 +96,8 @@ def generate_unique_id(route: \""APIRoute\"") -> str:\n     operation_id = f\""{route.name}{route.path_format}\""\n     operation_id = re.sub(r\""\\W\"", \""_\"", operation_id)\n     assert route.methods\n-    operation_id = f\""{operation_id}_{list(route.methods)[0].lower()}\""\n+    if len(route.methods) == 1:\n+        operation_id = f\""{operation_id}_{sorted(route.methods)[0].lower()}\"""",
+    ""advice"": ""修改正确，使用sorted()确保方法名的顺序是确定的，避免因集合无序导致的非确定性行为。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增测试用例验证修复效果"",
+    ""description"": ""新增的测试用例test_multi_method_route_unique_operation_ids和test_multi_method_route_unique_operation_ids_with_custom_generate_unique_id清晰地验证了多方法路由的operation_id生成逻辑，确保不会产生重复的operationId。"",
+    ""evidence"": ""文件: tests/test_generate_unique_id_function.py\n@@ -1697,3 +1697,44 @@ def post_third(item1: Item):\n         ]\n         assert len(duplicate_warnings) > 0\n         assert \""Duplicate Operation ID\"" in str(duplicate_warnings[0].message)\n+\n+\n+def test_multi_method_route_unique_operation_ids():\n+    app = FastAPI()\n+\n+    @app.api_route(\""/clear\"", methods=[\""POST\"", \""DELETE\""])\n+    def clear():\n+        return None  # pragma: nocover\n+\n+    client = TestClient(app)\n+    with warnings.catch_warnings(record=True) as w:\n+        warnings.simplefilter(\""always\"")\n+        response = client.get(\""/openapi.json\"")\n+        assert response.status_code == 200, response.text\n+\n+    duplicate_warnings = [\n+        warning\n+        for warning in w\n+        if issubclass(warning.category, UserWarning)\n+        and \""Duplicate Operation ID\"" in str(warning.message)\n+    ]\n+    assert duplicate_warnings == []\n+    path = response.json()[\""paths\""][\""/clear\""]\n+    assert path[\""post\""][\""operationId\""] == \""clear_clear_post\""\n+    assert path[\""delete\""][\""operationId\""] == \""clear_clear_delete\"""",
+    ""advice"": ""测试用例设计良好，既验证了默认行为，也验证了自定义generate_unique_id_function的情况，覆盖全面。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '8f87daac970092291e0649ae714f5e1ace8b621e', 'message': 'Fix unique operation IDs for multi-method routes'}, {'sha': '1d436a9099ce36a8e6f24736f68719316b293809', 'message': ""Merge branch 'master' into fix/my-first-contribution""}]","['Good catch on the multi-method route collision. The approach is sound — here are some detailed observations:\n\n1. **`generate_unique_id` change is correct.** For single-method routes, the behavior is unchanged. For multi-method routes, the base ID no longer includes a method suffix, which avoids the arbitrary ""first method wins"" problem. Using `sorted(route.methods)` for the single-method case also removes non-determinism from set iteration — nice side effect.\n\n2. **`get_openapi_operation_id` — clean separation.** Extracting this into its own function keeps `get_openapi_operation_metadata` focused on building the operation dict. The logic of ""if no explicit operation_id and multiple methods, append `_{method}`"" reads clearly.\n\n3. **Explicit `operation_id` is untouched.** The `if route.operation_id is None` guard in `get_openapi_operation_id` ensures that users who set a custom `operation_id` don\'t get an unexpected suffix. That\'s the right behavior — if someone explicitly sets a duplicate, they\'ll still get the existing warning.\n\n4. **Tests cover both default and custom `generate_unique_id_function`.** The second test (`test_multi_method_route_unique_operation_ids_with_custom_generate_unique_id`) is important because it validates that the suffix logic in `get_openapi_operation_id` works regardless of how the base ID is produced.\n\nOne consideration: if a custom `generate_unique_id_function` already appends a method suffix for multi-method routes, the new code in `get_openapi_operation_id` would append a second one (e.g., `foo_clear_post_post`). That\'s because the function checks `route.operation_id is None` but not whether the custom generator already handled multi-method disambiguation. Probably an edge case not worth guarding against since the existing contract doesn\'t guarantee anything about the generator\'s output format, but worth a note in the docstring if this gets a public-facing helper.\n\nSolid fix overall.', 'Hi, I implemented a fix for this and added regression tests.\r\n\r\nThe change makes multi-method routes generate distinct OpenAPI `operationId` values per HTTP method, while leaving explicit `operation_id` values untouched.\r\n\r\nI also verified it with:\r\n\r\n* `uv run pytest tests/test_generate_unique_id_function.py`\r\n* `uv run pytest tests/test_extra_routes.py`\r\n\r\nI’m opening a PR now.\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/my-first-contribution</code> (1d436a9) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmy-first-contribution?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Thanks! It looks like the failing check is only due to the missing required PR label.\r\n\r\nThis PR is a bug fix, so the appropriate label should be `bug`.\r\n\r\nI don’t think I have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label?\r\n', 'Please review other PRs linked to the issue and explain why you think your approach is better than others', '> Please review other PRs linked to the issue and explain why you think your approach is better than others\r\n\r\nI reviewed the other PRs linked to `#13175` (`#13861`, `#14881`, `#15070`, `#15074`, `#15140`, `#15194`, and `#15215`).\r\n\r\nMy reasoning for this approach is:\r\n\r\n- `#13861`, `#14881`, and `#15070` make the selected method deterministic, but they do not solve the duplicate `operationId` problem itself.\r\n- `#15074` appends the current method to `route.unique_id`, which already contains a method suffix in the default generator, so it can produce IDs like `..._post_post`.\r\n- `#15140` and `#15194` are closer, but they still have to reverse-engineer a base ID from `route.unique_id`. That is brittle for custom `generate_unique_id_function` values, especially `#15140`, which strips everything after the last underscore.\r\n- `#15215` rebuilds the base from `route.name + route.path_format` inside OpenAPI, which bypasses `generate_unique_id_function` for multi-method routes.\r\n\r\nI chose this implementation because it fixes the root ambiguity instead of patching around it later:\r\n- for multi-method routes, the default `unique_id` becomes a shared base\r\n- the per-method suffix is added only when emitting OpenAPI\r\n- explicit `operation_id` remains unchanged\r\n- custom `generate_unique_id_function` is still respected, because OpenAPI starts from `route.unique_id` instead of reconstructing it\r\n\r\nI think that is cleaner because `route.unique_id` is reused internally beyond `operationId`, so removing the arbitrary “first method” from the canonical route ID is more robust than preserving it and then trying to peel it back off in OpenAPI generation.\r\n\r\nI also added regression coverage for both the default generator and a custom `generate_unique_id_function`, because that was the main gap in the other proposals.\r\n', ""@abishekgiri, thank you for reviewing existing PRs, but it seems that you missed one: https://github.com/fastapi/fastapi/pull/10694\r\n\r\nYou approach is actually the same as in #10694. So, let's close this as duplicate and continue with #10694\r\n\r\nThanks!""]",2026-04-02 18:06:18
+fastapi/fastapi,15222,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复多方法路由中操作ID重复的问题"",
+    ""description"": ""在 `get_openapi_operation_id` 函数中，当 `route.operation_id` 为 `None` 且路由有多个方法时，会使用 `route.unique_id` 并附加方法名。然而，`route.unique_id` 在 `generate_unique_id` 函数中，对于单方法路由已经附加了方法名。这可能导致逻辑不一致或潜在的重复。例如，对于一个单方法路由，`route.unique_id` 已经包含了方法名（如 `get`），如果稍后该路由被修改为多方法，`get_openapi_operation_id` 中的逻辑可能会产生重复的方法名后缀（如 `get_get`）。虽然当前测试通过，但逻辑上存在隐患。"",
+    ""evidence"": ""在 `fastapi/openapi/utils.py` 中，`get_openapi_operation_id` 函数：\n```python\nif route.operation_id is None and route.methods and len(route.methods) > 1:\n    operation_id = f\""{operation_id}_{method.lower()}\""\n```\n在 `fastapi/utils.py` 中，`generate_unique_id` 函数：\n```python\nif len(route.methods) == 1:\n    operation_id = f\""{operation_id}_{sorted(route.methods)[0].lower()}\""\n```"",
+    ""advice"": ""建议在 `get_openapi_operation_id` 中，当 `route.operation_id` 为 `None` 时，更清晰地处理 `route.unique_id` 可能已包含方法名的情况。可以考虑：如果 `route.unique_id` 已经以当前方法名结尾，则不再追加。或者，确保 `generate_unique_id` 对于多方法路由不附加方法名（当前已实现），而 `get_openapi_operation_id` 负责为多方法路由的每个操作附加方法名。当前实现可能已满足需求，但逻辑可进一步澄清。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""提取操作ID生成逻辑到独立函数，提高可维护性"",
+    ""description"": ""将操作ID生成的逻辑从 `get_openapi_operation_metadata` 中提取到独立的 `get_openapi_operation_id` 函数中，这是一个好的重构，提高了代码的可读性和可维护性。"",
+    ""evidence"": ""在 `fastapi/openapi/utils.py` 中新增了 `get_openapi_operation_id` 函数，并在 `get_openapi_operation_metadata` 中调用它。"",
+    ""advice"": ""无。这是一个良好的代码结构改进。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""确保多方法路由的操作ID唯一性"",
+    ""description"": ""新增的 `get_openapi_operation_id` 函数和修改的 `generate_unique_id` 函数共同确保了对于支持多个HTTP方法的路由（如通过 `@app.api_route` 定义），每个方法都会生成唯一的操作ID（Operation ID），从而避免在OpenAPI规范中出现重复的操作ID。这是对之前可能存在的重复ID问题的修复。"",
+    ""evidence"": ""在 `fastapi/openapi/utils.py` 中，`get_openapi_operation_id` 函数为多方法路由的每个方法附加方法名后缀。在 `fastapi/utils.py` 中，`generate_unique_id` 函数现在只在路由只有一个方法时才附加方法名。"",
+    ""advice"": ""无。设计合理，解决了问题。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '8f87daac970092291e0649ae714f5e1ace8b621e', 'message': 'Fix unique operation IDs for multi-method routes'}, {'sha': '1d436a9099ce36a8e6f24736f68719316b293809', 'message': ""Merge branch 'master' into fix/my-first-contribution""}]","['Good catch on the multi-method route collision. The approach is sound — here are some detailed observations:\n\n1. **`generate_unique_id` change is correct.** For single-method routes, the behavior is unchanged. For multi-method routes, the base ID no longer includes a method suffix, which avoids the arbitrary ""first method wins"" problem. Using `sorted(route.methods)` for the single-method case also removes non-determinism from set iteration — nice side effect.\n\n2. **`get_openapi_operation_id` — clean separation.** Extracting this into its own function keeps `get_openapi_operation_metadata` focused on building the operation dict. The logic of ""if no explicit operation_id and multiple methods, append `_{method}`"" reads clearly.\n\n3. **Explicit `operation_id` is untouched.** The `if route.operation_id is None` guard in `get_openapi_operation_id` ensures that users who set a custom `operation_id` don\'t get an unexpected suffix. That\'s the right behavior — if someone explicitly sets a duplicate, they\'ll still get the existing warning.\n\n4. **Tests cover both default and custom `generate_unique_id_function`.** The second test (`test_multi_method_route_unique_operation_ids_with_custom_generate_unique_id`) is important because it validates that the suffix logic in `get_openapi_operation_id` works regardless of how the base ID is produced.\n\nOne consideration: if a custom `generate_unique_id_function` already appends a method suffix for multi-method routes, the new code in `get_openapi_operation_id` would append a second one (e.g., `foo_clear_post_post`). That\'s because the function checks `route.operation_id is None` but not whether the custom generator already handled multi-method disambiguation. Probably an edge case not worth guarding against since the existing contract doesn\'t guarantee anything about the generator\'s output format, but worth a note in the docstring if this gets a public-facing helper.\n\nSolid fix overall.', 'Hi, I implemented a fix for this and added regression tests.\r\n\r\nThe change makes multi-method routes generate distinct OpenAPI `operationId` values per HTTP method, while leaving explicit `operation_id` values untouched.\r\n\r\nI also verified it with:\r\n\r\n* `uv run pytest tests/test_generate_unique_id_function.py`\r\n* `uv run pytest tests/test_extra_routes.py`\r\n\r\nI’m opening a PR now.\r\n', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>abishekgiri:fix/my-first-contribution</code> (1d436a9) with <code>master</code> (3b9d848)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/abishekgiri%3Afix%2Fmy-first-contribution?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (d128a70) during the generation of this report, so 3b9d848 was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', 'Thanks! It looks like the failing check is only due to the missing required PR label.\r\n\r\nThis PR is a bug fix, so the appropriate label should be `bug`.\r\n\r\nI don’t think I have permission to add labels on the upstream repo, so could a maintainer or triager please add the `bug` label?\r\n', 'Please review other PRs linked to the issue and explain why you think your approach is better than others', '> Please review other PRs linked to the issue and explain why you think your approach is better than others\r\n\r\nI reviewed the other PRs linked to `#13175` (`#13861`, `#14881`, `#15070`, `#15074`, `#15140`, `#15194`, and `#15215`).\r\n\r\nMy reasoning for this approach is:\r\n\r\n- `#13861`, `#14881`, and `#15070` make the selected method deterministic, but they do not solve the duplicate `operationId` problem itself.\r\n- `#15074` appends the current method to `route.unique_id`, which already contains a method suffix in the default generator, so it can produce IDs like `..._post_post`.\r\n- `#15140` and `#15194` are closer, but they still have to reverse-engineer a base ID from `route.unique_id`. That is brittle for custom `generate_unique_id_function` values, especially `#15140`, which strips everything after the last underscore.\r\n- `#15215` rebuilds the base from `route.name + route.path_format` inside OpenAPI, which bypasses `generate_unique_id_function` for multi-method routes.\r\n\r\nI chose this implementation because it fixes the root ambiguity instead of patching around it later:\r\n- for multi-method routes, the default `unique_id` becomes a shared base\r\n- the per-method suffix is added only when emitting OpenAPI\r\n- explicit `operation_id` remains unchanged\r\n- custom `generate_unique_id_function` is still respected, because OpenAPI starts from `route.unique_id` instead of reconstructing it\r\n\r\nI think that is cleaner because `route.unique_id` is reused internally beyond `operationId`, so removing the arbitrary “first method” from the canonical route ID is more robust than preserving it and then trying to peel it back off in OpenAPI generation.\r\n\r\nI also added regression coverage for both the default generator and a custom `generate_unique_id_function`, because that was the main gap in the other proposals.\r\n', ""@abishekgiri, thank you for reviewing existing PRs, but it seems that you missed one: https://github.com/fastapi/fastapi/pull/10694\r\n\r\nYou approach is actually the same as in #10694. So, let's close this as duplicate and continue with #10694\r\n\r\nThanks!""]",2026-04-02 18:06:46
+fastapi/fastapi,15220,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复OAuth2中空Bearer令牌被错误处理的问题"",
+    ""description"": ""原代码在Authorization头为'Bearer '（Bearer后为空）时，会将param返回为空字符串''，而不是触发认证错误路径。根据RFC 6750 Section 2.1，b64token必须至少包含一个字符，空凭证在语法上是错误的，应该被视为缺少凭证。这会导致安全漏洞，因为空令牌可能被错误地接受为有效凭证。"",
+    ""evidence"": ""fastapi/security/oauth2.py:539行和645行：原条件为`if not authorization or scheme.lower() != \""bearer\"":`，修改后为`if not authorization or scheme.lower() != \""bearer\"" or not param:`"",
+    ""advice"": ""修改正确，确保空令牌被正确处理。建议同时检查其他安全相关的认证类是否也存在类似问题。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为OAuth2空令牌处理添加测试用例"",
+    ""description"": ""新增的测试用例命名清晰，直接反映了测试目的（test_empty_bearer_token）。测试用例覆盖了两种场景：auto_error=True时返回401，auto_error=False时返回正常响应。这提高了代码的可维护性和测试覆盖率。"",
+    ""evidence"": ""tests/test_security_oauth2_authorization_code_bearer.py:33-36行和tests/test_security_oauth2_password_bearer_optional.py:39-42行：新增的`test_empty_bearer_token`函数"",
+    ""advice"": ""测试用例设计良好，无需修改。可以考虑在测试描述中添加注释说明这是针对RFC 6750合规性的测试。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""统一处理OAuth2认证中的空令牌边界条件"",
+    ""description"": ""修改在两个OAuth2类（OAuth2PasswordBearer和OAuth2AuthorizationCodeBearer）中应用了相同的修复逻辑，保持了设计一致性。这种统一处理确保了整个OAuth2安全模块的行为一致性。"",
+    ""evidence"": ""fastapi/security/oauth2.py:539行和645行：在两个类的`__call__`方法中都添加了`or not param`条件"",
+    ""advice"": ""设计合理，建议检查项目中其他使用Bearer令牌认证的地方是否也需要类似修复。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'c5bd35c728c32fc7aa28fd650e7673678dd9d3a1', 'message': 'fix: treat empty bearer token as missing credentials in OAuth2 helpers\n\nAuthorization: Bearer  (empty token after ""Bearer"") was returned as """"\ninstead of triggering the auto_error path. Both OAuth2PasswordBearer and\nOAuth2AuthorizationCodeBearer only checked that the scheme was ""bearer""\nbut not that the credential string was non-empty.\n\nRFC 6750 Section 2.1 defines b64token = 1*(...) — at least one character\nrequired. An empty credential is syntactically malformed and should be\ntreated the same as missing credentials: 401 with auto_error=True, None\nwith auto_error=False.\n\nFix: add `not param` to the guard condition in both __call__ methods.\n\nCloses: https://github.com/fastapi/fastapi/discussions/15192'}, {'sha': 'ca96fdf2922f0d08bfe468c78024ccedfa6fb937', 'message': ""Merge branch 'master' into fix/oauth2-empty-bearer""}, {'sha': 'a06c3cf3a25c2b4e8462fa0489668c975b3786d7', 'message': ""Merge branch 'master' into fix/oauth2-empty-bearer""}]","['## Pull request overview\n\nThis PR fixes OAuth2 bearer-token extraction so that an empty bearer credential (`Authorization: Bearer `) is treated as missing credentials, triggering the `auto_error` behavior instead of returning an empty string token.\n\n**Changes:**\n- Update `OAuth2PasswordBearer.__call__` and `OAuth2AuthorizationCodeBearer.__call__` to treat empty `param` as unauthenticated.\n- Add regression tests covering empty bearer token handling for both optional (`auto_error=False`) and required (`auto_error=True`) OAuth2 helpers.\n\n### Reviewed changes\n\nCopilot reviewed 3 out of 3 changed files in this pull request and generated no comments.\n\n| File | Description |\n| ---- | ----------- |\n| `fastapi/security/oauth2.py` | Adds `or not param` guard so empty bearer credentials follow the unauthenticated path. |\n| `tests/test_security_oauth2_password_bearer_optional.py` | Adds a test asserting empty bearer token behaves like missing credentials when `auto_error=False`. |\n| `tests/test_security_oauth2_authorization_code_bearer.py` | Adds a test asserting empty bearer token triggers 401 when `auto_error=True`. |\n\n\n\n\n\n---\n\n💡 <a href=""/fastapi/fastapi/new/master?filename=.github/instructions/*.instructions.md"" class=""Link--inTextBlock"" target=""_blank"" rel=""noopener noreferrer"">Add Copilot custom instructions</a> for smarter, more guided reviews. <a href=""https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot"" class=""Link--inTextBlock"" target=""_blank"" rel=""noopener noreferrer"">Learn how to get started</a>.', 'Clean and well-targeted fix. A few observations:\n\n1. **RFC alignment is correct.** RFC 6750 Section 2.1 requires `b64token = 1*( ALPHA / DIGIT / ... )` — at least one character. Treating an empty credential as missing is the right call.\n\n2. **Guard ordering is sensible.** Appending `or not param` at the end means the short-circuit evaluation still skips redundant checks when `authorization` is falsy. No performance concern.\n\n3. **Both classes are covered.** Good that this patches both `OAuth2PasswordBearer` and `OAuth2AuthorizationCodeBearer` — they had identical code paths and the same gap.\n\n4. **Test coverage is solid.** Testing both the `auto_error=True` (401) and `auto_error=False` (`None`) paths for the empty-token case ensures no regression on either behavior.\n\nOne minor thought: `get_authorization_scheme_param` splits on the first space, so `""Bearer  ""` (double space) yields `param = "" ""` which is truthy and would pass this new guard. That\'s arguably correct since the credential is non-empty (just whitespace), but worth noting if someone later expects `.strip()` behavior. Not a blocker — the current fix handles the realistic scenario cleanly.\n\nLooks good overall.', 'based on the discussion https://github.com/fastapi/fastapi/discussions/15192', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>subhashdasyam:fix/oauth2-empty-bearer</code> (a06c3cf) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/subhashdasyam%3Afix%2Foauth2-empty-bearer?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n']",2026-04-02 18:07:10
+fastapi/fastapi,15220,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复OAuth2助手将空Bearer令牌视为有效凭据的问题"",
+    ""description"": ""在OAuth2PasswordBearer和OAuth2AuthorizationCodeBearer的__call__方法中，当Authorization头为'Bearer '（Bearer后跟空格）时，原代码会将空字符串作为有效凭据返回，而不是触发auto_error路径或返回None。这违反了RFC 6750 Section 2.1，该规范要求b64token至少包含一个字符。空凭据在语法上是错误的，应被视为缺少凭据。"",
+    ""evidence"": ""if not authorization or scheme.lower() != \""bearer\"" or not param:"",
+    ""advice"": ""修复正确。添加`or not param`条件确保了当凭据字符串为空时，行为与缺少授权头或方案不匹配时一致。这符合RFC规范并提高了安全性。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为修复添加了相应的单元测试"",
+    ""description"": ""为OAuth2PasswordBearer和OAuth2AuthorizationCodeBearer的空Bearer令牌场景添加了测试用例，验证了修复后的行为。测试覆盖了auto_error为True和False的两种情况。"",
+    ""evidence"": ""def test_empty_bearer_token():\n    response = client.get(\""/items\"", headers={\""Authorization\"": \""Bearer \""})\n    assert response.status_code == 401, response.text\n    assert response.json() == {\""detail\"": \""Not authenticated\""}"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c5bd35c728c32fc7aa28fd650e7673678dd9d3a1', 'message': 'fix: treat empty bearer token as missing credentials in OAuth2 helpers\n\nAuthorization: Bearer  (empty token after ""Bearer"") was returned as """"\ninstead of triggering the auto_error path. Both OAuth2PasswordBearer and\nOAuth2AuthorizationCodeBearer only checked that the scheme was ""bearer""\nbut not that the credential string was non-empty.\n\nRFC 6750 Section 2.1 defines b64token = 1*(...) — at least one character\nrequired. An empty credential is syntactically malformed and should be\ntreated the same as missing credentials: 401 with auto_error=True, None\nwith auto_error=False.\n\nFix: add `not param` to the guard condition in both __call__ methods.\n\nCloses: https://github.com/fastapi/fastapi/discussions/15192'}, {'sha': 'ca96fdf2922f0d08bfe468c78024ccedfa6fb937', 'message': ""Merge branch 'master' into fix/oauth2-empty-bearer""}, {'sha': 'a06c3cf3a25c2b4e8462fa0489668c975b3786d7', 'message': ""Merge branch 'master' into fix/oauth2-empty-bearer""}]","['## Pull request overview\n\nThis PR fixes OAuth2 bearer-token extraction so that an empty bearer credential (`Authorization: Bearer `) is treated as missing credentials, triggering the `auto_error` behavior instead of returning an empty string token.\n\n**Changes:**\n- Update `OAuth2PasswordBearer.__call__` and `OAuth2AuthorizationCodeBearer.__call__` to treat empty `param` as unauthenticated.\n- Add regression tests covering empty bearer token handling for both optional (`auto_error=False`) and required (`auto_error=True`) OAuth2 helpers.\n\n### Reviewed changes\n\nCopilot reviewed 3 out of 3 changed files in this pull request and generated no comments.\n\n| File | Description |\n| ---- | ----------- |\n| `fastapi/security/oauth2.py` | Adds `or not param` guard so empty bearer credentials follow the unauthenticated path. |\n| `tests/test_security_oauth2_password_bearer_optional.py` | Adds a test asserting empty bearer token behaves like missing credentials when `auto_error=False`. |\n| `tests/test_security_oauth2_authorization_code_bearer.py` | Adds a test asserting empty bearer token triggers 401 when `auto_error=True`. |\n\n\n\n\n\n---\n\n💡 <a href=""/fastapi/fastapi/new/master?filename=.github/instructions/*.instructions.md"" class=""Link--inTextBlock"" target=""_blank"" rel=""noopener noreferrer"">Add Copilot custom instructions</a> for smarter, more guided reviews. <a href=""https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot"" class=""Link--inTextBlock"" target=""_blank"" rel=""noopener noreferrer"">Learn how to get started</a>.', 'Clean and well-targeted fix. A few observations:\n\n1. **RFC alignment is correct.** RFC 6750 Section 2.1 requires `b64token = 1*( ALPHA / DIGIT / ... )` — at least one character. Treating an empty credential as missing is the right call.\n\n2. **Guard ordering is sensible.** Appending `or not param` at the end means the short-circuit evaluation still skips redundant checks when `authorization` is falsy. No performance concern.\n\n3. **Both classes are covered.** Good that this patches both `OAuth2PasswordBearer` and `OAuth2AuthorizationCodeBearer` — they had identical code paths and the same gap.\n\n4. **Test coverage is solid.** Testing both the `auto_error=True` (401) and `auto_error=False` (`None`) paths for the empty-token case ensures no regression on either behavior.\n\nOne minor thought: `get_authorization_scheme_param` splits on the first space, so `""Bearer  ""` (double space) yields `param = "" ""` which is truthy and would pass this new guard. That\'s arguably correct since the credential is non-empty (just whitespace), but worth noting if someone later expects `.strip()` behavior. Not a blocker — the current fix handles the realistic scenario cleanly.\n\nLooks good overall.', 'based on the discussion https://github.com/fastapi/fastapi/discussions/15192', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>subhashdasyam:fix/oauth2-empty-bearer</code> (a06c3cf) with <code>master</code> (d128a70)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/subhashdasyam%3Afix%2Foauth2-empty-bearer?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n']",2026-04-02 18:07:24

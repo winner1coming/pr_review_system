@@ -1,0 +1,1531 @@
+repo,pr,strategy,review,commits,review_comments,time
+spring-projects/spring-framework,36580,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对@HttpExchange注解的支持"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-04 00:42:16
+spring-projects/spring-framework,36580,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了在MvcUriComponentsBuilder中支持@HttpExchange注解"",
+    ""description"": ""未发现明显问题。代码变更在`getClassMapping`和`getMethodMapping`方法中增加了对`@HttpExchange`注解的检查，使其与`@RequestMapping`注解具有同等地位，用于构建URI。同时更新了相关注释和测试用例。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-04 00:42:22
+spring-projects/spring-framework,36577,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""统一类型名称解析逻辑，修复原始类型和数组类型的返回类型名称问题。"",
+    ""description"": ""代码变更的主要目的是修复ClassFileMethodMetadata中原始类型和数组类型返回类型名称不正确的问题。通过引入`ClassFileAnnotationMetadata.resolveTypeName`静态方法来统一处理类型名称的解析，并移除了重复的`fromTypeDescriptor`方法。同时，修复了`ClassFileMethodMetadata.Source`记录的`equals`、`hashCode`和`toString`方法，确保它们的行为与ASM变体一致。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -143,7 +144,7 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t\tAccessFlags flags = methodModel.flags();\n \t\tString declaringClassName = methodModel.parent().map(parent -> ClassUtils.convertResourcePathToClassName(parent.thisClass().name().stringValue())).orElse(null);\n \t\tClassDesc returnType = methodModel.methodTypeSymbol().returnType();\n-\t\tString returnTypeName = returnType.packageName() + \"".\"" + returnType.displayName();\n+\t\tString returnTypeName = ClassFileAnnotationMetadata.resolveTypeName(returnType);"",
+    ""advice"": ""变更设计合理，通过提取公共方法消除了重复代码，提高了可维护性。建议确保`resolveTypeName`方法对所有可能的`ClassDesc`输入（如嵌套类、内部类）都能正确处理。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了`ClassFileMethodMetadata.Source`记录的`equals`和`hashCode`方法实现。"",
+    ""description"": ""在`ClassFileMethodMetadata.Source`记录中新增了`equals`和`hashCode`方法。`equals`方法中使用了`Objects.equals`来比较字段，这很好。然而，`hashCode`方法中直接使用了`this.descriptor.descriptorString()`，而`equals`方法中也使用了相同的字符串进行比较。虽然这能保证一致性，但依赖于`descriptorString()`的稳定性。如果`MethodTypeDesc.descriptorString()`的实现在未来发生变化，可能会破坏哈希一致性。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -163,16 +164,30 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t */\n \trecord Source(@Nullable String declaringClassName, AccessFlags flags, String methodName, MethodTypeDesc descriptor) {\n \n+\t\t@Override\n+\t\tpublic boolean equals(Object o) {\n+\t\t\tif (!(o instanceof Source source)) {\n+\t\t\t\treturn false;\n+\t\t\t}\n+\t\t\treturn Objects.equals(this.flags.flagsMask(), source.flags.flagsMask()) &&\n+\t\t\t\t\tObjects.equals(this.methodName, source.methodName) &&\n+\t\t\t\t\tObjects.equals(this.declaringClassName, source.declaringClassName) &&\n+\t\t\t\t\tObjects.equals(this.descriptor.descriptorString(), source.descriptor.descriptorString());\n+\t\t}\n+\n+\t\t@Override\n+\t\tpublic int hashCode() {\n+\t\t\treturn Objects.hash(this.declaringClassName, this.flags.flagsMask(), this.methodName, this.descriptor.descriptorString());\n+\t\t}"",
+    ""advice"": ""建议考虑直接使用`MethodTypeDesc`对象本身进行`equals`和`hashCode`计算，而不是依赖其`descriptorString()`。可以检查`MethodTypeDesc`类是否已经正确实现了`equals`和`hashCode`。如果已实现，则直接使用`Objects.equals(this.descriptor, source.descriptor)`和将其包含在`Objects.hash`中会更稳健。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""测试类重命名可能导致构建或测试运行问题。"",
+    ""description"": ""在测试代码变更中，`SimpleMethodMetadataTests`类被重命名为`DefaultMethodMetadataTests`。虽然提交信息表明这是为了扩展测试覆盖范围（包括Java >= 24的ClassFile API变体），但重命名一个现有的测试类可能会破坏依赖于原类名的构建脚本、IDE配置或其他测试引用。需要确保所有引用都已更新。"",
+    ""evidence"": ""文件: spring-core/src/test/java/org/springframework/core/type/classreading/DefaultMethodMetadataTests.java\n@@ -16,25 +16,30 @@\n \n package org.springframework.core.type.classreading;\n \n+import java.io.IOException;\n+\n import org.springframework.core.type.AbstractMethodMetadataTests;\n import org.springframework.core.type.AnnotationMetadata;\n \n+\n /**\n  * Tests for {@link SimpleMethodMetadata} and\n- * {@link SimpleMethodMetadataReadingVisitor}.\n+ * {@link SimpleMethodMetadataReadingVisitor} on Java < 24,\n+ * and for the ClassFile API variant on Java >= 24.\n  *\n  * @author Phillip Webb\n+ * @author Brian Clozel\n  */\n-class SimpleMethodMetadataTests extends AbstractMethodMetadataTests {\n+class DefaultMethodMetadataTests extends AbstractMethodMetadataTests {"",
+    ""advice"": ""确认项目中没有其他文件或配置（如Maven Surefire插件配置、Gradle测试任务过滤）硬编码引用了旧的类名`SimpleMethodMetadataTests`。如果存在，需要一并更新。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'b01fdb01408499bf9c73de1e927017b4870ffe26', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\nIntroduce resolveTypeName helper for ClassDesc handling\nAdd ClassFileMethodMetadataTests (java24Test)\nExtend AbstractMethodMetadataTests with void return case\n\nSee gh-36577\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}, {'sha': '40ef6f68726521752ff030490eb9d658c97ee265', 'message': 'Fix method and annotation metadata for ClassFile variant\n\nPrior to this commit, the ClassFile variant for  annotation and method\nmetadata would report incorrect metadata for:\n* the method return type names in case of primitives and array types\n* `toString` values for methods\n* `equals` and `hashcode` information for methods\n\nThis commit expands the test suite and ensures that the ASM and\nClassFile variants are aligned.\n\nFixes gh-36577\n\nSigned-off-by: Brian Clozel <brian.clozel@broadcom.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.', 'Thanks for your contribution @bebeis !']",2026-04-04 00:42:56
+spring-projects/spring-framework,36577,with_readme,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了修复ClassFile API中方法元数据返回类型名称的问题"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b01fdb01408499bf9c73de1e927017b4870ffe26', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\nIntroduce resolveTypeName helper for ClassDesc handling\nAdd ClassFileMethodMetadataTests (java24Test)\nExtend AbstractMethodMetadataTests with void return case\n\nSee gh-36577\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}, {'sha': '40ef6f68726521752ff030490eb9d658c97ee265', 'message': 'Fix method and annotation metadata for ClassFile variant\n\nPrior to this commit, the ClassFile variant for  annotation and method\nmetadata would report incorrect metadata for:\n* the method return type names in case of primitives and array types\n* `toString` values for methods\n* `equals` and `hashcode` information for methods\n\nThis commit expands the test suite and ensures that the ASM and\nClassFile variants are aligned.\n\nFixes gh-36577\n\nSigned-off-by: Brian Clozel <brian.clozel@broadcom.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.', 'Thanks for your contribution @bebeis !']",2026-04-04 00:43:00
+spring-projects/spring-framework,36562,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为多个已标记为废弃的方法和构造器添加了 `forRemoval = true` 属性。"",
+    ""description"": ""本次代码变更的主要目的是为多个在之前版本中已标记为 `@Deprecated` 的 API 添加 `forRemoval = true` 属性。这明确指示这些 API 将在未来的主版本（7.0）中被移除，为开发者提供了更清晰的迁移信号。所有变更均符合 Java 的弃用注解规范，且与对应的 `@deprecated` Javadoc 注释中的移除计划保持一致。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.', ""@seregamorph I've asked other Spring projects leads and they would be happy to get issues similar to #36591. Please proceed, if you have time. Thanks a lot!"", 'Thanks. Will try to find time for this soon.']",2026-04-04 00:43:09
+spring-projects/spring-framework,36562,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为多个已弃用的方法添加了`forRemoval = true`标记。"",
+    ""description"": ""代码变更的主要目的是为多个在之前版本中已标记为`@Deprecated`的方法和构造函数，补充`forRemoval = true`属性。这明确指示这些API计划在未来的主要版本（如7.0）中被移除，为开发者提供了更清晰的迁移信号。所有变更都遵循了Java的弃用注解规范，并与已有的`@deprecated` Javadoc标签中的移除计划描述保持一致。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.', ""@seregamorph I've asked other Spring projects leads and they would be happy to get issues similar to #36591. Please proceed, if you have time. Thanks a lot!"", 'Thanks. Will try to find time for this soon.']",2026-04-04 00:43:15
+spring-projects/spring-framework,36560,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""移除了CacheAspectSupport类中未使用的methodIdentification方法"",
+    ""description"": ""未发现明显问题。该方法是已弃用且标记为待删除的方法，根据提交信息，其Javadoc说明用于日志记录但实际上未被使用，因此移除是合理的清理操作。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-04 00:43:23
+spring-projects/spring-framework,36560,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码移除了一个已弃用且未使用的方法。"",
+    ""description"": ""本次代码变更移除了 `CacheAspectSupport` 类中名为 `methodIdentification` 的方法。根据提交信息和代码注释，该方法已被标记为弃用（since 6.2.18, for removal in 7.1），并且其Javadoc说明它用于日志记录，但实际上在代码库中并未被使用。移除此类未使用的代码是合理的，有助于保持代码库的整洁和可维护性。"",
+    ""evidence"": ""@@ -291,23 +291,6 @@ public void afterSingletonsInstantiated() {\n \t\tthis.initialized = true;\n \t}\n \n-\n-\t/**\n-\t * Convenience method to return a String representation of this Method\n-\t * for use in logging. Can be overridden in subclasses to provide a\n-\t * different identifier for the given method.\n-\t * @param method the method we're interested in\n-\t * @param targetClass class the method is on\n-\t * @return log message identifying this method\n-\t * @see org.springframework.util.ClassUtils#getQualifiedMethodName\n-\t * @deprecated since 6.2.18 with no replacement, for removal in 7.1\n-\t */\n-\t@Deprecated(since = \""6.2.18\"", forRemoval = true)\n-\tprotected String methodIdentification(Method method, Class<?> targetClass) {\n-\t\tMethod specificMethod = ClassUtils.getMostSpecificMethod(method, targetClass);\n-\t\treturn ClassUtils.getQualifiedMethodName(specificMethod);\n-\t}\n"",
+    ""advice"": ""无。此变更符合Spring Framework的代码清理和演进策略。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-04 00:43:34
+spring-projects/spring-framework,36559,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新FieldError类的Javadoc，澄清defaultMessage参数的性质"",
+    ""description"": ""Javadoc变更旨在澄清`defaultMessage`参数是一个静态字符串，而不是应用程序资源包中的国际化（i18n）键。这有助于防止开发者误解其用途，误以为设置`defaultMessage`会启用i18n，而实际上这会导致i18n失效。澄清这一点对于正确使用Spring的验证和消息解析机制至关重要。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n 以及 @@ -60,9 +60,9 @@ public class FieldError(String objectName, String field, String defaultMessage) {\n \t * @param rejectedValue the rejected field value\n \t * @param bindingFailure whether this error represents a binding failure\n \t * (like a type mismatch); else, it is a validation failure\n-\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n \t * @param arguments the array of arguments to be used to resolve this message\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""这是一个很好的文档改进，有助于提高API的清晰度和开发者体验。无需代码层面的修改。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-04 00:43:50
+spring-projects/spring-framework,36559,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""增强FieldError类Javadoc，澄清defaultMessage和codes参数的用途。"",
+    ""description"": ""本次代码变更的主要目的是澄清Javadoc，将`defaultMessage`参数描述从“the default message to be used to resolve this message”修改为“the static default message to be used to resolve this message”，并明确指出`codes`参数是“i18n keys in your application”。这有助于开发者理解`defaultMessage`是一个静态字符串，而非国际化键，从而避免误用导致无法实现国际化。变更本身是文档改进，不涉及功能逻辑。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n \t */\n \tpublic FieldError(String objectName, String field, String defaultMessage) {\n \t\tthis(objectName, field, null, false, null, null, defaultMessage);\n@@ -60,9 +60,9 @@ public FieldError(String objectName, String field, String defaultMessage) {\n \t * @param rejectedValue the rejected field value\n \t * @param bindingFailure whether this error represents a binding failure\n \t * (like a type mismatch); else, it is a validation failure\n-\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n \t * @param arguments the array of arguments to be used to resolve this message\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""文档改进清晰准确，无需修改。建议在未来的相关文档或教程中，可以进一步举例说明如何正确使用`codes`参数配合`MessageSource`实现国际化，以及`defaultMessage`作为后备消息的典型场景。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-04 00:44:03
+spring-projects/spring-framework,36555,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释。"",
+    ""description"": ""代码变更移除了类Javadoc中关于缓存机制的描述（'Previously resolved return types are cached for faster lookups.'）。然而，根据Spring Framework的代码历史，`HandlerMethodReturnValueHandlerComposite` 类确实在内部维护了一个 `Map<MethodParameter, HandlerMethodReturnValueHandler>` 作为缓存（例如 `this.returnValueHandlers` 映射或一个专门的 `resolvedHandlers` 缓存，具体实现可能因版本而异）。移除这条注释可能会误导开发者，使其认为该类没有缓存优化，从而影响对代码性能行为的理解。虽然注释可能不完全准确或过时，但直接删除而不提供更新后的说明会降低文档的清晰度。"",
+    ""evidence"": ""@@ -28,7 +28,6 @@\n /**\n  * Handles method return values by delegating to a list of registered\n  * {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers}.\n- * Previously resolved return types are cached for faster lookups.\n  *\n  * @author Rossen Stoyanchev\n  * @since 3.1"",
+    ""advice"": ""建议核实当前类（`HandlerMethodReturnValueHandlerComposite`）是否确实存在缓存机制。如果存在，应更新Javadoc以准确描述缓存行为（例如，'Resolved handlers are cached internally for performance.'）。如果缓存机制已被移除，则此变更合理，但最好在提交信息或代码注释中简要说明移除原因，以保持文档的准确性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-04 00:44:18
+spring-projects/spring-framework,36555,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释"",
+    ""description"": ""代码变更移除了类级别Javadoc中关于'Previously resolved return types are cached for faster lookups'的说明。这个注释可能已经过时或不准确，因为当前代码实现中可能没有这样的缓存机制，或者缓存机制已经发生了变化。保留不准确的文档会误导开发者对类行为的理解。"",
+    ""evidence"": ""@@ -28,7 +28,6 @@\n /**\n  * Handles method return values by delegating to a list of registered\n  * {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers}.\n- * Previously resolved return types are cached for faster lookups.\n  *\n  * @author Rossen Stoyanchev\n  * @since 3.1"",
+    ""advice"": ""这是一个正确的文档清理。建议检查HandlerMethodReturnValueHandlerComposite类的实际实现，如果确实存在缓存机制，应该更新为准确的描述；如果不存在，这个删除是正确的。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-04 00:44:26
+spring-projects/spring-framework,36553,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""修改了setSupportedVersionPredicate方法的返回类型，从void改为ApiVersionConfigurer，并返回this。这使得方法可以支持链式调用（fluent API）模式，与类中其他配置方法（如addSupportedVersions、detectSupportedVersions）保持设计一致性。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""修改合理，符合API设计的一致性要求。建议检查类中其他setter方法是否也应该改为链式调用以保持完全一致。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-04 00:44:37
+spring-projects/spring-framework,36553,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""修改了setSupportedVersionPredicate方法的返回类型，从void改为ApiVersionConfigurer，并返回this。这使得方法可以支持链式调用（fluent API），与类中其他配置方法（如addSupportedVersions、detectSupportedVersions）的设计风格保持一致。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""修改符合设计一致性原则，使API更加流畅。建议检查是否有其他类似的方法也需要调整为链式调用风格，以保持API设计的一致性。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-04 00:44:44
+spring-projects/spring-framework,36549,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中错误的方法名引用。"",
+    ""description"": ""Javadoc示例代码中引用了不存在的方法`TypeDescriptor.value(String.class)`，这会导致开发者阅读文档时产生困惑，并可能错误地使用该方法。正确的静态工厂方法是`TypeDescriptor.valueOf(String.class)`。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/convert/TypeDescriptor.java\n@@ -631,7 +631,7 @@ public static TypeDescriptor map(Class<?> mapType, @Nullable TypeDescriptor keyT\n \t * Create a new type descriptor as an array of the specified type.\n \t * <p>For example to create a {@code Map<String,String>[]} use:\n \t * <pre class=\""code\"">\n-\t * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.valueOf(String.class)));\n+\t * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(String.class)));\n \t * </pre>"",
+    ""advice"": ""已修复。此变更确保了文档示例的准确性，有助于开发者正确理解和使用API。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-04 00:44:56
+spring-projects/spring-framework,36549,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中的错误方法名"",
+    ""description"": ""Javadoc示例代码中使用了错误的方法名`TypeDescriptor.value(String.class)`，而正确的方法名应该是`TypeDescriptor.valueOf(String.class)`。这会导致开发者参考文档时产生困惑，可能复制错误的代码。"",
+    ""evidence"": ""TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.value(String.class)));"",
+    ""advice"": ""已正确修复为`TypeDescriptor.valueOf(String.class)`，确保文档示例代码的准确性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-04 00:45:02
+spring-projects/spring-framework,36548,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要解决了NullAway静态分析工具在未来版本中可能产生的空值警告。"",
+    ""description"": ""未发现明显问题。本次变更仅修改了`nullIfEmpty`方法的泛型签名，为`MultiValueMap`的值类型添加了`@Nullable`注解，以明确告知静态分析工具该Map中的值可能为null。这是一个预防性的、与静态代码分析工具兼容性相关的修改，不影响运行时逻辑、功能、性能或安全性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '47750e14385e45c0faf8898bd1dd0a79909f9d5a', 'message': 'Address nullness warning from future version of NullAway\n\nSigned-off-by: Manu Sridharan <msridhar@gmail.com>'}]",['FYI @sdeleuze '],2026-04-04 00:45:10
+spring-projects/spring-framework,36548,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""更新方法签名以解决NullAway工具的空值警告。"",
+    ""description"": ""代码变更将方法 `nullIfEmpty` 的参数和返回值的泛型类型从 `MultiValueMap<String, Object>` 修改为 `MultiValueMap<String, @Nullable Object>`。这旨在解决静态分析工具（如NullAway）可能发出的警告，因为方法可能返回 `null`，而原始签名暗示了 `Object` 值不可为空。然而，这个修改可能引入不一致性，因为 `@Nullable` 注解被应用于泛型类型参数 `Object`，而不是整个 `MultiValueMap` 或其值集合。这可能导致混淆，因为 `MultiValueMap` 的值类型是 `List<Object>`，而不是 `Object`。"",
+    ""evidence"": ""private static @Nullable MultiValueMap<String, @Nullable Object> nullIfEmpty(MultiValueMap<String, @Nullable Object> map) {"",
+    ""advice"": ""建议重新审视这个注解的意图。如果目的是表明 `MultiValueMap` 中的值列表可以包含 `null` 元素，那么 `@Nullable` 应该应用于 `List` 的元素类型，例如 `MultiValueMap<String, List<@Nullable Object>>`。但考虑到 `MultiValueMap` 的典型用法和Spring的约定，这可能不是必需的。更直接且可能更准确的修改是保持方法签名不变，或者如果工具警告是关于返回 `null` 的可能性，那么当前的修改（在方法级别使用 `@Nullable`）可能已经足够，而无需修改泛型参数。应检查NullAway的具体警告信息，以确定最合适的修复方式。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '47750e14385e45c0faf8898bd1dd0a79909f9d5a', 'message': 'Address nullness warning from future version of NullAway\n\nSigned-off-by: Manu Sridharan <msridhar@gmail.com>'}]",['FYI @sdeleuze '],2026-04-04 00:45:22
+spring-projects/spring-framework,36516,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复了AbstractEnvironment类Javadoc中错误的交叉引用链接。"",
+    ""description"": ""未发现明显问题。本次变更仅修正了Javadoc注释中的一个方法引用，将指向`doGetActiveProfilesProperty()`的错误链接更正为指向`doGetDefaultProfilesProperty()`。这是一个文档修正，不影响代码逻辑、功能或性能。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ea0ff92cb6a65268b13cb43c6ffbd41c13df1783', 'message': 'Fix incorrect cross-reference links in AbstractEnvironment Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged.\r\n\r\nThanks'],2026-04-04 00:45:31
+spring-projects/spring-framework,36516,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了AbstractEnvironment类Javadoc中错误的交叉引用链接。"",
+    ""description"": ""Javadoc注释中引用了错误的方法名 `doGetActiveProfilesProperty()`，而实际应该引用 `doGetDefaultProfilesProperty()`。这会导致文档阅读者产生困惑，并可能误导开发者。"",
+    ""evidence"": ""- `doGetActiveProfilesProperty()`\n+ `doGetDefaultProfilesProperty()`"",
+    ""advice"": ""修改正确，确保了Javadoc的准确性和可读性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ea0ff92cb6a65268b13cb43c6ffbd41c13df1783', 'message': 'Fix incorrect cross-reference links in AbstractEnvironment Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged.\r\n\r\nThanks'],2026-04-04 00:45:36
+spring-projects/spring-framework,36514,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了设置API版本时未检查null值导致默认值被覆盖的问题"",
+    ""description"": ""在RestClientAdapter和WebClientAdapter中，当values.getApiVersion()返回null时，会调用spec.apiVersion(null)或bodySpec.apiVersion(null)，这可能会覆盖RestClient/WebClient中已设置的默认API版本。新增的null检查确保了只有在明确提供API版本时才进行设置，从而保留了默认值。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/support/RestClientAdapter.java\n@@ -99,7 +99,9 @@ public RestClient.RequestBodySpec newRequest(HttpRequestValues values) {\n \t\tRestClient.RequestBodySpec spec = setUri(uriSpec, values);\n \t\tspec.headers(headers -> headers.putAll(values.getHeaders()));\n \t\tsetCookieHeader(spec, values);\n-\t\tspec.apiVersion(values.getApiVersion());\n+\t\tif (values.getApiVersion() != null) {\n+\t\t\tspec.apiVersion(values.getApiVersion());\n+\t\t}\n \t\tspec.attributes(attributes -> attributes.putAll(values.getAttributes()));\n \t\tsetBody(spec, values);\n \t\treturn spec;"",
+    ""advice"": ""代码变更正确，已修复潜在问题。建议保持现有实现。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为修复添加了相应的单元测试，验证默认API版本保留功能"",
+    ""description"": ""在RestClientAdapterTests和WebClientAdapterTests中新增了greetingWithDefaultApiVersion测试方法，验证当HttpRequestValues中的apiVersion为null时，RestClient/WebClient配置的默认API版本（通过defaultApiVersion和apiVersionInserter设置）能够正确生效。测试覆盖了关键场景，确保修复的有效性。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/web/client/support/RestClientAdapterTests.java\n@@ -200,6 +200,27 @@ void greetingWithApiVersion() throws Exception {\n \t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n \t}\n \n+\t@Test\n+\tvoid greetingWithDefaultApiVersion() throws Exception {\n+\t\tprepareResponse(builder ->\n+\t\t\t\tbuilder.setHeader(\""Content-Type\"", \""text/plain\"").body(\""Hello Spring 2!\""));\n+\n+\t\tRestClient restClient = RestClient.builder()\n+\t\t\t\t.baseUrl(anotherServer.url(\""/\"").toString())\n+\t\t\t\t.defaultApiVersion(\""1.0\"")\n+\t\t\t\t.apiVersionInserter(ApiVersionInserter.useHeader(\""X-Version\""))\n+\t\t\t\t.build();\n+\n+\t\tRestClientAdapter adapter = RestClientAdapter.create(restClient);\n+\t\tService service = HttpServiceProxyFactory.builderFor(adapter).build().createClient(Service.class);\n+\n+\t\tString actualResponse = service.getGreeting();\n+\n+\t\tRecordedRequest request = anotherServer.takeRequest();\n+\t\tassertThat(request.getHeaders().get(\""X-Version\"")).isEqualTo(\""1.0\"");\n+\t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n+\t}"",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c210352043ad0b0e2a53c0600010dadb904189d4', 'message': 'Add null check when setting API version to preserve default value\n\nSigned-off-by: Vishnutheep B <vishnutheep@gmail.com>'}]",['As mentioned in the Boot issue the cause of this is commit b83cb4a9479ae8c3b2e37f2a797c2648c6c2f25a which relates to issue #36374'],2026-04-04 00:46:02
+spring-projects/spring-framework,36514,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了设置API版本时可能覆盖默认值的问题"",
+    ""description"": ""在RestClientAdapter和WebClientAdapter中，当values.getApiVersion()返回null时，会调用spec.apiVersion(null)或bodySpec.apiVersion(null)，这可能会覆盖RestClient或WebClient构建时设置的默认API版本。新增的null检查确保了只有在明确提供了API版本时才进行设置，从而保留了默认值。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/support/RestClientAdapter.java\n@@ -99,7 +99,9 @@ public RestClient.RequestBodySpec newRequest(HttpRequestValues values) {\n \t\tRestClient.RequestBodySpec spec = setUri(uriSpec, values);\n \t\tspec.headers(headers -> headers.putAll(values.getHeaders()));\n \t\tsetCookieHeader(spec, values);\n-\t\tspec.apiVersion(values.getApiVersion());\n+\t\tif (values.getApiVersion() != null) {\n+\t\t\tspec.apiVersion(values.getApiVersion());\n+\t\t}\n \t\tspec.attributes(attributes -> attributes.putAll(values.getAttributes()));\n \t\tsetBody(spec, values);\n \t\treturn spec;\n\n文件: spring-webflux/src/main/java/org/springframework/web/reactive/function/client/support/WebClientAdapter.java\n@@ -111,7 +111,9 @@ public WebClient.RequestBodySpec newRequest(HttpRequestValues values) {\n \t\tWebClient.RequestBodySpec bodySpec = setUri(uriSpec, values);\n \t\tbodySpec.headers(headers -> headers.putAll(values.getHeaders()));\n \t\tbodySpec.cookies(cookies -> cookies.putAll(values.getCookies()));\n-\t\tbodySpec.apiVersion(values.getApiVersion());\n+\t\tif (values.getApiVersion() != null) {\n+\t\t\tbodySpec.apiVersion(values.getApiVersion());\n+\t\t}\n \t\tbodySpec.attributes(attributes -> attributes.putAll(values.getAttributes()));\n \t\tsetBody(bodySpec, values);\n \t\treturn bodySpec;"",
+    ""advice"": ""修复正确。新增的测试用例也验证了当HttpRequestValues中的apiVersion为null时，会使用RestClient/WebClient构建器中设置的defaultApiVersion。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为修复添加了对应的测试用例"",
+    ""description"": ""在RestClientAdapterTests和WebClientAdapterTests中分别添加了greetingWithDefaultApiVersion测试方法，验证了当HttpRequestValues不提供apiVersion时，会使用RestClient/WebClient构建器中设置的defaultApiVersion。这提高了代码的可测试性和可维护性。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/web/client/support/RestClientAdapterTests.java\n@@ -200,6 +200,27 @@ void greetingWithApiVersion() throws Exception {\n \t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n \t}\n \n+\t@Test\n+\tvoid greetingWithDefaultApiVersion() throws Exception {\n+\t\tprepareResponse(builder ->\n+\t\t\t\tbuilder.setHeader(\""Content-Type\"", \""text/plain\"").body(\""Hello Spring 2!\""));\n+\n+\t\tRestClient restClient = RestClient.builder()\n+\t\t\t\t.baseUrl(anotherServer.url(\""/\"").toString())\n+\t\t\t\t.defaultApiVersion(\""1.0\"")\n+\t\t\t\t.apiVersionInserter(ApiVersionInserter.useHeader(\""X-Version\""))\n+\t\t\t\t.build();\n+\n+\t\tRestClientAdapter adapter = RestClientAdapter.create(restClient);\n+\t\tService service = HttpServiceProxyFactory.builderFor(adapter).build().createClient(Service.class);\n+\n+\t\tString actualResponse = service.getGreeting();\n+\n+\t\tRecordedRequest request = anotherServer.takeRequest();\n+\t\tassertThat(request.getHeaders().get(\""X-Version\"")).isEqualTo(\""1.0\"");\n+\t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n+\t}\n+\n \t@Test // see gh-36326\n \tvoid getBodyWithGenericReturnType() {\n \t\tprepareResponse(r -> r.setHeader(\""Content-Type\"", \""application/json\"").body(\""{\\\""name\\\"":\\\""Karl\\\""}\""));"",
+    ""advice"": ""测试用例设计良好，清晰地验证了修复的功能。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c210352043ad0b0e2a53c0600010dadb904189d4', 'message': 'Add null check when setting API version to preserve default value\n\nSigned-off-by: Vishnutheep B <vishnutheep@gmail.com>'}]",['As mentioned in the Boot issue the cause of this is commit b83cb4a9479ae8c3b2e37f2a797c2648c6c2f25a which relates to issue #36374'],2026-04-04 00:46:28
+spring-projects/spring-framework,36513,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Accept-Language头为空字符串时，默认区域设置被忽略的问题"",
+    ""description"": ""当Accept-Language头存在但为空字符串时，原代码会跳过默认区域设置，直接使用系统默认区域设置。这与头不存在时的行为不一致，因为空字符串的Accept-Language头应该被视为没有提供语言偏好。"",
+    ""evidence"": ""if (defaultLocale != null && !StringUtils.hasText(request.getHeader(\""Accept-Language\""))) {"",
+    ""advice"": ""使用StringUtils.hasText()检查头值是否为空字符串是正确的修复方式，确保了逻辑一致性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了针对空白Accept-Language头的单元测试"",
+    ""description"": ""新增的测试用例验证了当Accept-Language头为空字符串时，解析器能正确返回设置的默认区域设置。"",
+    ""evidence"": ""void defaultLocaleWithBlankAcceptLanguageHeader() {\n\t\tthis.resolver.setDefaultLocale(JAPANESE);\n\t\tMockHttpServletRequest request = new MockHttpServletRequest();\n\t\trequest.addHeader(\""Accept-Language\"", \""\"");\n\t\tassertThat(this.resolver.resolveLocale(request)).isEqualTo(JAPANESE);\n\t}"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4b211643bb0bde7e3096500350093bbbc28854ff', 'message': 'Handle blank Accept-Language header in AcceptHeaderLocaleResolver\n\nWhen the Accept-Language header is present but blank, defaultLocale\nwas ignored and fell back to Locale.getDefault() (JVM system locale).\nA blank header represents the same intent as an absent header.\n\nCloses gh-36513\n\nSigned-off-by: elgun.shukurov <elgun.sukurov@kapitalbank.az>'}]","['@elgunshukurov at this stage we try to avoid introducing behavior changes in the 6.2.x line. Can you rebase against 7.0.x please?', '@bclozel done, rebased against 7.0.x. Thanks for the guidance.\r\n\r\n', 'Thanks for your contribution @elgunshukurov this has been merged in 7.0.x and main.']",2026-04-04 00:46:40
+spring-projects/spring-framework,36513,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Accept-Language头为空字符串时默认区域设置被忽略的问题"",
+    ""description"": ""原代码仅检查Accept-Language头是否为null，当该头存在但值为空字符串时，会跳过默认区域设置而使用JVM系统区域设置。这与头不存在时的处理逻辑不一致，因为空字符串的Accept-Language头实际上表示客户端没有指定语言偏好，应与头不存在的情况同等对待。"",
+    ""evidence"": ""if (defaultLocale != null && !StringUtils.hasText(request.getHeader(\""Accept-Language\""))) {"",
+    ""advice"": ""使用StringUtils.hasText()检查是合理的，它同时处理null、空字符串和仅包含空白字符的情况。建议保持现有修复不变。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了针对空白Accept-Language头的测试用例"",
+    ""description"": ""测试用例验证了当Accept-Language头为空字符串时，解析器正确返回设置的默认区域设置（JAPANESE）。"",
+    ""evidence"": ""request.addHeader(\""Accept-Language\"", \""\"");\nassertThat(this.resolver.resolveLocale(request)).isEqualTo(JAPANESE);"",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4b211643bb0bde7e3096500350093bbbc28854ff', 'message': 'Handle blank Accept-Language header in AcceptHeaderLocaleResolver\n\nWhen the Accept-Language header is present but blank, defaultLocale\nwas ignored and fell back to Locale.getDefault() (JVM system locale).\nA blank header represents the same intent as an absent header.\n\nCloses gh-36513\n\nSigned-off-by: elgun.shukurov <elgun.sukurov@kapitalbank.az>'}]","['@elgunshukurov at this stage we try to avoid introducing behavior changes in the 6.2.x line. Can you rebase against 7.0.x please?', '@bclozel done, rebased against 7.0.x. Thanks for the guidance.\r\n\r\n', 'Thanks for your contribution @elgunshukurov this has been merged in 7.0.x and main.']",2026-04-04 00:46:50
+spring-projects/spring-framework,36494,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将Content-Type字符集处理逻辑从ServletServerHttpRequest迁移到ServletRequestHeadersAdapter"",
+    ""description"": ""代码变更将字符集处理逻辑从ServletServerHttpRequest.getHeaders()方法迁移到了ServletRequestHeadersAdapter中，并添加了缓存机制。然而，迁移后的逻辑在判断是否添加charset参数时，仅排除了application/json类型，这可能过于宽泛。根据RFC规范，某些媒体类型（如application/xml、application/xhtml+xml等）也可能需要charset参数，而其他类型（如image/png）则不需要。当前的硬编码排除逻辑可能导致某些需要charset的媒体类型被错误地排除。"",
+    ""evidence"": ""if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n\tparams.put(\""charset\"", charset.toString());\n}"",
+    ""advice"": ""建议使用更精确的判断逻辑，例如检查媒体类型是否为文本类型（如text/*）或某些已知需要charset的应用程序类型。可以考虑使用MediaType的isConcrete()方法或其他属性来判断，或者提供一个可配置的排除列表。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""为Content-Type添加了缓存机制以避免重复计算"",
+    ""description"": ""新增的cachedContentType字段和缓存逻辑可以有效避免在多次调用getFirst()或get()方法时重复构建Content-Type字符串。然而，缓存仅在字符集被添加时更新，如果请求的字符编码发生变化（例如通过setCharacterEncoding()），缓存不会失效，可能导致返回过时的Content-Type值。"",
+    ""evidence"": ""private @Nullable String cachedContentType;\n\nprivate @Nullable String getContentType() {\n\tString stringContentType = this.cachedContentType;\n\tif (stringContentType != null) {\n\t\treturn stringContentType;\n\t}\n\t// ... 计算逻辑\n\tthis.cachedContentType = stringContentType;\n\treturn stringContentType;\n}"",
+    ""advice"": ""考虑添加缓存失效机制，例如在检测到request.getCharacterEncoding()发生变化时清除缓存。或者，由于HttpServletRequest在请求处理期间通常不会改变字符编码，可以添加注释说明此假设。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了字符集处理逻辑，避免为application/json添加charset"",
+    ""description"": ""在迁移的逻辑中，添加了一个条件判断，当Content-Type为application/json时不添加charset参数。这是正确的，因为JSON规范（RFC 8259）规定JSON文本应使用UTF-8、UTF-16或UTF-32编码，但charset参数不是必需的，且某些客户端可能不期望它。然而，如果原始Content-Type已经是application/json;charset=UTF-8，此逻辑不会移除已有的charset参数，这可能导致不一致。测试用例仅覆盖了没有charset的情况。"",
+    ""evidence"": ""if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n\tparams.put(\""charset\"", charset.toString());\n}"",
+    ""advice"": ""考虑在条件中同时处理已存在charset的application/json情况，或者确保逻辑的一致性。添加测试用例覆盖application/json;charset=UTF-8的场景。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""代码结构清晰，但异常处理可能隐藏问题"",
+    ""description"": ""getContentType()方法捕获了InvalidMediaTypeException并忽略，仅返回null或原始字符串。这可能导致调用方无法区分无效的Content-Type和缺失的Content-Type。虽然注释说明“不暴露无效内容类型”，但静默忽略异常可能掩盖配置错误。"",
+    ""evidence"": ""catch (InvalidMediaTypeException ex) {\n\t// Ignore: simply not exposing an invalid content type in HttpHeaders...\n}"",
+    ""advice"": ""考虑记录调试日志或至少记录一条跟踪日志，以便在调试时能够发现无效的Content-Type头。或者，让异常传播并由上层处理，但需评估对现有代码的影响。"",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '1a545ff5d3c89cbcfa4d847a4ca3c7660394610e', 'message': 'Fix: Avoid updating to request ""Content-Type"" for characterEncoding in ServletServerHttpRequest\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '201735bbbc3b7a3f0746850922e7618496f23bf7', 'message': 'Fix: fix javadoc\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","[""I'm sorry but this is not the right approach and the issue is not open for contribution.""]",2026-04-04 00:47:18
+spring-projects/spring-framework,36494,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了Servlet请求中Content-Type头字符集处理逻辑，并移除了冗余代码。"",
+    ""description"": ""代码变更的主要目的是将字符集处理逻辑从`ServletServerHttpRequest`移动到`ServletRequestHeadersAdapter`中，并修复了`application/json`媒体类型不应附加字符集的问题。然而，在`getContentType()`方法中，存在一个潜在的性能和正确性问题：当`contentType`不为null且没有字符集，但`requestEncoding`有值时，代码会创建一个新的`LinkedCaseInsensitiveMap`并复制所有参数，即使对于`application/json`类型，最终不会添加`charset`参数。这导致了一次不必要的Map创建和复制操作。"",
+    ""evidence"": ""在`ServletRequestHeadersAdapter.java`的`getContentType()`方法中：\n```java\nif (contentType != null && contentType.getCharset() == null) {\n    String requestEncoding = this.request.getCharacterEncoding();\n    if (StringUtils.hasLength(requestEncoding)) {\n        Charset charset = Charset.forName(requestEncoding);\n        Map<String, String> params = new LinkedCaseInsensitiveMap<>();\n        params.putAll(contentType.getParameters());\n        if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n            params.put(\""charset\"", charset.toString());\n        }\n        MediaType mediaType = new MediaType(contentType.getType(), contentType.getSubtype(), params);\n        stringContentType = mediaType.toString();\n    }\n}\n```"",
+    ""advice"": ""建议调整逻辑顺序，先检查是否为`application/json`类型，如果是则直接返回原内容类型，避免不必要的Map操作。修改如下：\n```java\nif (contentType != null && contentType.getCharset() == null) {\n    String requestEncoding = this.request.getCharacterEncoding();\n    if (StringUtils.hasLength(requestEncoding)) {\n        if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n            Charset charset = Charset.forName(requestEncoding);\n            Map<String, String> params = new LinkedCaseInsensitiveMap<>();\n            params.putAll(contentType.getParameters());\n            params.put(\""charset\"", charset.toString());\n            MediaType mediaType = new MediaType(contentType.getType(), contentType.getSubtype(), params);\n            stringContentType = mediaType.toString();\n        }\n    }\n}\n```"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了Servlet请求中Content-Type头字符集处理逻辑，并移除了冗余代码。"",
+    ""description"": ""在`ServletRequestHeadersAdapter`的`getContentType()`方法中，异常处理块捕获了`InvalidMediaTypeException`，但注释为“Ignore: simply not exposing an invalid content type in HttpHeaders...”。这个注释是准确的，但为了更好的可读性和维护性，可以考虑在捕获异常后，将`stringContentType`显式地设置为`null`或保持原值，以明确表示忽略无效类型。目前，如果解析失败，`stringContentType`将保持为`request.getContentType()`的原始值，这可能导致缓存一个无效的字符串。虽然当前行为可能可以接受（不暴露无效类型），但逻辑不够清晰。"",
+    ""evidence"": ""在`ServletRequestHeadersAdapter.java`的`getContentType()`方法中：\n```java\ncatch (InvalidMediaTypeException ex) {\n    // Ignore: simply not exposing an invalid content type in HttpHeaders...\n}\n```"",
+    ""advice"": ""建议在catch块内将`stringContentType`设置为`null`，以明确表示忽略无效的内容类型，并确保缓存的是`null`而不是无效字符串。修改如下：\n```java\ncatch (InvalidMediaTypeException ex) {\n    // Ignore: simply not exposing an invalid content type in HttpHeaders...\n    stringContentType = null;\n}\n```"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '1a545ff5d3c89cbcfa4d847a4ca3c7660394610e', 'message': 'Fix: Avoid updating to request ""Content-Type"" for characterEncoding in ServletServerHttpRequest\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '201735bbbc3b7a3f0746850922e7618496f23bf7', 'message': 'Fix: fix javadoc\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","[""I'm sorry but this is not the right approach and the issue is not open for contribution.""]",2026-04-04 00:47:40
+spring-projects/spring-framework,36493,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""使用 computeIfAbsent 简化 optionArgs 的初始化逻辑"",
+    ""description"": ""代码变更将原有的显式检查并初始化 List 的逻辑替换为 computeIfAbsent，使代码更简洁，意图更清晰。但存在一个潜在的可读性问题：变量名 'key' 未使用，可能引起困惑。"",
+    ""evidence"": ""List<String> values = this.optionArgs.computeIfAbsent(optionName, key -> new ArrayList<>());"",
+    ""advice"": ""建议将 lambda 表达式中的参数 'key' 改为下划线 '_' 或一个更具描述性但明确表示未使用的名称（如 'unused'），以明确表示该参数在函数体中未被使用，提高代码可读性。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '10d1ad3c4aec86120bd47e41e312689f2d6877c8', 'message': 'Use computeIfAbsent in CommandLineArgs.addOptionArg\n\nSigned-off-by: junhyung8795 <junhyung8795@naver.com>'}]",['Please [sign the DCO](https://github.com/spring-projects/spring-framework/pull/36493/checks?check_run_id=67541216670).'],2026-04-04 00:47:51
+spring-projects/spring-framework,36493,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""使用 computeIfAbsent 简化添加命令行选项参数的逻辑。"",
+    ""description"": ""代码变更将原有的 `if (!this.optionArgs.containsKey(optionName))` 检查和 `put` 操作，替换为 `Map.computeIfAbsent` 方法。这减少了代码行数，并消除了潜在的重复键检查。然而，`computeIfAbsent` 的 lambda 参数 `key` 未被使用，这可能会引起轻微的困惑，因为其值始终与传入的 `optionName` 相同。"",
+    ""evidence"": ""List<String> values = this.optionArgs.computeIfAbsent(optionName, key -> new ArrayList<>());"",
+    ""advice"": ""建议将 lambda 参数 `key` 重命名为 `k` 或使用下划线 `_` 来明确表示该参数未被使用，以提高代码的清晰度。例如：`key -> new ArrayList<>()` 可以改为 `_ -> new ArrayList<>()` 或 `k -> new ArrayList<>()`。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '10d1ad3c4aec86120bd47e41e312689f2d6877c8', 'message': 'Use computeIfAbsent in CommandLineArgs.addOptionArg\n\nSigned-off-by: junhyung8795 <junhyung8795@naver.com>'}]",['Please [sign the DCO](https://github.com/spring-projects/spring-framework/pull/36493/checks?check_run_id=67541216670).'],2026-04-04 00:47:59
+spring-projects/spring-framework,36475,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了GenericTypeResolver中通配符类型解析的问题"",
+    ""description"": ""在resolveType方法中，当处理ParameterizedType的类型参数时，新增了对WildcardType的处理分支，但该分支直接递归调用resolveType，可能导致无限递归或栈溢出。因为WildcardType本身可能包含其他ParameterizedType或WildcardType，递归调用时没有检查循环引用。"",
+    ""evidence"": ""else if (typeArgument instanceof ParameterizedType || typeArgument instanceof WildcardType) {\n\tgenerics[i] = ResolvableType.forType(resolveType(typeArgument, contextClass));\n}"",
+    ""advice"": ""建议在递归调用resolveType前，添加对已处理类型的检查，防止无限递归。可以引入一个Set<Type>参数来跟踪已处理的类型，或者在ResolvableType.forType内部处理循环引用。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增了WildcardTypeImpl内部类来处理通配符类型"",
+    ""description"": ""新增的WildcardTypeImpl类实现了WildcardType接口，但equals方法中直接使用Arrays.equals比较数组，而WildcardType.getUpperBounds()和getLowerBounds()返回的数组可能是克隆的，这可能导致equals比较失败，因为数组对象不同。虽然内容相同，但Arrays.equals比较的是内容，所以理论上没问题，但依赖数组克隆行为可能存在风险。"",
+    ""evidence"": ""return Arrays.equals(this.upperBound, that.getUpperBounds()) &&\n\t\tArrays.equals(this.lowerBound, that.getLowerBounds());"",
+    ""advice"": ""建议在equals方法中，将that.getUpperBounds()和that.getLowerBounds()的结果缓存到局部变量，避免多次调用。同时，确保WildcardTypeImpl的getUpperBounds和getLowerBounds返回克隆数组，以保持不可变性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构了类型变量解析逻辑，提取了公共方法"",
+    ""description"": ""将重复的类型变量解析逻辑提取到resolveVariableConsiderBounds方法中，提高了代码的可维护性。但新方法的名字'resolveVariableConsiderBounds'可能不够清晰，'ConsiderBounds'含义模糊。"",
+    ""evidence"": ""private static ResolvableType resolveVariableConsiderBounds(TypeVariable<?> typeVariable, ResolvableType contextType) {\n\tResolvableType resolvedTypeArgument = resolveVariable(typeVariable, contextType);\n\tif (resolvedTypeArgument == ResolvableType.NONE) {\n\t\tresolvedTypeArgument = ResolvableType.forVariableBounds(typeVariable);\n\t}\n\treturn resolvedTypeArgument;\n}"",
+    ""advice"": ""建议将方法名改为更清晰的，例如'resolveVariableWithFallbackToBounds'或'resolveVariableOrBounds'，以准确反映其行为：先解析变量，失败则回退到边界。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了通配符类型解析，但可能存在边界条件处理不完整"",
+    ""description"": ""在resolveType方法中处理WildcardType时，只处理了单一上界或单一下界的情况（originalLowerBound.length == 1 或 originalUpperBound.length == 1）。如果WildcardType有多个上界或下界（虽然Java语法上不允许多个下界，但上界允许多个，例如? extends T1 & T2），当前代码会忽略，直接返回原始genericType。这可能导致某些泛型场景解析不准确。"",
+    ""evidence"": ""if (originalLowerBound.length == 1) {\n\t...\n}\nelse if (originalUpperBound.length == 1) {\n\t...\n}"",
+    ""advice"": ""建议考虑多个上界的情况（例如? extends T1 & T2），可以遍历所有上界进行解析，或者至少记录一个TODO注释说明当前限制。对于下界，Java语法只允许一个，所以当前处理是合理的。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '18a8995e2aed3c711b23842eea2546db56fbce83', 'message': 'Add test cases\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '1e4f2eac44adefb2c9ca9dee23d8102c75c17da0', 'message': 'Fix generic with WildcardType return type support in HttpServiceMethod\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'b07b77f72abb7e6dae06f7b8d770098d20a4e2d6', 'message': 'Fix: Checkstyle and refactor\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]",['Error: eckstyle] [ERROR] /home/runner/work/spring-framework/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java:1698:57: Use a single space to separate non-whitespace characters. [SingleSpaceSeparator]\nMay this is a bug from checkstyle?'],2026-04-04 00:48:26
+spring-projects/spring-framework,36475,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了GenericTypeResolver中通配符类型解析的边界条件处理问题。"",
+    ""description"": ""在`resolveType`方法中，当处理`WildcardType`时，对于`originalUpperBound.length == 1`的情况，代码直接返回了`ResolvableType.forWildcardTypeWithUpperBound(...).getType()`。然而，如果`upperBound`解析后与原始值相同（即`upperBound != originalUpperBound[0]`为false），方法会跳过`return`语句并最终返回原始的`genericType`（即`wildcardType`）。这可能导致在某些情况下，即使通配符的上界是`Object`（默认上界），也应该返回一个解析后的`WildcardType`（例如，当上界是`Object`但需要携带变量解析器时），但当前逻辑会直接返回原始类型，丢失了可能的上下文解析信息。"",
+    ""evidence"": ""else if (originalUpperBound.length == 1) {\n\tType upperBound = resolveType(originalUpperBound[0], contextClass);\n\tif (upperBound != originalUpperBound[0]) {\n\t\treturn ResolvableType.forWildcardTypeWithUpperBound(\n\t\t\t\twildcardType, ResolvableType.forType(upperBound))\n\t\t\t\t.getType();\n\t}\n}"",
+    ""advice"": ""考虑在条件分支的末尾添加一个`return`语句，返回一个基于解析后上界（即使相同）构造的`WildcardType`，以确保类型信息的一致性。或者，重新评估此处的逻辑：是否当上界解析后未变化时，仍应返回一个可能带有正确变量解析器的`WildcardType`？可以参考`resolveVariableConsiderBounds`方法的模式，它总是返回一个`ResolvableType`（即使是边界类型）。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""提取了重复的类型变量解析逻辑到独立方法。"",
+    ""description"": ""在`resolveType`方法中，处理`TypeVariable`和`ParameterizedType`内部`TypeVariable`的代码存在重复逻辑：都需要尝试解析变量，如果解析失败则回退到变量的边界。这个重复逻辑已被提取到新的私有方法`resolveVariableConsiderBounds`中，提高了代码的可维护性。"",
+    ""evidence"": ""private static ResolvableType resolveVariableConsiderBounds(TypeVariable<?> typeVariable, ResolvableType contextType) {\n\tResolvableType resolvedTypeArgument = resolveVariable(typeVariable, contextType);\n\tif (resolvedTypeArgument == ResolvableType.NONE) {\n\t\tresolvedTypeArgument = ResolvableType.forVariableBounds(typeVariable);\n\t}\n\treturn resolvedTypeArgument;\n}"",
+    ""advice"": ""这是一个良好的重构。无进一步建议。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增了对通配符类型（WildcardType）的解析支持。"",
+    ""description"": ""代码变更扩展了`GenericTypeResolver.resolveType`和`ResolvableType`的功能，以支持对`WildcardType`（如`? extends T`或`? super T`）的解析。这包括在`resolveType`中添加对`WildcardType`的处理分支，在`ResolvableType`中添加`isUnresolvableWildcard`方法、`forWildcardTypeWithUpperBound`/`forWildcardTypeWithLowerBound`工厂方法以及一个内部的`WildcardTypeImpl`类。设计上，这些新增功能与现有类型解析体系保持一致。"",
+    ""evidence"": ""else if (genericType instanceof WildcardType wildcardType) { ... }"",
+    ""advice"": ""设计合理，新增功能与现有架构集成良好。确保新增的`WildcardTypeImpl`的`equals`和`hashCode`方法符合`WildcardType`的约定（比较上下界数组）。当前实现使用`Arrays.equals`和`Arrays.hashCode`，这是正确的。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了ResolvableType中通配符无边界判断的逻辑错误。"",
+    ""description"": ""在`isWildcardWithoutBounds`方法中，变更将条件判断从多行`if`语句简化为单行`return`。原逻辑是：如果下界长度为0，且上界长度为0或（上界长度为1且上界为`Object.class`），则返回`true`。变更后的逻辑在语义上是等价的，但更简洁。然而，需要确认在`upperBounds[0] == Object.class`时，`upperBounds.length == 1`是否总是成立（根据Java规范，是的）。这是一个内部重构，不影响外部行为。"",
+    ""evidence"": ""return upperBounds.length == 0 || (upperBounds.length == 1 && (Object.class == upperBounds[0]));"",
+    ""advice"": ""重构正确。无进一步建议。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '18a8995e2aed3c711b23842eea2546db56fbce83', 'message': 'Add test cases\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '1e4f2eac44adefb2c9ca9dee23d8102c75c17da0', 'message': 'Fix generic with WildcardType return type support in HttpServiceMethod\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'b07b77f72abb7e6dae06f7b8d770098d20a4e2d6', 'message': 'Fix: Checkstyle and refactor\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]",['Error: eckstyle] [ERROR] /home/runner/work/spring-framework/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java:1698:57: Use a single space to separate non-whitespace characters. [SingleSpaceSeparator]\nMay this is a bug from checkstyle?'],2026-04-04 00:48:58
+spring-projects/spring-framework,36449,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Kotlin内联值类（inline class）参数在可为空时的装箱处理逻辑"",
+    ""description"": ""原始代码中，当参数类型标记为可为空（isMarkedNullable）且参数值为null时，会跳过内联值类的装箱处理。这可能导致当参数类型是可为空的内联值类（如`String?`被包装成内联类）且实际传入null时，装箱逻辑被错误跳过，从而可能引发类型转换异常或后续处理错误。修改后，只要参数类型标记为可为空，无论参数值是否为null，都会进入后续的内联值类判断和可能的递归装箱流程，确保类型系统的一致性。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/CoroutinesUtils.java\n- if (!(type.isMarkedNullable() && arg == null) &&\n+ if (!type.isMarkedNullable() &&"",
+    ""advice"": ""修改正确。建议补充相应的单元测试，覆盖参数类型为可为空的内联值类且传入null值的场景，以验证修复效果。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'f70446aacd69ef68a2b963e695fbf9c06958d3e4', 'message': 'remove  ""args == null"" condition to handle nullable value class param correctly\n\nSigned-off-by: T45K <tasktas9@gmail.com>'}]","['@T45K Can you please update the commit to comply with the [DCO requirement](https://github.com/spring-projects/spring-framework/blob/main/CONTRIBUTING.md#submit-a-pull-request)?', '@sdeleuze force pushed', '@sdeleuze \r\nSorry to rush you, but could you check this when you get a chance?']",2026-04-04 00:49:12
+spring-projects/spring-framework,36449,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Kotlin内联值类参数处理逻辑，移除冗余的空值检查"",
+    ""description"": ""代码变更移除了对`type.isMarkedNullable() && arg == null`的联合检查，仅保留`!type.isMarkedNullable()`。原逻辑存在缺陷：当参数类型标记为可空（nullable）且参数值为null时，条件`!(type.isMarkedNullable() && arg == null)`为false，会跳过后续的内联值类装箱处理。然而，对于可空的内联值类参数，即使传入null，也可能需要特殊处理（例如，保持null值而非装箱）。移除`arg == null`检查后，逻辑变为：仅当类型标记为不可空（non-nullable）时才进行装箱，这更符合Kotlin内联值类的语义——不可空类型需要装箱，可空类型则保持原样（包括null）。"",
+    ""evidence"": ""@@ -134,7 +134,7 @@ public static Publisher<?> invokeSuspendingFunction(\n\t\t\t\t\t\t\t\t\tObject arg = args[index];\n\t\t\t\t\t\t\t\t\tif (!(parameter.isOptional() && arg == null)) {\n\t\t\t\t\t\t\t\t\t\tKType type = parameter.getType();\n-\t\t\t\t\t\t\t\t\t\tif (!(type.isMarkedNullable() && arg == null) &&\n+\t\t\t\t\t\t\t\t\t\tif (!type.isMarkedNullable() &&"",
+    ""advice"": ""变更合理，无需修改。建议补充单元测试，覆盖可空内联值类参数传入null的场景，确保行为符合预期。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""统一了内联值类装箱逻辑中的空值处理策略"",
+    ""description"": ""在`box`方法中也进行了相同的逻辑修改，保持了代码一致性。这确保了递归处理嵌套内联值类时，空值处理逻辑统一。"",
+    ""evidence"": ""@@ -166,7 +166,7 @@ public static Publisher<?> invokeSuspendingFunction(\n \tprivate static Object box(KClass<?> kClass, @Nullable Object arg) {\n \t\tKFunction<?> constructor = Objects.requireNonNull(KClasses.getPrimaryConstructor(kClass));\n \t\tKType type = constructor.getParameters().get(0).getType();\n-\t\tif (!(type.isMarkedNullable() && arg == null) &&\n+\t\tif (!type.isMarkedNullable() &&"",
+    ""advice"": ""无。变更保持了方法间逻辑的一致性。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'f70446aacd69ef68a2b963e695fbf9c06958d3e4', 'message': 'remove  ""args == null"" condition to handle nullable value class param correctly\n\nSigned-off-by: T45K <tasktas9@gmail.com>'}]","['@T45K Can you please update the commit to comply with the [DCO requirement](https://github.com/spring-projects/spring-framework/blob/main/CONTRIBUTING.md#submit-a-pull-request)?', '@sdeleuze force pushed', '@sdeleuze \r\nSorry to rush you, but could you check this when you get a chance?']",2026-04-04 00:49:31
+spring-projects/spring-framework,36448,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了异常消息中的类名拼写错误。"",
+    ""description"": ""异常消息中引用的类名 'MappingJackson2MessageConverter' 与实际类名 'JacksonJsonMessageConverter' 不一致。这虽然不会导致功能错误，但会误导开发者，降低代码的可读性和维护性。当开发者看到此异常时，可能会困惑于实际抛出异常的类。"",
+    ""evidence"": ""-\t\t\t\t\""]. MappingJackson2MessageConverter by default only supports TextMessages and BytesMessages.\""\n+\t\t\t\t\""]. JacksonJsonMessageConverter by default only supports TextMessages and BytesMessages.\"""",
+    ""advice"": ""已修复，无需进一步操作。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ea482b36caae4a145cecf037f5279e35039fa07b', 'message': 'Update JacksonJsonMessageConverter.java\n\nFix typo\n\nSigned-off-by: gbouwen <57719521+gbouwen@users.noreply.github.com>'}]",['Good catch!\r\n\r\nThis has been merged into `main`.\r\n\r\nThanks\r\n\r\n----\r\n\r\np.s. I noticed two other spots that I addressed in 4e8acb9ef2ff43c6f841af2a2ad0a3de53cac914.'],2026-04-04 00:49:43
+spring-projects/spring-framework,36448,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了异常消息中的类名拼写错误"",
+    ""description"": ""异常消息中引用的类名 'MappingJackson2MessageConverter' 与实际类名 'JacksonJsonMessageConverter' 不一致。这是一个拼写错误，会导致错误信息不准确，可能误导开发者进行问题排查。"",
+    ""evidence"": ""throw new IllegalArgumentException(\""Unsupported message type [\"" + targetType +\n                \""]. MappingJackson2MessageConverter by default only supports TextMessages and BytesMessages.\"");"",
+    ""advice"": ""将异常消息中的类名更正为 'JacksonJsonMessageConverter' 是正确的修复。这确保了错误信息的准确性，有助于开发者快速识别问题来源。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ea482b36caae4a145cecf037f5279e35039fa07b', 'message': 'Update JacksonJsonMessageConverter.java\n\nFix typo\n\nSigned-off-by: gbouwen <57719521+gbouwen@users.noreply.github.com>'}]",['Good catch!\r\n\r\nThis has been merged into `main`.\r\n\r\nThanks\r\n\r\n----\r\n\r\np.s. I noticed two other spots that I addressed in 4e8acb9ef2ff43c6f841af2a2ad0a3de53cac914.'],2026-04-04 00:49:51
+spring-projects/spring-framework,36429,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""清理了多个文件中未使用的import语句"",
+    ""description"": ""移除了多个Java文件中未使用的import语句，这有助于提高代码的可读性和编译效率。未使用的import会增加代码的视觉噪音，并可能在某些IDE中引起警告。"",
+    ""evidence"": ""文件: framework-docs/src/main/java/org/springframework/docs/testing/mockmvc/assertj/mockmvctesterrequests/HotelControllerTests.java\n-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstompconfigurationperformance/MessageSizeLimitWebSocketConfiguration.java\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstompconfigurationperformance/WebSocketConfiguration.java\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstomphandlesimplebroker/WebSocketConfiguration.java\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstompmessageflow/GreetingController.java\n-import org.springframework.context.annotation.Configuration;\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;\n-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstomporderedmessages/ReceiveOrderWebSocketConfiguration.java\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;"",
+    ""advice"": ""这是一个良好的代码清理实践。建议在未来的开发中，定期使用IDE的“优化导入”功能或静态代码分析工具来识别和移除未使用的导入。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'e11ad1b688b385d1541a0572756a8c64ec9d68c6', 'message': 'Remove unused import\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['This has been merged into `main`.\r\n\r\nThanks'],2026-04-04 00:50:12
+spring-projects/spring-framework,36429,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""清理了多个文件中的未使用import语句"",
+    ""description"": ""本次提交移除了多个Java文件中的未使用import语句。虽然这有助于提高代码整洁度和可读性，但部分文件的import移除可能过于激进，导致编译错误。例如，在`WebSocketConfiguration`类中移除了`StompEndpointRegistry`的import，但代码中可能仍然需要它来注册STOMP端点。"",
+    ""evidence"": ""文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstompconfigurationperformance/WebSocketConfiguration.java\n@@ -17,9 +17,7 @@\n import org.springframework.context.annotation.Configuration;\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;\n import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;"",
+    ""advice"": ""建议在移除import前，确认这些类是否真的未被使用。特别是对于实现了`WebSocketMessageBrokerConfigurer`接口的配置类，通常需要`StompEndpointRegistry`参数来配置端点。如果这些类确实不再需要这些import，那么清理是合理的；否则，需要保留必要的import以避免编译错误。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'e11ad1b688b385d1541a0572756a8c64ec9d68c6', 'message': 'Remove unused import\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['This has been merged into `main`.\r\n\r\nThanks'],2026-04-04 00:50:23
+spring-projects/spring-framework,36410,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复日志格式化字符串参数数量不匹配的问题"",
+    ""description"": ""原始代码中，logger.debug()方法调用时，字符串格式化操作在方法调用之前执行，但格式化字符串使用了两个占位符（%s），而只传入了一个参数（beanMethod）。这会导致运行时异常（如MissingFormatArgumentException）。修复后，将格式化操作移到字符串字面量内部，并正确传入了两个参数（beanMethod和beanName）。"",
+    ""evidence"": ""logger.debug(\""Skipping bean definition for %s: a definition for bean '%s' already exists. \"" +\n\t\t\t\t\""This top-level bean definition is considered as an override.\"".formatted(beanMethod, beanName));"",
+    ""advice"": ""修复正确。建议确保所有日志语句的格式化占位符数量与参数数量严格匹配，以避免运行时错误。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  }
+]
+```","[{'sha': 'a1e24f40b61988472002ea2473ff84a280783e0c', 'message': 'Fix format string argument count\n\nSigned-off-by: cetf <cetf9h@163.com>'}]","['We consider the code in question fine as it is: we do not wrap concatenated strings within parentheses.\r\n\r\nIf you are wondering about our coding guidelines, please consult our [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) wiki page.\r\n\r\nIn light of that, I am closing this PR.\r\n\r\n----\r\n\r\nIn addition, your proposed change has absolutely nothing to do with ""fixing a format string argument count"". Did you perhaps use AI to generate this PR?\r\n', 'I think this PR is valid, the parentheses do have a meaning here and are actually fixing a bug. In Java, the method call `.` operator has a higher precedence than the string concatenation `+` operator. Here, the arguments are only applied to the last string, before concatenation - so arguments are in fact not replaced.\r\n\r\nSee the following:\r\n\r\n```java\r\nSystem.out.println(""First %s"" + "", second %s"" + "", third"".formatted(""1"", ""2""));\r\n// prints \'First %s, second %s, third\'\r\n\r\nSystem.out.println((""First %s"" + "", second %s"" + "", third"").formatted(""1"", ""2""));\r\n// prints \'First 1, second 2, third\'\r\n```\r\nReopening.', 'Indeed. I apologize: I glanced at that too quickly.', '<img width=""1604"" height=""56"" alt=""image"" src=""https://github.com/user-attachments/assets/6294f781-b60b-47d8-a669-56c675220838"" />\r\n@sbrannen \r\n\r\n\r\nI did not use AI.\r\nMy test results are shown in the figure.\r\nIn the original `str1 + str2.formatted(beanMethod, beanName)`, the `str2.formatted(beanMethod, beanName)` part is executed first, and then its result is concatenated with `str1`.\r\n\r\n我没有使用AI\r\n我的测试结果如图，原来的 `str1 + str2.formatted(beanMethod, beanName)`，其中 `str2.formatted(beanMethod, beanName)` 会先执行，然后其结果与 `str1` 进行连接', 'Thanks @cetf9h this is now merged and backported']",2026-04-04 00:50:35
+spring-projects/spring-framework,36410,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了日志格式化字符串参数数量不匹配的问题。"",
+    ""description"": ""在变更前的代码中，`logger.debug` 调用使用了字符串插值（`formatted` 方法），但该调用位于 `logger.isDebugEnabled()` 条件块内部。虽然这本身不是错误，但变更后的代码将格式化操作移到了 `logger.debug` 方法的参数内部。然而，关键问题是格式化字符串 `\""Skipping bean definition for %s: a definition for bean '%s' already exists...\""` 包含两个 `%s` 占位符，但 `formatted` 方法只提供了一个参数 `beanMethod`。这会导致 `MissingFormatArgumentException` 异常，因为缺少第二个参数 `beanName`。"",
+    ""evidence"": ""logger.debug((\""Skipping bean definition for %s: a definition for bean '%s' already exists. \"" +\n\t\t\t\t\""This top-level bean definition is considered as an override.\"").formatted(beanMethod, beanName));"",
+    ""advice"": ""`formatted` 方法需要两个参数来匹配格式化字符串中的两个 `%s` 占位符。请确保 `formatted(beanMethod, beanName)` 被调用，并且 `beanName` 变量在作用域内且有效。当前代码已经正确提供了两个参数，因此修复了潜在的错误。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  }
+]","[{'sha': 'a1e24f40b61988472002ea2473ff84a280783e0c', 'message': 'Fix format string argument count\n\nSigned-off-by: cetf <cetf9h@163.com>'}]","['We consider the code in question fine as it is: we do not wrap concatenated strings within parentheses.\r\n\r\nIf you are wondering about our coding guidelines, please consult our [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) wiki page.\r\n\r\nIn light of that, I am closing this PR.\r\n\r\n----\r\n\r\nIn addition, your proposed change has absolutely nothing to do with ""fixing a format string argument count"". Did you perhaps use AI to generate this PR?\r\n', 'I think this PR is valid, the parentheses do have a meaning here and are actually fixing a bug. In Java, the method call `.` operator has a higher precedence than the string concatenation `+` operator. Here, the arguments are only applied to the last string, before concatenation - so arguments are in fact not replaced.\r\n\r\nSee the following:\r\n\r\n```java\r\nSystem.out.println(""First %s"" + "", second %s"" + "", third"".formatted(""1"", ""2""));\r\n// prints \'First %s, second %s, third\'\r\n\r\nSystem.out.println((""First %s"" + "", second %s"" + "", third"").formatted(""1"", ""2""));\r\n// prints \'First 1, second 2, third\'\r\n```\r\nReopening.', 'Indeed. I apologize: I glanced at that too quickly.', '<img width=""1604"" height=""56"" alt=""image"" src=""https://github.com/user-attachments/assets/6294f781-b60b-47d8-a669-56c675220838"" />\r\n@sbrannen \r\n\r\n\r\nI did not use AI.\r\nMy test results are shown in the figure.\r\nIn the original `str1 + str2.formatted(beanMethod, beanName)`, the `str2.formatted(beanMethod, beanName)` part is executed first, and then its result is concatenated with `str1`.\r\n\r\n我没有使用AI\r\n我的测试结果如图，原来的 `str1 + str2.formatted(beanMethod, beanName)`，其中 `str2.formatted(beanMethod, beanName)` 会先执行，然后其结果与 `str1` 进行连接', 'Thanks @cetf9h this is now merged and backported']",2026-04-04 00:50:46
+spring-projects/spring-framework,36409,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了重复的条件判断，简化了代码逻辑"",
+    ""description"": ""代码变更移除了一个冗余的if条件检查。原代码中，外层已经检查了'skipEquals && bucket.size() == 1'，内层又重复检查了'skipEquals'。这种重复检查虽然不会导致功能错误，但增加了不必要的代码复杂度和阅读负担。"",
+    ""evidence"": ""原代码：\nif (skipEquals && bucket.size() == 1) {\n    if (skipEquals) {\n        e.pop();\n    }\n    callback.processCase(bucket.get(0), end);\n}\n\n新代码：\nif (skipEquals && bucket.size() == 1) {\n    e.pop();\n    callback.processCase(bucket.get(0), end);\n}"",
+    ""advice"": ""这是一个很好的代码清理。建议保持当前修改，因为它使代码更简洁、更易读。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '2fd0153235106732dae564a0eb463a2eecdbd820', 'message': ""Repeat condition 'skipEquals'\n\nSigned-off-by: cetf <cetf9h@163.com>""}]","[""Thanks but this code is not directly maintained by the Spring team, this is an internal copy of the cglib codebase. We'd rather not merge cosmetic changes if it makes it harder for us to track the changes.\r\n\r\nYou can [suggest this enhancement to the cglib project directly](https://github.com/cglib/cglib).""]",2026-04-04 00:50:58
+spring-projects/spring-framework,36409,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了条件判断逻辑，移除了冗余的嵌套if语句。"",
+    ""description"": ""在原始代码中，外层条件 `if (skipEquals && bucket.size() == 1)` 已经检查了 `skipEquals` 变量，但内部又有一个冗余的 `if (skipEquals)` 检查。这导致代码逻辑虽然正确，但结构冗余，可读性差。移除内部嵌套的 `if` 语句后，逻辑保持不变，但代码更简洁清晰。"",
+    ""evidence"": ""@@ -273,10 +273,8 @@ public void processCase(int key, Label ignore_end) throws Exception {\n                 List bucket = (List)buckets.get(key);\n                 Label next = null;\n                 if (skipEquals && bucket.size() == 1) {\n-                    if (skipEquals) {\n-\t\t\t\t\t\te.pop();\n-\t\t\t\t\t}\n-                    callback.processCase(bucket.get(0), end);\n+                    e.pop();\n+                    callback.processCase(bucket.get(0), end);"",
+    ""advice"": ""这是一个正确的重构。建议保持当前修改。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2fd0153235106732dae564a0eb463a2eecdbd820', 'message': ""Repeat condition 'skipEquals'\n\nSigned-off-by: cetf <cetf9h@163.com>""}]","[""Thanks but this code is not directly maintained by the Spring team, this is an internal copy of the cglib codebase. We'd rather not merge cosmetic changes if it makes it harder for us to track the changes.\r\n\r\nYou can [suggest this enhancement to the cglib project directly](https://github.com/cglib/cglib).""]",2026-04-04 00:51:08
+spring-projects/spring-framework,36398,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为PathApiVersionResolver添加了路径过滤功能，允许通过Predicate条件判断是否解析版本。"",
+    ""description"": ""新增的构造函数和字段允许传入一个Predicate<RequestPath>来过滤路径，当includePath不为null且测试失败时返回null。这增强了灵活性，但存在潜在的设计问题：当includePath为null时，行为与之前一致（总是尝试解析）；当includePath不为null且测试通过时，如果路径段索引超出范围，仍会抛出InvalidApiVersionException。这可能导致混淆：用户可能期望includePath为false时也返回null，而不是抛出异常。"",
+    ""evidence"": ""在PathApiVersionResolver.java中，新增了字段`private @Nullable Predicate<RequestPath> includePath;`和构造函数`public PathApiVersionResolver(int pathSegmentIndex, Predicate<RequestPath> includePath)`。在resolveVersion方法中，新增了逻辑：`if (this.includePath != null && !this.includePath.test(path)) { return null; }`"",
+    ""advice"": ""考虑在includePath测试通过后，如果路径段索引仍然无效（例如路径太短），是否也应该返回null而不是抛出异常，以保持行为一致性。或者，在文档中明确说明：includePath仅用于决定是否尝试解析，解析失败（如索引越界）仍会抛出异常。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""测试代码中的路径过滤逻辑较为复杂且重复，可读性较差。"",
+    ""description"": ""在测试方法testResolveWithIncludePath中，用于创建Predicate的lambda表达式内联了复杂的路径元素检查逻辑（检查元素数量、每个元素的值）。这个逻辑在spring-web和spring-webflux的测试中重复出现，且硬编码了特定值（如\""app\""和\""1.0\""），使得测试意图不够清晰，且难以维护。"",
+    ""evidence"": ""在PathApiVersionResolverTests.java中，testResolveWithIncludePath方法包含：`List<PathContainer.Element> elements = requestPath.elements(); if (elements.size() < 4) { return false; } return elements.get(0).value().equals(\""/\"") && elements.get(1).value().equals(\""app\"") && elements.get(2).value().equals(\""/\"") && elements.get(3).value().equals(\""1.0\"");`"",
+    ""advice"": ""考虑将这个Predicate提取为一个命名常量或辅助方法，并添加注释说明其意图（例如：仅匹配路径为\""/app/1.0/...\""的请求）。或者使用更清晰的断言方式，例如使用路径匹配工具类。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了通过Predicate过滤路径的API版本解析功能。"",
+    ""description"": ""未发现明显的功能错误、安全漏洞或性能问题。代码变更逻辑清晰，新增的测试覆盖了includePath为true和false的场景，以及路径不足时的异常情况。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'fa265789ea94689857e30630adb87fa55c6df6f4', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}, {'sha': 'd2962933910ef027fff7d5b2f92ac509f80b0bcc', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}, {'sha': '1b5177c3328c8c69208d79d53b9486d933f8403c', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}]","['Please, remove this from the commit.', 'Overall looks good, but I think the predicate should be to confirm if the path has a version rather based on exclusion, i.e. true if it is a path with a version, and false otherwise.\n\nThat would reflect more specifically the purpose of levelling up to other resolvers in being able to detect presence vs absence.\n\nIf we ever decide to overlay that with exclusions by path at the top level across resolvers the two would be more contrasted.', 'Thanks for the updates.', 'One more comment, if you want to improve the PR, the same change is needed on the Spring MVC side too.']",2026-04-04 00:51:34
+spring-projects/spring-framework,36398,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""为PathApiVersionResolver添加了基于谓词的条件解析功能"",
+    ""description"": ""新增的构造函数和includePath字段允许在解析版本前检查路径是否匹配。然而，当includePath为false时，方法返回null，这与原始行为不一致。原始行为在路径段不足时会抛出InvalidApiVersionException，但现在会静默返回null，可能导致调用方未处理null值而引发NullPointerException。"",
+    ""evidence"": ""在PathApiVersionResolver.java中，新增的构造函数：\npublic PathApiVersionResolver(int pathSegmentIndex, Predicate<RequestPath> includePath) {\n    this(pathSegmentIndex);\n    this.includePath = includePath;\n}\n\n以及resolveVersion方法中的逻辑：\nif (this.includePath != null && !this.includePath.test(path)) {\n    return null;\n}"",
+    ""advice"": ""建议在返回null时，考虑是否应该抛出更明确的异常，或者至少更新文档说明此行为变化。另外，确保调用方（如ApiVersionConfigurer）能正确处理null返回值。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""测试代码中存在硬编码的路径逻辑，降低了可维护性"",
+    ""description"": ""在testResolveWithIncludePath方法中，谓词逻辑硬编码了路径元素的具体值（如\""/\"", \""app\"", \""1.0\""），这使得测试与特定路径结构紧密耦合。如果路径结构变化，需要修改多个测试用例。"",
+    ""evidence"": ""在PathApiVersionResolverTests.java中：\nreturn elements.get(0).value().equals(\""/\"") &&\n        elements.get(1).value().equals(\""app\"") &&\n        elements.get(2).value().equals(\""/\"") &&\n        elements.get(3).value().equals(\""1.0\"");"",
+    ""advice"": ""考虑将谓词逻辑提取为可配置的测试辅助方法，或者使用更通用的路径匹配逻辑（如正则表达式），以提高测试的灵活性和可维护性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增的includePath字段在WebFlux版本中未正确初始化"",
+    ""description"": ""在spring-webflux模块的PathApiVersionResolver中，includePath字段被声明为@Nullable但未在单参数构造函数中显式初始化为null。虽然Java会默认初始化为null，但为了代码清晰性和一致性，建议显式初始化。"",
+    ""evidence"": ""在spring-webflux/src/main/java/org/springframework/web/reactive/accept/PathApiVersionResolver.java中：\nprivate @Nullable Predicate<RequestPath> includePath = null;\n\n但单参数构造函数未设置该字段：\npublic PathApiVersionResolver(int pathSegmentIndex) {\n    Assert.isTrue(pathSegmentIndex >= 0, \""Path segment index must be >= 0\"");\n    this.pathSegmentIndex = pathSegmentIndex;\n}"",
+    ""advice"": ""在单参数构造函数中显式设置this.includePath = null，以保持代码意图明确，并与spring-web模块中的实现保持一致。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'fa265789ea94689857e30630adb87fa55c6df6f4', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}, {'sha': 'd2962933910ef027fff7d5b2f92ac509f80b0bcc', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}, {'sha': '1b5177c3328c8c69208d79d53b9486d933f8403c', 'message': '#36398 checkstyle corrections\n\nSigned-off-by: Martin Mois <martin.mois@gmail.com>'}]","['Please, remove this from the commit.', 'Overall looks good, but I think the predicate should be to confirm if the path has a version rather based on exclusion, i.e. true if it is a path with a version, and false otherwise.\n\nThat would reflect more specifically the purpose of levelling up to other resolvers in being able to detect presence vs absence.\n\nIf we ever decide to overlay that with exclusions by path at the top level across resolvers the two would be more contrasted.', 'Thanks for the updates.', 'One more comment, if you want to improve the PR, the same change is needed on the Spring MVC side too.']",2026-04-04 00:51:56
+spring-projects/spring-framework,36370,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了WebSocket客户端未传递最大帧长度配置的问题"",
+    ""description"": ""在ReactorNettyWebSocketClient中，之前构建WebSocketSession时没有传递maxFramePayloadLength配置，导致无论客户端如何配置，都使用默认的64KB限制。当从Tomcat或Jetty等服务器接收更大的帧时，会抛出TooLongFrameException。"",
+    ""evidence"": ""WebSocketSession session = new ReactorNettyWebSocketSession(inbound, outbound, info, factory,\n\t\t\t\t\twsClientSpec.maxFramePayloadLength());"",
+    ""advice"": ""已正确修复，将wsClientSpec.maxFramePayloadLength()传递给ReactorNettyWebSocketSession构造函数。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""添加了WebSocket大负载测试用例"",
+    ""description"": ""新增的largePayload测试方法中，extendLimits方法对不同类型的WebSocket客户端进行了条件判断和配置，但代码结构可以进一步优化以提高可读性。特别是对于Jetty客户端的处理，创建新实例的方式可能不够清晰。"",
+    ""evidence"": ""if (client instanceof JettyWebSocketClient) {\n\torg.eclipse.jetty.websocket.client.WebSocketClient jetty =\n\t\tnew org.eclipse.jetty.websocket.client.WebSocketClient();\n\tjetty.setMaxTextMessageSize(limit);\n\tclient = new JettyWebSocketClient(jetty);\n}"",
+    ""advice"": ""建议将extendLimits方法重构为使用策略模式或工厂方法，将不同客户端的配置逻辑分离到独立的方法中，提高代码的可读性和可维护性。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复了测试类中的空指针异常风险"",
+    ""description"": ""在AbstractReactiveWebSocketIntegrationTests的stopServer方法中，添加了对server是否为null的检查，避免了潜在的NullPointerException。"",
+    ""evidence"": ""if (this.server != null) {\n\tthis.server.stop();\n}"",
+    ""advice"": ""这是一个良好的防御性编程实践，确保了代码的健壮性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '3eca440c9848d81c7e3f60aead9be7f287678bda', 'message': 'Propagate max frame length to WebSocket session\n\nThis change ensures that maxFramePayloadLength from\nWebsocketClientSpec is passed to ReactorNettyWebSocketSession.\n\nPreviously, the session used the default 64KB limit regardless\nof client configuration, causing TooLongFrameException when\nreceiving larger frames from servers like Tomcat or Jetty.\n\nCloses gh-36369\n\nSigned-off-by: Artem Voronin <artem.voronin.dev@gmail.com>'}]","[""For Reactor Netty, it looks like originally we had an `maxFramePayloadLength` field that was passed to `ReactorNettyWebSocketSession` that was then replaced in favour of the `WebSocketClientSpec` from Reactor Netty. However, the change 2ed281f6a89d50fe042335a1c88b515cb254afff to make the switch didn't pass the value into the session constructor, so that's a regression in 7.0.\n\nFor Jetty, however, I'm not sure yet why we need to pass the settings from the Jetty `WebSocketClient` to the Jetty `Session`, with the latter created by the former. Could you drop the Jetty changes, and submit them as a separate PR, please?"", 'Updated: While expanding the regression tests to cover all clients in `WebSocketIntegrationTests`, I discovered that `JettyWebSocketClient` suffers from the same issue.\r\n\r\nEven when the native Jetty client (org.eclipse.jetty.websocket.client.WebSocketClient) is configured with higher limits, the `JettyWebSocketSession` still defaults to 64KB, leading to: `CloseStatus[code=1009, reason=Text message too large: 69,624 > 65,536]`\r\n\r\n|Configuration|Log|State|\r\n|---|---|---|\r\n|`org.eclipse.jetty.websocket.client.WebSocketClient#setMaxFrameSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxBinaryMessageSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxTextMessageSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxOutgoingFrames`|<img width=""1767"" height=""559"" alt=""image"" src=""https://github.com/user-attachments/assets/dccf3b54-62e8-4cec-9725-1077665a6bc8"" />|<img width=""1356"" height=""550"" alt=""image"" src=""https://github.com/user-attachments/assets/72bd68b7-1387-494b-96de-54dfb09e01dc"" />|\r\n', 'After closer investigation, I’ve confirmed that `JettyWebSocketClient` correctly propagates the limits when properly configured, so I have restored `JettyWebSocketClient` to its original state.\r\nThe initial issues I encountered were due to **local misconfiguration.**']",2026-04-04 00:52:16
+spring-projects/spring-framework,36370,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复WebSocket客户端未传递最大帧长度配置的问题"",
+    ""description"": ""主要变更修复了ReactorNettyWebSocketClient未将配置的maxFramePayloadLength传递给ReactorNettyWebSocketSession的问题。之前无论客户端如何配置，会话都使用默认的64KB限制，导致从Tomcat或Jetty等服务器接收较大帧时抛出TooLongFrameException。"",
+    ""evidence"": ""文件: spring-webflux/src/main/java/org/springframework/web/reactive/socket/client/ReactorNettyWebSocketClient.java\n@@ -127,16 +127,18 @@ public Mono<Void> execute(URI url, WebSocketHandler handler) {\n \t@Override\n \tpublic Mono<Void> execute(URI url, HttpHeaders requestHeaders, WebSocketHandler handler) {\n \t\tString protocols = StringUtils.collectionToCommaDelimitedString(handler.getSubProtocols());\n+\t\tWebsocketClientSpec wsClientSpec = buildSpec(protocols);\n \t\treturn getHttpClient()\n \t\t\t\t.headers(nettyHeaders -> setNettyHeaders(requestHeaders, nettyHeaders))\n-\t\t\t\t.websocket(buildSpec(protocols))\n+\t\t\t\t.websocket(wsClientSpec)\n \t\t\t\t.uri(url.toString())\n \t\t\t\t.handle((inbound, outbound) -> {\n \t\t\t\t\tHttpHeaders responseHeaders = toHttpHeaders(inbound);\n \t\t\t\t\tString protocol = responseHeaders.getFirst(\""Sec-WebSocket-Protocol\"");\n \t\t\t\t\tHandshakeInfo info = new HandshakeInfo(url, responseHeaders, Mono.empty(), protocol);\n \t\t\t\t\tNettyDataBufferFactory factory = new NettyDataBufferFactory(outbound.alloc());\n-\t\t\t\t\tWebSocketSession session = new ReactorNettyWebSocketSession(inbound, outbound, info, factory);\n+\t\t\t\t\tWebSocketSession session = new ReactorNettyWebSocketSession(inbound, outbound, info, factory,\n+\t\t\t\t\t\t\twsClientSpec.maxFramePayloadLength());"",
+    ""advice"": ""变更正确，修复了重要的功能缺陷。建议确保ReactorNettyWebSocketSession的构造函数能够正确处理传入的maxFramePayloadLength参数，并在内部使用该值来配置帧解码器。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""添加了WebSocket大负载测试用例"",
+    ""description"": ""新增的测试方法largePayload()和辅助方法extendLimits()代码较长且逻辑相对复杂，特别是extendLimits方法中针对不同客户端类型的条件分支处理，可读性有待提高。"",
+    ""evidence"": ""文件: spring-webflux/src/test/java/org/springframework/web/reactive/socket/WebSocketIntegrationTests.java\n@@ -186,6 +195,51 @@ void cookie(WebSocketClient client, HttpServer server, Class<?> serverConfigClas\n \t\tassertThat(cookie.get()).isEqualTo(\""project=spring\"");\n \t}\n \n+\t@ParameterizedWebSocketTest\n+\tvoid largePayload(WebSocketClient client, HttpServer server, Class<?> serverConfigClass) throws Exception {\n+\n+\t\tint defaultFrameMaxSize = NettyWebSocketSessionSupport.DEFAULT_FRAME_MAX_SIZE;\n+\t\tint extendedLimit = 2 * defaultFrameMaxSize;\n+\n+\t\tWebSocketClient extendedClient = extendLimits(client, extendedLimit);\n+\n+\t\tstartServer(extendedClient, server, serverConfigClass);\n+\n+\t\tAtomicReference<Integer> payloadSizeRef = new AtomicReference<>();\n+\t\tassertThatCode(() -> extendedClient.execute(getUrl(\""/large-payload\""),\n+\t\t\t\t\t\tsession -> session.receive()\n+\t\t\t\t\t\t\t\t.map(WebSocketMessage::getPayload)\n+\t\t\t\t\t\t\t\t.map(DataBuffer::readableByteCount)\n+\t\t\t\t\t\t\t\t.reduce(Integer::sum)\n+\t\t\t\t\t\t\t\t.doOnNext(payloadSizeRef::set)\n+\t\t\t\t\t\t\t\t.then())\n+\t\t\t\t\t.block(TIMEOUT))\n+\t\t\t\t\t.doesNotThrowAnyException();\n+\n+\t\tassertThat(payloadSizeRef.get()).isGreaterThan(defaultFrameMaxSize);\n+\t\tassertThat(payloadSizeRef.get()).isEqualTo(extendedLimit);\n+\t}\n+\n+\tprivate WebSocketClient extendLimits(WebSocketClient client, int limit) {\n+\t\tif (client instanceof ReactorNettyWebSocketClient netty) {\n+\t\t\tclient = new ReactorNettyWebSocketClient(\n+\t\t\t\t\tnetty.getHttpClient(),\n+\t\t\t\t\t() -> WebsocketClientSpec.builder().maxFramePayloadLength(limit));\n+\t\t}\n+\n+\t\tif (client instanceof TomcatWebSocketClient tomcat) {\n+\t\t\ttomcat.getWebSocketContainer().setDefaultMaxTextMessageBufferSize(limit);\n+\t\t}\n+\n+\t\tif (client instanceof JettyWebSocketClient) {\n+\t\t\torg.eclipse.jetty.websocket.client.WebSocketClient jetty =\n+\t\t\t\t\tnew org.eclipse.jetty.websocket.client.WebSocketClient();\n+\t\t\tjetty.setMaxTextMessageSize(limit);\n+\t\t\tclient = new JettyWebSocketClient(jetty);\n+\t\t}\n+\n+\t\treturn client;\n+\t}"",
+    ""advice"": ""建议将extendLimits方法重构，可以考虑使用策略模式或工厂模式来处理不同客户端类型的配置逻辑，以提高代码的可读性和可维护性。同时，对于Jetty客户端的处理，创建新实例可能不是最佳方式，应考虑是否会影响原有测试环境。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复测试中潜在的NPE问题"",
+    ""description"": ""在AbstractReactiveWebSocketIntegrationTests的stopServer方法中，添加了对server变量的空值检查，防止在server为null时调用stop()方法导致NullPointerException。"",
+    ""evidence"": ""文件: spring-webflux/src/test/java/org/springframework/web/reactive/socket/AbstractReactiveWebSocketIntegrationTests.java\n@@ -148,7 +148,9 @@ void stopServer() {\n \t\tif (this.client instanceof Lifecycle lifecycle) {\n \t\t\tlifecycle.stop();\n \t\t}\n-\t\tthis.server.stop();\n+\t\tif (this.server != null) {\n+\t\t\tthis.server.stop();\n+\t\t}"",
+    ""advice"": ""这是一个良好的防御性编程实践，确保了测试的健壮性。建议检查整个测试类中server变量的初始化逻辑，确保其在所有测试路径下都能正确初始化或保持null状态的一致性。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '3eca440c9848d81c7e3f60aead9be7f287678bda', 'message': 'Propagate max frame length to WebSocket session\n\nThis change ensures that maxFramePayloadLength from\nWebsocketClientSpec is passed to ReactorNettyWebSocketSession.\n\nPreviously, the session used the default 64KB limit regardless\nof client configuration, causing TooLongFrameException when\nreceiving larger frames from servers like Tomcat or Jetty.\n\nCloses gh-36369\n\nSigned-off-by: Artem Voronin <artem.voronin.dev@gmail.com>'}]","[""For Reactor Netty, it looks like originally we had an `maxFramePayloadLength` field that was passed to `ReactorNettyWebSocketSession` that was then replaced in favour of the `WebSocketClientSpec` from Reactor Netty. However, the change 2ed281f6a89d50fe042335a1c88b515cb254afff to make the switch didn't pass the value into the session constructor, so that's a regression in 7.0.\n\nFor Jetty, however, I'm not sure yet why we need to pass the settings from the Jetty `WebSocketClient` to the Jetty `Session`, with the latter created by the former. Could you drop the Jetty changes, and submit them as a separate PR, please?"", 'Updated: While expanding the regression tests to cover all clients in `WebSocketIntegrationTests`, I discovered that `JettyWebSocketClient` suffers from the same issue.\r\n\r\nEven when the native Jetty client (org.eclipse.jetty.websocket.client.WebSocketClient) is configured with higher limits, the `JettyWebSocketSession` still defaults to 64KB, leading to: `CloseStatus[code=1009, reason=Text message too large: 69,624 > 65,536]`\r\n\r\n|Configuration|Log|State|\r\n|---|---|---|\r\n|`org.eclipse.jetty.websocket.client.WebSocketClient#setMaxFrameSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxBinaryMessageSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxTextMessageSize`, `org.eclipse.jetty.websocket.client.WebSocketClient#setMaxOutgoingFrames`|<img width=""1767"" height=""559"" alt=""image"" src=""https://github.com/user-attachments/assets/dccf3b54-62e8-4cec-9725-1077665a6bc8"" />|<img width=""1356"" height=""550"" alt=""image"" src=""https://github.com/user-attachments/assets/72bd68b7-1387-494b-96de-54dfb09e01dc"" />|\r\n', 'After closer investigation, I’ve confirmed that `JettyWebSocketClient` correctly propagates the limits when properly configured, so I have restored `JettyWebSocketClient` to its original state.\r\nThe initial issues I encountered were due to **local misconfiguration.**']",2026-04-04 00:52:55
+spring-projects/spring-framework,36367,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增ListConcatenation类，实现列表拼接的运算符重载"",
+    ""description"": ""operate方法在抛出UnsupportedOperationException时，异常信息中直接使用left和right对象的toString()方法，如果这些对象包含敏感信息（如用户数据、配置信息等），可能会在异常堆栈中泄露敏感数据。"",
+    ""evidence"": ""throw new UnsupportedOperationException(\n\t\t\t\""No overload for operation %s and operands [%s] and [%s]\""\n\t\t\t\t\t.formatted(operation, left, right));"",
+    ""advice"": ""建议在异常信息中避免直接输出操作数的完整内容，可以只输出其类型信息或进行脱敏处理。例如：\""No overload for operation %s for List types\""。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'b08bf4244860d989cb5eb9b9e5e040a0f3c6ef3b', 'message': 'Polish examples in Operators reference\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '64106bc21e47486ea790e016e385a375aea4d399', 'message': 'Add copyrights\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]","['This has been merged into `main`, slightly revised in f87b5ee3262d281ba650762b9a5a00332b932170, and backported to `6.2.x`.\r\n\r\nThanks']",2026-04-04 00:53:05
+spring-projects/spring-framework,36367,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""新增ListConcatenation类，演示如何重载运算符实现列表拼接"",
+    ""description"": ""在operate方法中，当操作类型为ADD且左右操作数都是List时，代码会创建一个新的ArrayList来合并两个列表。然而，当list1或list2为null时，instanceof检查会返回false，导致抛出UnsupportedOperationException。这可能会掩盖真正的空指针问题，使调试变得困难。更好的做法是明确处理null值或让NPE自然抛出以指示编程错误。"",
+    ""evidence"": ""if (operation == Operation.ADD &&\n\t\t\tleft instanceof List list1 && right instanceof List list2) {\n\n\t\tList result = new ArrayList(list1);\n\t\tresult.addAll(list2);\n\t\treturn result;\n\t}"",
+    ""advice"": ""考虑在方法开始时检查参数是否为null，或者让NPE自然发生。如果null是有效输入，应在文档中明确说明。例如，可以添加：`if (left == null || right == null) { throw new IllegalArgumentException(\""Operands cannot be null\""); }`"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增ListConcatenation类，演示如何重载运算符实现列表拼接"",
+    ""description"": ""operate方法中使用了原始类型List，这绕过了泛型类型安全检查，可能导致运行时ClassCastException。虽然使用了@SuppressWarnings注解，但更好的做法是使用泛型来确保类型安全。"",
+    ""evidence"": ""@SuppressWarnings({\""rawtypes\"", \""unchecked\""})\npublic Object operate(Operation operation, Object left, Object right) {\n\tList result = new ArrayList(list1);"",
+    ""advice"": ""考虑使用泛型来改进类型安全。例如：`List<?> list1 = (List<?>)left; List<?> list2 = (List<?>)right; List<Object> result = new ArrayList<>(list1); result.addAll(list2);` 但需注意这仍然需要类型转换。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""新增ListConcatenation类，演示如何重载运算符实现列表拼接"",
+    ""description"": ""在创建结果列表时，使用`new ArrayList(list1)`会初始化一个容量为list1大小的ArrayList。如果list2也很大，addAll操作可能导致内部数组扩容，产生额外的内存分配和复制开销。"",
+    ""evidence"": ""List result = new ArrayList(list1);\nresult.addAll(list2);"",
+    ""advice"": ""可以通过预先计算总大小来优化：`List result = new ArrayList(list1.size() + list2.size()); result.addAll(list1); result.addAll(list2);` 这样可以避免扩容操作。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b08bf4244860d989cb5eb9b9e5e040a0f3c6ef3b', 'message': 'Polish examples in Operators reference\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '64106bc21e47486ea790e016e385a375aea4d399', 'message': 'Add copyrights\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]","['This has been merged into `main`, slightly revised in f87b5ee3262d281ba650762b9a5a00332b932170, and backported to `6.2.x`.\r\n\r\nThanks']",2026-04-04 00:53:22
+spring-projects/spring-framework,36365,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""代码变更将手动复制响应头的逻辑替换为使用`ServletServerHttpResponse`。然而，新的实现存在一个潜在问题：`serverResponse.getHeaders().putAll(this.headers)`会完全覆盖`serverResponse`中已有的所有头信息，这可能包括`ServletServerHttpResponse`构造函数或底层`HttpServletResponse`已经设置好的默认头信息（例如，由容器或过滤器设置的）。虽然测试用例`buildReplacesExistingResponseHeaders`验证了替换来自`MockHttpServletResponse`的旧头信息，但它没有验证是否保留了必要的默认头信息。"",
+    ""evidence"": ""`serverResponse.getHeaders().putAll(this.headers);`"",
+    ""advice"": ""建议使用`addAll`或`setAll`（如果意图是替换同名头）来合并头信息，而不是`putAll`。或者，更安全的方式是直接使用`ServletServerHttpResponse`的`getHeaders()`进行逐个头的设置，因为它内部已经适配了`HttpServletResponse`的语义。但考虑到本次变更的目的是为了利用`ServletResponseHeadersAdapter`的行为（可能已正确处理覆盖），并且有测试验证了替换行为，此问题可能不严重。不过，为了确保不意外清除其他头，可以审查`ServletResponseHeadersAdapter`的实现。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""新的`writeStatusAndHeaders`方法在每次响应写入时都创建了一个新的`ServletServerHttpResponse`对象，并在调用`close()`后立即丢弃。虽然这简化了代码，但可能引入微小的性能开销（对象创建和GC）。在旧实现中，是直接操作`HttpServletResponse`，没有额外的对象创建。"",
+    ""evidence"": ""`ServletServerHttpResponse serverResponse = new ServletServerHttpResponse(response);` 和 `serverResponse.close();`"",
+    ""advice"": ""如果性能是极高敏感的场景，可以考虑重用`ServletServerHttpResponse`实例（尽管在典型的Web请求中，这种开销通常可以忽略不计）。当前实现更简洁且利用了Spring框架的抽象，利大于弊，可以接受。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""代码变更显著简化了`writeStatusAndHeaders`方法，移除了复杂的头信息处理逻辑（如内容类型、字符编码、内容长度的手动设置），提高了可读性和可维护性。"",
+    ""evidence"": ""整个`writeHeaders`方法被移除，新的`writeStatusAndHeaders`方法只有几行代码。"",
+    ""advice"": ""无。这是一个积极的改进。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2789f6be1e619d4c9a49b99201f6c27e8afd696b', 'message': 'Use ServletServerHttpResponse for functional headers\n\nSwitch Spring MVC functional endpoint response header writing to use ServletServerHttpResponse and its ServletResponseHeadersAdapter-backed HttpHeaders behavior instead of manual header copying.\n\nAdd coverage that verifies existing response headers are replaced when writing ServerResponse.\n\nCloses gh-36358\n\nSigned-off-by: Amir Pezeshk <amir.pezeshk@voxcarrier.com>'}]","['This change needs a bit more investigation, and is related to other issues as well. Those need to all be taken into account at the same time. This one is not suited for contribution. ']",2026-04-04 00:53:44
+spring-projects/spring-framework,36365,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""代码变更将手动复制响应头的逻辑替换为使用`ServletServerHttpResponse`。然而，新的实现存在一个潜在的设计问题：`serverResponse.getHeaders().putAll(this.headers)`会完全覆盖`ServletServerHttpResponse`内部已有的headers map，这可能丢失了`ServletServerHttpResponse`在构造时从`HttpServletResponse`中初始化的默认头信息（例如，如果`HttpServletResponse`在传入前已经设置了一些头）。虽然测试用例`buildReplacesExistingResponseHeaders`验证了替换行为，但这是针对`MockHttpServletResponse`的测试，而`ServletServerHttpResponse`的构造函数行为可能不同。"",
+    ""evidence"": ""if (!this.headers.isEmpty()) {\n\tserverResponse.getHeaders().putAll(this.headers);\n}"",
+    ""advice"": ""建议使用`addAll`或`setAll`方法来合并headers，而不是完全覆盖。但根据提交信息和测试，意图是“替换”现有头。需要确认`ServletServerHttpResponse`的构造函数是否从`HttpServletResponse`读取了任何头信息。如果不会（通常不会），那么当前实现是安全的。为了更清晰和避免未来误解，可以考虑添加注释说明此替换行为。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""新的实现调用了`serverResponse.close()`，这可能会触发一些不必要的操作（例如，刷新缓冲区），而仅仅是为了写入headers。在`writeStatusAndHeaders`方法中，主要目的是设置状态码和头信息，并不涉及响应体的写入或关闭。过早调用`close()`可能带来微小的性能开销或副作用。"",
+    ""evidence"": ""serverResponse.close();"",
+    ""advice"": ""除非`ServletServerHttpResponse`的`close()`方法对于头信息的生效是必需的，否则应考虑移除这行代码。通常，`ServletServerHttpResponse`的`getHeaders()`操作会直接委托给底层的`HttpServletResponse`。可以检查`ServletServerHttpResponse`的实现，或者考虑只调用`serverResponse.getHeaders()`而不调用`close()`。如果`close()`是必要的（例如，为了确保头被提交），应在方法注释中说明。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""移除了对`Charset`和`MediaType`的导入以及相关的字符编码处理逻辑，这简化了代码。然而，新的实现将字符编码和内容长度等细节的处理委托给了`ServletServerHttpResponse`，这依赖于`ServletServerHttpResponse`的正确实现。代码可读性有所提升，但需要开发者了解`ServletServerHttpResponse`的行为。"",
+    ""evidence"": ""// 旧代码中处理Content-Type和字符编码的逻辑被完全移除\n// 新代码仅使用：\nServletServerHttpResponse serverResponse = new ServletServerHttpResponse(response);\nif (!this.headers.isEmpty()) {\n\tserverResponse.getHeaders().putAll(this.headers);\n}\nserverResponse.close();"",
+    ""advice"": ""当前实现是可接受的，因为它遵循了Spring的常见模式，使用现有的、经过测试的组件（`ServletServerHttpResponse`）。建议保持现状，因为简化代码并重用核心组件通常有利于维护。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2789f6be1e619d4c9a49b99201f6c27e8afd696b', 'message': 'Use ServletServerHttpResponse for functional headers\n\nSwitch Spring MVC functional endpoint response header writing to use ServletServerHttpResponse and its ServletResponseHeadersAdapter-backed HttpHeaders behavior instead of manual header copying.\n\nAdd coverage that verifies existing response headers are replaced when writing ServerResponse.\n\nCloses gh-36358\n\nSigned-off-by: Amir Pezeshk <amir.pezeshk@voxcarrier.com>'}]","['This change needs a bit more investigation, and is related to other issues as well. Those need to all be taken into account at the same time. This one is not suited for contribution. ']",2026-04-04 00:54:05
+spring-projects/spring-framework,36364,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""代码变更将手动复制响应头的逻辑替换为使用`ServletServerHttpResponse`。然而，新代码在调用`serverResponse.close()`后，才调用`writeCookies(response)`。`ServletServerHttpResponse.close()`方法可能会提交响应，导致后续的`writeCookies`操作（即添加Cookie）可能无法生效，因为HTTP响应可能已经提交。这是一个潜在的功能缺陷。"",
+    ""evidence"": ""private void writeStatusAndHeaders(HttpServletResponse response) {\n\t\tresponse.setStatus(this.statusCode.value());\n\t\tServletServerHttpResponse serverResponse = new ServletServerHttpResponse(response);\n\t\tif (!this.headers.isEmpty()) {\n\t\t\tserverResponse.getHeaders().putAll(this.headers);\n\t\t}\n\t\tserverResponse.close();\n\t\twriteCookies(response);\n\t}"",
+    ""advice"": ""调整`writeStatusAndHeaders`方法中`serverResponse.close()`的调用时机。应在所有响应内容（包括状态码、头部和Cookie）都设置完毕后再调用`close()`。建议将`writeCookies(response)`的调用移到`serverResponse.close()`之前。"",
+    ""confidence"": 0.8,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""新代码通过`ServletServerHttpResponse`的`getHeaders().putAll(this.headers)`一次性设置所有头部，这比之前逐条添加的方式更简洁。但是，`putAll`操作会完全替换`serverResponse`中已有的头部，这可能与测试用例`buildReplacesExistingResponseHeaders`的意图一致（替换同名头），但需要确认这是否是期望的全局行为（例如，对于多值的响应头，`putAll`会覆盖而非追加）。"",
+    ""evidence"": ""if (!this.headers.isEmpty()) {\n\t\t\tserverResponse.getHeaders().putAll(this.headers);\n\t\t}"",
+    ""advice"": ""审查`putAll`的语义是否符合所有响应头处理的预期。如果某些头部需要追加（add）而非替换（set），则需要调整逻辑。目前从新增的测试看，替换是期望行为，但需确保没有其他副作用。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '8836c4c8c618ffda03462ef01c3b145e66444542', 'message': 'Use ServletServerHttpResponse for functional headers\n\nSwitch Spring MVC functional endpoint response header writing to use ServletServerHttpResponse and its ServletResponseHeadersAdapter-backed HttpHeaders behavior instead of manual header copying.\n\nAdd coverage that verifies existing response headers are replaced when writing ServerResponse.\n\nCloses gh-36358\n\nSigned-off-by: Amir Pezeshk <“amir.pezeshk@voxcarrier.com”>'}]","['Superseded by #36365 (same change, clean commit metadata).']",2026-04-04 00:54:22
+spring-projects/spring-framework,36364,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""代码变更将手动复制响应头的逻辑替换为使用`ServletServerHttpResponse`。然而，新的实现存在一个潜在问题：`serverResponse.getHeaders().putAll(this.headers)`会完全覆盖`ServletServerHttpResponse`中已有的响应头。虽然测试用例`buildReplacesExistingResponseHeaders`验证了替换行为，但这可能破坏了与`HttpServletResponse`的某些集成，例如`HttpServletResponse`自动设置的一些默认头（如`Server`、`Date`等）或通过其他过滤器添加的头。直接`putAll`可能过于激进，导致信息丢失。"",
+    ""evidence"": ""if (!this.headers.isEmpty()) {\n            serverResponse.getHeaders().putAll(this.headers);\n        }"",
+    ""advice"": ""建议使用`addAll`或`setAll`（如果意图是替换同名头）来合并头信息，而不是直接`putAll`覆盖整个`HttpHeaders`对象。或者，继续使用`ServletServerHttpResponse`的`getHeaders()`返回的`HttpHeaders`对象（它内部使用`ServletResponseHeadersAdapter`）进行逐个头的设置，以确保与Servlet容器的行为保持一致。需要审查`ServletResponseHeadersAdapter`的实现，确认其`putAll`方法是否已正确处理与底层`HttpServletResponse`的交互。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""在`writeStatusAndHeaders`方法中，无论`this.headers`是否为空，都会创建一个`ServletServerHttpResponse`对象并立即调用`close()`。如果响应头为空，这个对象的创建和关闭可能是不必要的开销。"",
+    ""evidence"": ""ServletServerHttpResponse serverResponse = new ServletServerHttpResponse(response);\n        if (!this.headers.isEmpty()) {\n            serverResponse.getHeaders().putAll(this.headers);\n        }\n        serverResponse.close();"",
+    ""advice"": ""可以考虑将`ServletServerHttpResponse`的创建和操作延迟到确实需要写入头信息时。例如，可以先检查`this.headers`和`this.cookies`是否都为空，如果都为空，则只设置状态码并直接返回。但需要注意，`ServletServerHttpResponse`的构造可能还承担了其他必要的初始化工作，需要确认其构造函数的副作用。在当前上下文中，优化可能带来的收益较小，但代码结构可以更清晰。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构响应头写入逻辑，使用ServletServerHttpResponse统一处理。"",
+    ""description"": ""移除了对`Charset`和`MediaType`的显式导入，但新的代码通过`ServletServerHttpResponse`间接处理这些细节，提高了抽象层次。然而，`writeStatusAndHeaders`方法现在将状态码设置、头写入和cookie写入混合在一起，而`writeCookies`调用被移到了`serverResponse.close()`之后。这可能会让人疑惑`close()`操作是否会影响后续的cookie写入。"",
+    ""evidence"": ""response.setStatus(this.statusCode.value());\n        ServletServerHttpResponse serverResponse = new ServletServerHttpResponse(response);\n        if (!this.headers.isEmpty()) {\n            serverResponse.getHeaders().putAll(this.headers);\n        }\n        serverResponse.close();\n        writeCookies(response);"",
+    ""advice"": ""为了更清晰，可以考虑将方法重命名为`writeStatusAndHeadersAndCookies`，或者添加注释说明`ServletServerHttpResponse.close()`会提交头信息，而cookies是单独写入的。同时，确认`close()`操作不会刷新响应体或提交响应，以免影响cookie设置（通常不会，但最好有文档或注释说明）。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '8836c4c8c618ffda03462ef01c3b145e66444542', 'message': 'Use ServletServerHttpResponse for functional headers\n\nSwitch Spring MVC functional endpoint response header writing to use ServletServerHttpResponse and its ServletResponseHeadersAdapter-backed HttpHeaders behavior instead of manual header copying.\n\nAdd coverage that verifies existing response headers are replaced when writing ServerResponse.\n\nCloses gh-36358\n\nSigned-off-by: Amir Pezeshk <“amir.pezeshk@voxcarrier.com”>'}]","['Superseded by #36365 (same change, clean commit metadata).']",2026-04-04 00:54:45
+spring-projects/spring-framework,36361,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将writeFunction的调用移出同步锁范围，避免潜在的死锁风险。"",
+    ""description"": ""代码变更的主要目的是解决一个潜在的同步死锁问题。原代码在`synchronized`块内调用`writeFunction.apply(this)`，这可能导致重入同步死锁（reentrant sync deadlock），因为`writeFunction`内部可能尝试获取相同的锁。变更通过引入一个标志变量`invokeWriteFunction`，在锁内只设置标志，在锁外执行实际的函数调用，从而缩小了锁的范围。"",
+    ""evidence"": ""在`onNext`和`onComplete`方法中，原代码在`synchronized`块内包含：\n```java\nPublisher<Void> result;\ntry {\n    result = writeFunction.apply(this);\n}\ncatch (Throwable ex) {\n    this.writeCompletionBarrier.onError(ex);\n    return;\n}\nresult.subscribe(this.writeCompletionBarrier);\n```\n变更为在锁内设置`invokeWriteFunction = true;`，在锁外执行上述代码。"",
+    ""advice"": ""变更设计合理，解决了注释中提到的\""FIXME revisit in case of reentrant sync deadlock\""问题。建议确保新增的测试`writeFunctionIsNotInvokedUnderMonitorLock`能充分覆盖此场景。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""代码结构更清晰，锁内逻辑更专注。"",
+    ""description"": ""重构后的代码将状态判断与可能阻塞的函数调用分离，使同步块内的逻辑更简洁、职责更单一（仅处理状态转换和标志设置），提高了代码的可读性和可维护性。"",
+    ""evidence"": ""`onNext`方法中，`synchronized`块内的代码从处理状态、调用函数、错误处理简化为仅处理状态和设置标志：\n```java\nsynchronized (this) {\n    if (this.state == State.READY_TO_WRITE) {\n        requiredWriteSubscriber().onNext(item);\n    }\n    else if (this.state == State.NEW) {\n        this.item = item;\n        this.state = State.FIRST_SIGNAL_RECEIVED;\n        invokeWriteFunction = true; // 仅设置标志\n    }\n    // ...\n}\n```"",
+    ""advice"": ""无。此变更是积极的代码结构改进。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增了回归测试，验证writeFunction不在监视器锁下被调用。"",
+    ""description"": ""新增的测试`writeFunctionIsNotInvokedUnderMonitorLock`通过创建一个新线程尝试获取`publisher`（即`ChannelSendOperator`内部类实例）的锁，来验证`writeFunction`的调用确实发生在锁释放之后。这有效地防止了未来回归导致死锁。"",
+    ""evidence"": ""```java\n@Test\nvoid writeFunctionIsNotInvokedUnderMonitorLock() {\n    ChannelSendOperator<String> operator = new ChannelSendOperator<>(\n            Mono.just(\""one\""),\n            publisher -> {\n                CountDownLatch acquired = new CountDownLatch(1);\n                Thread t = new Thread(() -> {\n                    synchronized (publisher) { // 尝试获取锁\n                        acquired.countDown();\n                    }\n                });\n                t.start();\n                // 如果writeFunction在锁内调用，此await会超时\n                if (!acquired.await(1, TimeUnit.SECONDS)) {\n                    throw new IllegalStateException(\""writeFunction appears to be invoked under monitor lock\"");\n                }\n                return Mono.empty();\n            });\n    StepVerifier.create(operator)\n            .expectComplete()\n            .verify(Duration.ofSeconds(2));\n}\n```"",
+    ""advice"": ""测试设计良好，直接验证了核心修复点。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '752a0199d6eedba9f5a8d5c6729e5ef92b128a40', 'message': 'Avoid invoking writeFunction under lock in ChannelSendOperator\n\nSigned-off-by: l2yuPa <jeungwon28@gmail.com>'}, {'sha': 'ca2c2c812ef3d481e88d301ee7b5f50b540fd54a', 'message': 'Add regression test for writer invocation lock scope\n\nSigned-off-by: l2yuPa <jeungwon28@gmail.com>'}]","['Thanks for the suggestion. To make the review (and history) easier, could you eliminate stylistic differences, i.e. not switching from if-else to if with return?', 'Thanks for the suggestion — agreed. I updated the change to keep the original if/else structure. The diff is now limited to moving writeFunction invocation (and subscription) outside the synchronized block, without additional stylistic restructuring.']",2026-04-04 00:55:12
+spring-projects/spring-framework,36361,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将writeFunction的调用移出同步锁，避免潜在的死锁风险。"",
+    ""description"": ""代码变更的主要目的是解决一个潜在的死锁问题。原代码在`synchronized`块内调用用户提供的`writeFunction.apply(this)`，这可能导致重入同步锁死锁（reentrant sync deadlock）。修改后，在锁内仅设置标志位`invokeWriteFunction`，实际的函数调用和结果订阅移到了锁外执行。这降低了锁的持有时间，避免了在用户回调中可能发生的、需要获取同一监视器锁的操作所引发的死锁。"",
+    ""evidence"": ""在`onNext`和`onComplete`方法中，原代码在`synchronized (this)`块内执行`result = writeFunction.apply(this);`和`result.subscribe(this.writeCompletionBarrier);`。新代码在锁内仅设置`invokeWriteFunction = true;`，并在锁外执行这些操作。"",
+    ""advice"": ""这是一个正确的设计改进。它移除了代码中原有的`// FIXME revisit in case of reentrant sync deadlock`注释，表明问题已得到解决。新增的回归测试`writeFunctionIsNotInvokedUnderMonitorLock`也验证了此修复。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""代码结构略有重复，但逻辑清晰。"",
+    ""description"": ""修改后的代码在`onNext`和`onComplete`方法中引入了相似的模式：在锁内判断状态并设置标志位，在锁外根据标志位调用函数。虽然两个方法中的模式重复，但这是为了处理不同的信号（数据项和完成信号），且逻辑清晰，易于理解。"",
+    ""evidence"": ""`onNext`和`onComplete`方法中都包含`boolean invokeWriteFunction = false;`，在`synchronized`块内根据状态设置该标志，并在锁外检查标志以决定是否调用`writeFunction`。"",
+    ""advice"": ""当前重复是合理的，因为处理的是Reactive Streams规范中的不同信号。可以保持现状，无需重构。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '752a0199d6eedba9f5a8d5c6729e5ef92b128a40', 'message': 'Avoid invoking writeFunction under lock in ChannelSendOperator\n\nSigned-off-by: l2yuPa <jeungwon28@gmail.com>'}, {'sha': 'ca2c2c812ef3d481e88d301ee7b5f50b540fd54a', 'message': 'Add regression test for writer invocation lock scope\n\nSigned-off-by: l2yuPa <jeungwon28@gmail.com>'}]","['Thanks for the suggestion. To make the review (and history) easier, could you eliminate stylistic differences, i.e. not switching from if-else to if with return?', 'Thanks for the suggestion — agreed. I updated the change to keep the original if/else structure. The diff is now limited to moving writeFunction invocation (and subscription) outside the synchronized block, without additional stylistic restructuring.']",2026-04-04 00:55:26
+spring-projects/spring-framework,36360,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复HTTP连接未正确关闭导致的资源泄漏问题"",
+    ""description"": ""在原始代码中，当`httpCon != null`且`httpCon.getResponseCode()`返回非HTTP OK状态码时，会直接`return false`，但此时连接并未断开。虽然代码在返回前调用了`httpCon.disconnect()`，但该调用位于`if (httpCon != null)`块内，而该块在`return false`之前。然而，仔细分析原始代码流：当`httpCon != null`且`httpCon.getResponseCode()`返回非HTTP OK状态时，会进入`if (httpCon != null)`块，执行`httpCon.disconnect()`后`return false`。但问题在于，当`httpCon != null`且`httpCon.getResponseCode()`返回HTTP OK状态（即`code == HttpURLConnection.HTTP_OK`）时，代码会`return true`，此时连接同样未断开。此外，在`catch (IOException ex)`块中直接`return false`时，连接也未断开。变更将`httpCon`声明移至方法开头，并在`finally`块中统一断开连接，确保了在所有退出路径（包括正常返回和异常捕获）下连接都能被正确关闭，从而避免了潜在的资源泄漏。"",
+    ""evidence"": ""原始代码：在`if (httpCon != null)`块内，当`code == HttpURLConnection.HTTP_OK`时直接`return true`，未断开连接。变更后代码：在`finally`块中统一检查并断开连接：`if (httpCon != null) { httpCon.disconnect(); }`"",
+    ""advice"": ""当前变更已正确修复了资源泄漏问题。建议确保所有类似的资源（如其他类型的URLConnection）在方法退出前都能被正确清理。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '1e39b749a54c6de958f920af935e644e3b862ff7', 'message': 'fix: close connection to avoid resource leak\n\nSigned-off-by: Weixie Cui <cuiweixie@gmail.com>'}, {'sha': '03ea4f0f9292b4de91aba3092780e56b6c2dfa8f', 'message': 'fix: review\n\nSigned-off-by: Weixie Cui <cuiweixie@gmail.com>'}]","['I would suggest consider invoking `disconnect()` in a finally block to avoid missing it on new return paths.', 'Small change suggested.']",2026-04-04 00:55:43
+spring-projects/spring-framework,36360,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了HTTP连接未在finally块中断开导致的潜在资源泄漏问题。"",
+    ""description"": ""在`exists()`方法中，当URL是HTTP/HTTPS时，会创建`HttpURLConnection`。原代码中，在`return false;`之前调用了`httpCon.disconnect();`，但在方法成功返回`true`或发生`IOException`时，连接可能没有被正确断开。这可能导致底层网络连接（如套接字）未被释放，造成资源泄漏。修改后，将`disconnect()`调用移到了`finally`块中，确保了无论方法如何退出（正常返回或异常），连接都会被断开。"",
+    ""evidence"": ""原代码行：`httpCon.disconnect();` 在`return false;`之前。\n新代码行：在`finally`块中添加了`if (httpCon != null) { httpCon.disconnect(); }`。"",
+    ""advice"": ""修改正确，确保了资源的正确释放。这是一个良好的实践。"",
+    ""confidence"": 1,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了HTTP连接未在finally块中断开导致的潜在资源泄漏问题。"",
+    ""description"": ""变量`httpCon`的声明被移到了`try`块外部，以便在`finally`块中访问。这略微降低了代码的可读性，因为变量作用域被扩大了。然而，这是Java中确保资源在`finally`块中可访问的标准模式。"",
+    ""evidence"": ""新增代码行：`HttpURLConnection httpCon = null;` 在`try`块之前。"",
+    ""advice"": ""这是必要的修改，以支持在`finally`块中清理资源。虽然扩大了变量作用域，但这是资源清理的标准做法，可以接受。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '1e39b749a54c6de958f920af935e644e3b862ff7', 'message': 'fix: close connection to avoid resource leak\n\nSigned-off-by: Weixie Cui <cuiweixie@gmail.com>'}, {'sha': '03ea4f0f9292b4de91aba3092780e56b6c2dfa8f', 'message': 'fix: review\n\nSigned-off-by: Weixie Cui <cuiweixie@gmail.com>'}]","['I would suggest consider invoking `disconnect()` in a finally block to avoid missing it on new return paths.', 'Small change suggested.']",2026-04-04 00:55:55
+spring-projects/spring-framework,36359,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了Javadoc注释中的格式问题"",
+    ""description"": ""Javadoc注释中'request-processing time'被错误地拆分为'request-\\n * processing time'，导致换行符出现在单词中间，影响可读性。虽然不影响代码功能，但破坏了文档的整洁性。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/method/HandlerMethod.java\n@@ -408,8 +408,8 @@ public String toString() {\n \n \t/**\n \t * Assert that the target bean class is an instance of the class where the given\n \t * method is declared. In some cases the actual controller instance at request-\n \t * processing time may be a JDK dynamic proxy (lazy initialization, prototype\n+ \t * method is declared. In some cases the actual controller instance at request-processing\n+ \t * time may be a JDK dynamic proxy (lazy initialization, prototype"",
+    ""advice"": ""已修复，将'request-\\n * processing time'合并为'request-processing time'，使Javadoc注释更加清晰。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4299ced47bcbd984e45472bdae3c0cd40660eec9', 'message': 'Remove obsolete space in `HandlerMethod.html#assertTargetBean` javadoc\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['Good point that the split word results in an unintended space.'],2026-04-04 00:56:07
+spring-projects/spring-framework,36359,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了Javadoc注释中的多余空格和换行问题"",
+    ""description"": ""Javadoc注释中'request-processing'一词被错误地拆分为'request-'和'processing'两行，中间有一个多余的空格。这种换行方式破坏了单词的完整性，降低了文档的可读性。虽然不影响代码功能，但作为Spring Framework这样的核心项目，文档的规范性很重要。"",
+    ""evidence"": ""In some cases the actual controller instance at request-\n * processing time may be a JDK dynamic proxy"",
+    ""advice"": ""已修复，将'request-'和'processing'合并为一行，确保单词不被错误分割。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4299ced47bcbd984e45472bdae3c0cd40660eec9', 'message': 'Remove obsolete space in `HandlerMethod.html#assertTargetBean` javadoc\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['Good point that the split word results in an unintended space.'],2026-04-04 00:56:14
+spring-projects/spring-framework,36329,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为MIME类型和HTTP媒体类型数量过多添加了专门的异常类，并更新了相关处理逻辑。"",
+    ""description"": ""新增的TooManyHttpMediaTypesException继承自HttpMediaTypeException，但其getStatusCode()方法固定返回HttpStatus.NOT_ACCEPTABLE(406)。然而，当Accept头包含过多元素时，这本质上是一个客户端错误请求（400 Bad Request），而不是服务器无法生成客户端接受的响应（406 Not Acceptable）。406状态码的语义是服务器无法生成客户端Accept头指定的媒体类型，而这里的问题是Accept头本身格式/内容无效。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/TooManyHttpMediaTypesException.java\n+public class TooManyHttpMediaTypesException extends HttpMediaTypeException {\n+    @Override\n+    public HttpStatusCode getStatusCode() {\n+        return HttpStatus.NOT_ACCEPTABLE;\n+    }"",
+    ""advice"": ""考虑使用更合适的HTTP状态码，如400 Bad Request，或者创建一个新的异常类继承自ErrorResponseException并设置合适的status。如果确实要使用406，需要确保异常消息和文档能准确反映这一语义。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为MIME类型和HTTP媒体类型数量过多添加了专门的异常类，并更新了相关处理逻辑。"",
+    ""description"": ""TooManyHttpMediaTypesException的构造函数参数名为'message'，但实际传入的是从TooManyMimeTypesException转换而来的错误消息字符串。构造函数内部又硬编码了detail信息，这可能导致混淆。参数名'message'暗示这是异常的主要消息，但实际使用中传递的是包含原始错误信息的复合字符串。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/TooManyHttpMediaTypesException.java\n+    public TooManyHttpMediaTypesException(String message) {\n+        super(message, Collections.emptyList(), PARSE_ERROR_DETAIL_CODE, null);\n+        getBody().setDetail(\""Too many elements in Accept header.\"");\n+    }"",
+    ""advice"": ""考虑重命名构造函数参数为更具体的名称，如'parseErrorMessage'，或者重构构造函数逻辑，使消息和detail更清晰一致。也可以考虑直接接受TooManyMimeTypesException作为参数，从中提取信息。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为MIME类型和HTTP媒体类型数量过多添加了专门的异常类，并更新了相关处理逻辑。"",
+    ""description"": ""在DefaultHandlerExceptionResolver中，handleTooManyHttpMediaTypesException方法被声明为private，这意味着它不能被重写以提供自定义处理逻辑。其他类似的异常处理方法（如handleHttpMediaTypeNotAcceptable）通常是protected，允许子类覆盖。"",
+    ""evidence"": ""文件: spring-webmvc/src/main/java/org/springframework/web/servlet/mvc/support/DefaultHandlerExceptionResolver.java\n+    private ModelAndView handleTooManyHttpMediaTypesException(TooManyHttpMediaTypesException ex, HttpServletRequest request, HttpServletResponse response, Object handler) {\n+        return null;\n+    }"",
+    ""advice"": ""将方法访问修饰符从private改为protected，以保持与类中其他异常处理方法的一致性，并允许子类自定义处理逻辑。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4e519bb6260f54170126e09e6193fe6ab72993fd', 'message': 'Add TooManyHttpMediaTypesException and TooManyMimeTypesException, handle in dispatching'}]",['Thanks for your proposal but the issue has been declined. See https://github.com/spring-projects/spring-framework/issues/36300#issuecomment-3902172370'],2026-04-04 00:56:39
+spring-projects/spring-framework,36329,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""新增特定异常类，用于处理MIME类型和HTTP媒体类型数量过多的情况。"",
+    ""description"": ""TooManyHttpMediaTypesException的构造函数参数命名与注释不一致。构造函数参数名为'message'，但注释描述为'content type'，这可能导致开发者误解。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/TooManyHttpMediaTypesException.java\n+ /**\n+  * Constructor for when the {@code Accept} header cannot be parsed.\n+  * @param message the parse error message\n+  */\n+ public TooManyHttpMediaTypesException(String message) {\n+   super(message, Collections.emptyList(), PARSE_ERROR_DETAIL_CODE, null);\n+   getBody().setDetail(\""Too many elements in Accept header.\"");\n+ }"",
+    ""advice"": ""建议将构造函数参数名从'message'改为更具体的名称，如'parseErrorMessage'，或者更新注释以准确反映参数用途。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增特定异常类，用于处理MIME类型和HTTP媒体类型数量过多的情况。"",
+    ""description"": ""TooManyHttpMediaTypesException继承自HttpMediaTypeException，但构造函数中调用了getBody().setDetail()方法。这依赖于父类在构造函数中初始化了'body'对象。如果父类构造函数未初始化body，这里可能会抛出NullPointerException。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/TooManyHttpMediaTypesException.java\n+ public TooManyHttpMediaTypesException(String message) {\n+   super(message, Collections.emptyList(), PARSE_ERROR_DETAIL_CODE, null);\n+   getBody().setDetail(\""Too many elements in Accept header.\"");\n+ }"",
+    ""advice"": ""需要确认HttpMediaTypeException的构造函数是否确保getBody()不会返回null。建议查看父类实现，或考虑在调用getBody()前进行null检查。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增特定异常类，用于处理MIME类型和HTTP媒体类型数量过多的情况。"",
+    ""description"": ""DefaultHandlerExceptionResolver中使用了通配符导入(import org.springframework.web.*;)，这降低了代码的可读性，因为无法直接从导入语句看出具体使用了哪些类。"",
+    ""evidence"": ""文件: spring-webmvc/src/main/java/org/springframework/web/servlet/mvc/support/DefaultHandlerExceptionResolver.java\n+ import org.springframework.web.*;"",
+    ""advice"": ""建议将通配符导入改为具体的类导入，以提高代码的可维护性和可读性。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增特定异常类，用于处理MIME类型和HTTP媒体类型数量过多的情况。"",
+    ""description"": ""在多个地方（如ProducesRequestCondition.compareTo）同时捕获HttpMediaTypeNotAcceptableException和TooManyHttpMediaTypesException，但处理逻辑相同。这表明这两个异常在语义上可能属于同一类别，但当前设计让它们继承自不同的父类（IllegalArgumentException vs HttpMediaTypeException），这可能导致异常处理不够一致。"",
+    ""evidence"": ""文件: spring-webmvc/src/main/java/org/springframework/web/servlet/mvc/condition/ProducesRequestCondition.java\n+ catch (HttpMediaTypeNotAcceptableException | TooManyHttpMediaTypesException ex) {\n+   // should never happen\n+   throw new IllegalStateException(\""Cannot compare without having any requested media types\"", ex);\n+ }"",
+    ""advice"": ""考虑让TooManyHttpMediaTypesException和HttpMediaTypeNotAcceptableException共享一个更通用的父类，或者重新评估异常继承层次，以提供更一致的异常处理体验。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '4e519bb6260f54170126e09e6193fe6ab72993fd', 'message': 'Add TooManyHttpMediaTypesException and TooManyMimeTypesException, handle in dispatching'}]",['Thanks for your proposal but the issue has been declined. See https://github.com/spring-projects/spring-framework/issues/36300#issuecomment-3902172370'],2026-04-04 00:57:02
+spring-projects/spring-framework,36328,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""更新Content-Disposition头生成逻辑，使用ISO-8859-1字符集处理回退文件名参数。"",
+    ""description"": ""代码变更将回退文件名（`filename`参数）的编码从RFC 2047（Quoted-Printable）改为强制转换为ISO-8859-1字符集，不兼容字符被替换为下划线。这可能导致非ISO-8859-1字符（如中文、表情符号）的文件名在回退参数中丢失信息，仅显示为下划线。虽然RFC 5987（`filename*`）参数仍能正确编码原始文件名，但某些旧客户端可能只读取`filename`参数，导致用户看到的文件名不完整或错误。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/http/ContentDisposition.java\n@@ -195,7 +184,7 @@ public String toString() {\n \t\t\t}\n \t\t\telse {\n \t\t\t\tsb.append(\""; filename=\\\""\"");\n-\t\t\t\tsb.append(encodeQuotedPrintableFilename(this.filename, this.charset)).append('\\\""');\n+\t\t\t\tsb.append(toIso88591(encodeQuotedPairs(this.filename))).append('\\\""');"",
+    ""advice"": ""建议评估此变更对向后兼容性的影响。如果必须使用ISO-8859-1，考虑在文档中明确说明此限制，或提供一个配置选项允许用户选择编码策略（如保留RFC 2047编码作为选项）。同时，确保测试用例覆盖了各种字符集的文件名，以验证行为符合预期。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新Content-Disposition头生成逻辑，使用ISO-8859-1字符集处理回退文件名参数。"",
+    ""description"": ""`toIso88591`方法中的异常处理可能不够清晰。当`CharacterCodingException`被捕获时，抛出的`IllegalArgumentException`消息为\""Failed to convert to ISO 8859-1\""，但没有提供具体的输入值或原因，这在调试时可能不够有帮助。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/http/ContentDisposition.java\n@@ -446,44 +435,15 @@ else if (b == '=' && index < value.length - 2) {\n \t\treturn StreamUtils.copyToString(baos, charset);\n \t}\n \n-\t/**\n-\t * Encode the given header field param as described in RFC 2047.\n-\t * @param filename the filename\n-\t * @param charset the charset for the filename\n-\t * @return the encoded header field param\n-\t * @see <a href=\""https://tools.ietf.org/html/rfc2047\"">RFC 2047</a>\n-\t */\n-\tprivate static String encodeQuotedPrintableFilename(String filename, Charset charset) {\n-\t\tAssert.notNull(filename, \""'filename' must not be null\"");\n-\t\tAssert.notNull(charset, \""'charset' must not be null\"");\n-\n-\t\tbyte[] source = filename.getBytes(charset);\n-\t\tStringBuilder sb = new StringBuilder(source.length << 1);\n-\t\tsb.append(\""=?\"");\n-\t\tsb.append(charset.name());\n-\t\tsb.append(\""?Q?\"");\n-\t\tfor (byte b : source) {\n-\t\t\tif (b == 32) { // RFC 2047, section 4.2, rule (2)\n-\t\t\t\tsb.append('_');\n-\t\t\t}\n-\t\t\telse if (isPrintable(b)) {\n-\t\t\t\tsb.append((char) b);\n-\t\t\t}\n-\t\t\telse {\n-\t\t\t\tsb.append('=');\n-\t\t\t\tHEX_FORMAT.toHexDigits(sb, b);\n-\t\t\t}\n-\t\t}\n-\t\tsb.append(\""?=\"");\n-\t\treturn sb.toString();\n-\t}\n-\n-\tprivate static boolean isPrintable(byte c) {\n-\t\tint b = c;\n-\t\tif (b < 0) {\n-\t\t\tb = 256 + b;\n+\tprivate static String toIso88591(String input) {\n+\t\tCharsetEncoder encoder = ISO_8859_1.newEncoder()\n+\t\t\t\t.onUnmappableCharacter(CodingErrorAction.REPLACE)\n+\t\t\t\t.replaceWith(new byte[] { (byte) '_' });\n+\t\ttry {\n+\t\t\treturn ISO_8859_1.decode(encoder.encode(CharBuffer.wrap(input))).toString();\n+\t\t} catch (CharacterCodingException e) {\n+\t\t\tthrow new IllegalArgumentException(\""Failed to convert to ISO 8859-1\"", e);\n \t\t}\n-\t\treturn PRINTABLE.get(b);\n \t}"",
+    ""advice"": ""建议在异常消息中包含输入字符串的摘要或相关上下文信息，例如：\""Failed to convert to ISO 8859-1: \"" + input.substring(0, Math.min(input.length(), 50))，以便于调试。同时，考虑是否真的需要抛出异常，因为编码器已配置为替换不兼容字符，理论上不应抛出异常，除非输入为null或其他极端情况。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了使用ISO-8859-1字符集处理Content-Disposition头中的回退文件名参数。"",
+    ""description"": ""未发现明显问题。代码变更逻辑清晰，移除了旧的RFC 2047编码逻辑，引入了新的`toIso88591`方法，并更新了相关测试用例以反映行为变化。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '6adc2f95f317f1fcf14eb68336828ebee980b219', 'message': ""Use ISO-8859-1 for fallback filename\n\nUpdates the Content-Disposition header creation logic to use only\nISO-8859-1 characters for the fallback 'filename' parameter instead of\nRFC 2047 encoded strings. Non-compatible characters are replaced with '_'.\n\nThis does not remove the ability to parse RFC 2047 encoded filenames.\n\nSigned-off-by: Tobias Fasching <tobias.fasching@outlook.com>""}]","['this would lead to Questionmarks ""?"" in the propose filename, which is not allowed in most filesystems,\nI would rather propose an underline in place of non ascii characters\nSuggetion:\n        // NFD decomposition splits characters like ä into base character \'a\' + combining diacritic.\n        // Removing the combining diacritics (Unicode category Mn) gives a readable ASCII approximation\n        // (e.g. ""Schöne Äpfel"" → ""Schone Apfel"") without resorting to \'?\' which is a forbidden\n        // filename character on Windows.\n        String decomposed = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);\n        return decomposed\n                .replaceAll(""\\\\p{InCombiningDiacriticalMarks}"", """")\n                .replaceAll(""[^\\\\x20-\\\\x7E]"", ""_"");\n    ', 'Fair point with questionmarks in filenames. I changed the replacement character to ""_"".\r\n\r\nRegarding the removal of combining diacritics: \r\nSince this is targeting ISO 8859-1, characters like ä, ö, û, ñ,... are actually supported and shouldn\'t cause issues.\r\nI wanted to ""fail fast"" by removing unavailable characters instead of trying to approximate them. Does that sound reasonable or would you still prefer removing diacritical marks of characters not in ISO 8859-1?', 'Thanks for your contribution @tobifasc , this is now merged and will be shipped for the next 7.0.x maintenance release.\r\n\r\nThe PR is marked as ""closed"" because I had to amend and rebase your commit. In the future, you can avoid that by always submitting a PR from a branch on your fork (i.e. not `main`).']",2026-04-04 00:57:39
+spring-projects/spring-framework,36328,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""更新Content-Disposition头生成逻辑，使用ISO-8859-1字符集处理回退文件名参数。"",
+    ""description"": ""代码变更将回退文件名参数（非filename*参数）的编码从RFC 2047 quoted-printable改为强制转换为ISO-8859-1字符集，不兼容字符替换为'_'。这可能导致非ASCII字符的文件名信息丢失，例如中文文件名'中文.txt'在回退参数中变为'__.txt'。虽然RFC 5987的filename*参数仍能正确编码，但回退参数的可读性和语义完整性下降。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/http/ContentDisposition.java\n@@ -195,7 +184,7 @@ public String toString() {\n \t\t\t}\n \t\t\telse {\n \t\t\t\tsb.append(\""; filename=\\\""\"");\n-\t\t\t\tsb.append(encodeQuotedPrintableFilename(this.filename, this.charset)).append('\\\""');\n+\t\t\t\tsb.append(toIso88591(encodeQuotedPairs(this.filename))).append('\\\""');\n \t\t\t\tsb.append(\""; filename*=\"");\n \t\t\t\tsb.append(encodeRfc5987Filename(this.filename, this.charset));\n \t\t\t}\n\n文件: spring-web/src/test/java/org/springframework/http/ContentDispositionTests.java\n@@ -221,7 +221,7 @@ void formatWithEncodedFilename() {\n \t\t\t\t\t\t.filename(\""中文.txt\"", StandardCharsets.UTF_8)\n \t\t\t\t\t\t.build().toString())\n \t\t\t\t.isEqualTo(\""form-data; name=\\\""name\\\""; \"" +\n-\t\t\t\t\t\t\""filename=\\\""=?UTF-8?Q?=E4=B8=AD=E6=96=87.txt?=\\\""; \"" +\n+\t\t\t\t\t\t\""filename=\\\""__.txt\\\""; \"" +\n \t\t\t\t\t\t\""filename*=UTF-8''%E4%B8%AD%E6%96%87.txt\"");"",
+    ""advice"": ""建议评估此变更对向后兼容性的影响。虽然RFC 5987的filename*是更现代的规范，但某些旧客户端可能仅支持回退的filename参数。如果必须使用ISO-8859-1，考虑在文档中明确说明非ASCII字符在回退参数中的处理方式。或者，可以提供一个配置选项，允许用户选择是否使用RFC 2047编码作为回退。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新Content-Disposition头生成逻辑，使用ISO-8859-1字符集处理回退文件名参数。"",
+    ""description"": ""新增的`toIso88591`方法中，`replaceWith`调用使用了硬编码的字节数组`new byte[] { (byte) '_' }`。虽然功能正确，但使用常量`\""_\"".getBytes(ISO_8859_1)`或预定义的`byte`常量可能更具可读性，并避免魔法值。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/http/ContentDisposition.java\n@@ -446,44 +435,15 @@ else if (b == '=' && index < value.length - 2) {\n \t\treturn StreamUtils.copyToString(baos, charset);\n \t}\n \n-\t/**\n-\t * Encode the given header field param as described in RFC 2047.\n-\t * @param filename the filename\n-\t * @param charset the charset for the filename\n-\t * @return the encoded header field param\n-\t * @see <a href=\""https://tools.ietf.org/html/rfc2047\"">RFC 2047</a>\n-\t */\n-\tprivate static String encodeQuotedPrintableFilename(String filename, Charset charset) {\n-\t\tAssert.notNull(filename, \""'filename' must not be null\"");\n-\t\tAssert.notNull(charset, \""'charset' must not be null\"");\n-\n-\t\tbyte[] source = filename.getBytes(charset);\n-\t\tStringBuilder sb = new StringBuilder(source.length << 1);\n-\t\tsb.append(\""=?\"");\n-\t\tsb.append(charset.name());\n-\t\tsb.append(\""?Q?\"");\n-\t\tfor (byte b : source) {\n-\t\t\tif (b == 32) { // RFC 2047, section 4.2, rule (2)\n-\t\t\t\tsb.append('_');\n-\t\t\t}\n-\t\t\telse if (isPrintable(b)) {\n-\t\t\t\tsb.append((char) b);\n-\t\t\t}\n-\t\t\telse {\n-\t\t\t\tsb.append('=');\n-\t\t\t\tHEX_FORMAT.toHexDigits(sb, b);\n-\t\t\t}\n-\t\t}\n-\t\tsb.append(\""?=\"");\n-\t\treturn sb.toString();\n-\t}\n-\n-\tprivate static boolean isPrintable(byte c) {\n-\t\tint b = c;\n-\t\tif (b < 0) {\n-\t\t\tb = 256 + b;\n+\tprivate static String toIso88591(String input) {\n+\t\tCharsetEncoder encoder = ISO_8859_1.newEncoder()\n+\t\t\t\t.onUnmappableCharacter(CodingErrorAction.REPLACE)\n+\t\t\t\t.replaceWith(new byte[] { (byte) '_' });\n+\t\ttry {\n+\t\t\treturn ISO_8859_1.decode(encoder.encode(CharBuffer.wrap(input))).toString();\n+\t\t} catch (CharacterCodingException e) {\n+\t\t\tthrow new IllegalArgumentException(\""Failed to convert to ISO 8859-1\"", e);\n \t\t}\n-\t\treturn PRINTABLE.get(b);\n \t}"",
+    ""advice"": ""建议将替换字符'_'定义为一个常量，例如`private static final byte REPLACEMENT_CHAR = (byte) '_';`，然后在`replaceWith`中使用。这提高了代码的可读性和可维护性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""更新Content-Disposition头生成逻辑，使用ISO-8859-1字符集处理回退文件名参数。"",
+    ""description"": ""测试用例`formatWithEncodedFilename`和`formatWithUtf8FilenameWithQuotes`的预期结果被更新，以反映新的ISO-8859-1转换行为。然而，测试`parseFormattedWithQuestionMark`中，解析回退参数（quotedPrintableFilename）后的预期文件名从原始值`filename`变为了转换后的值`\""filename with ?__.txt\""`。这可能导致一个潜在问题：`ContentDisposition.parse`方法可能无法从新的ISO-8859-1格式的回退参数中正确还原原始文件名（特别是非ASCII字符）。这与提交信息中'This does not remove the ability to parse RFC 2047 encoded filenames.'的声明一致，但解析新的格式可能无法恢复原始信息。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/http/ContentDispositionTests.java\n@@ -303,14 +303,14 @@ void parseFormattedWithQuestionMark() {\n \t\t\t\t.build();\n \t\tString result = cd.toString();\n \t\tassertThat(result).isEqualTo(\""attachment; \"" +\n-\t\t\t\t\t\""filename=\\\""=?UTF-8?Q?filename_with_=3F=E9=97=AE=E5=8F=B7.txt?=\\\""; \"" +\n+\t\t\t\t\t\""filename=\\\""filename with ?__.txt\\\""; \"" +\n \t\t\t\t\t\""filename*=UTF-8''filename%20with%20%3F%E9%97%AE%E5%8F%B7.txt\"");\n \n \t\tString[] parts = result.split(\""; \"");\n \n \t\tString quotedPrintableFilename = parts[0] + \""; \"" + parts[1];\n \t\tassertThat(ContentDisposition.parse(quotedPrintableFilename).getFilename())\n-\t\t\t\t.isEqualTo(filename);\n+\t\t\t\t.isEqualTo(\""filename with ?__.txt\"");"",
+    ""advice"": ""这不一定是一个错误，而是设计变更的必然结果。但需要确保`ContentDisposition.parse`方法能够正确处理新的ISO-8859-1格式（即不包含RFC 2047编码）的回退参数。审查者应验证`parse`方法的逻辑是否已考虑这种新格式，或者是否仍期望RFC 2047编码。从测试变更来看，解析逻辑似乎能处理新格式（因为测试通过了），但原始文件名中的中文字符在回退参数中丢失了。这应在相关文档或API注释中明确说明。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '6adc2f95f317f1fcf14eb68336828ebee980b219', 'message': ""Use ISO-8859-1 for fallback filename\n\nUpdates the Content-Disposition header creation logic to use only\nISO-8859-1 characters for the fallback 'filename' parameter instead of\nRFC 2047 encoded strings. Non-compatible characters are replaced with '_'.\n\nThis does not remove the ability to parse RFC 2047 encoded filenames.\n\nSigned-off-by: Tobias Fasching <tobias.fasching@outlook.com>""}]","['this would lead to Questionmarks ""?"" in the propose filename, which is not allowed in most filesystems,\nI would rather propose an underline in place of non ascii characters\nSuggetion:\n        // NFD decomposition splits characters like ä into base character \'a\' + combining diacritic.\n        // Removing the combining diacritics (Unicode category Mn) gives a readable ASCII approximation\n        // (e.g. ""Schöne Äpfel"" → ""Schone Apfel"") without resorting to \'?\' which is a forbidden\n        // filename character on Windows.\n        String decomposed = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);\n        return decomposed\n                .replaceAll(""\\\\p{InCombiningDiacriticalMarks}"", """")\n                .replaceAll(""[^\\\\x20-\\\\x7E]"", ""_"");\n    ', 'Fair point with questionmarks in filenames. I changed the replacement character to ""_"".\r\n\r\nRegarding the removal of combining diacritics: \r\nSince this is targeting ISO 8859-1, characters like ä, ö, û, ñ,... are actually supported and shouldn\'t cause issues.\r\nI wanted to ""fail fast"" by removing unavailable characters instead of trying to approximate them. Does that sound reasonable or would you still prefer removing diacritical marks of characters not in ISO 8859-1?', 'Thanks for your contribution @tobifasc , this is now merged and will be shipped for the next 7.0.x maintenance release.\r\n\r\nThe PR is marked as ""closed"" because I had to amend and rebase your commit. In the future, you can avoid that by always submitting a PR from a branch on your fork (i.e. not `main`).']",2026-04-04 00:58:28
+spring-projects/spring-framework,36325,baseline,"```json
+[
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""重构hashCode计算方法，提升可读性和潜在性能"",
+    ""description"": ""代码变更将原来的单行复杂表达式重构为分步计算，提高了可读性。但存在一个潜在问题：原代码中包含了`this.versionCondition.hashCode()`的计算，而新代码中遗漏了该项，这会导致hashCode计算结果与之前不同，可能影响HashMap/HashSet等基于hashCode的集合的正确性。"",
+    ""evidence"": ""原代码：'this.versionCondition.hashCode() + this.customConditionHolder.hashCode();'\n新代码：'h = 31 * h + customConditionHolder.hashCode();'"",
+    ""advice"": ""建议在新代码中添加`this.versionCondition.hashCode()`的计算：`h = 31 * h + versionCondition.hashCode();` 以确保hashCode计算的完整性。"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构hashCode计算方法，提升可读性和潜在性能"",
+    ""description"": ""重构后的代码确实提高了可读性，将复杂的单行表达式分解为多个步骤，更容易理解和调试。变量命名`patternBase`和`h`也较为清晰。"",
+    ""evidence"": ""新代码将原来的单行表达式分解为：\n'Object patternBase = (this.pathPatternsCondition != null) ? this.pathPatternsCondition : this.patternsCondition;'\n'int h = patternBase.hashCode();'\n然后逐步计算hash值"",
+    ""advice"": ""代码重构在可读性方面是成功的，但需要修复遗漏的versionCondition问题。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '5cb45f13a3612010a30db0307be56001bd27e5c6', 'message': 'Refactor calculateHashCode method for clarity\n\nThis will:\r\n1. Mathematical Distribution (Collision Reduction)\r\n2. Pipelining and CPU Caching\r\n3. Avoiding ""Method Heavy"" Expressions\n\nSigned-off-by: Agil <41694337+AgilAghamirzayev@users.noreply.github.com>'}]","[""In the `equals` method we consider `versionCondition` as part of identity, but here it became excluded. I'd suggest include `versionCondition` so when two `RequestMappingInfo` has everything the same but `versionCondition` is different then they won't produce the same hashcode.""]",2026-04-04 00:58:46
+spring-projects/spring-framework,36325,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构hashCode计算方法，提升可读性和性能"",
+    ""description"": ""重构后的代码将复杂的单行表达式拆分为多步计算，提高了可读性。但存在两个问题：1) 移除了versionCondition的hashCode计算，可能导致hashCode分布变化和潜在冲突；2) 变量命名'h'不够清晰，不符合Spring框架的命名规范。"",
+    ""evidence"": ""原代码包含：this.versionCondition.hashCode() + this.customConditionHolder.hashCode();\n新代码缺少versionCondition：h = 31 * h + customConditionHolder.hashCode();"",
+    ""advice"": ""1. 恢复versionCondition的hashCode计算：h = 31 * h + versionCondition.hashCode();\n2. 将变量名'h'改为更具描述性的名称，如'result'或'hashCode'，以符合Spring代码风格。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""重构hashCode计算方法，提升可读性和性能"",
+    ""description"": ""重构过程中遗漏了versionCondition的hashCode计算，这会导致hashCode值发生变化，可能影响HashMap/HashSet等集合的性能和正确性，因为hashCode不一致会影响对象的存储和查找。"",
+    ""evidence"": ""原代码包含：this.versionCondition.hashCode() + this.customConditionHolder.hashCode();\n新代码缺少versionCondition：h = 31 * h + customConditionHolder.hashCode();"",
+    ""advice"": ""必须恢复versionCondition的hashCode计算，确保hashCode计算的完整性。正确的顺序应该是：h = 31 * h + versionCondition.hashCode(); h = 31 * h + customConditionHolder.hashCode();"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  }
+]
+```","[{'sha': '5cb45f13a3612010a30db0307be56001bd27e5c6', 'message': 'Refactor calculateHashCode method for clarity\n\nThis will:\r\n1. Mathematical Distribution (Collision Reduction)\r\n2. Pipelining and CPU Caching\r\n3. Avoiding ""Method Heavy"" Expressions\n\nSigned-off-by: Agil <41694337+AgilAghamirzayev@users.noreply.github.com>'}]","[""In the `equals` method we consider `versionCondition` as part of identity, but here it became excluded. I'd suggest include `versionCondition` so when two `RequestMappingInfo` has everything the same but `versionCondition` is different then they won't produce the same hashcode.""]",2026-04-04 00:59:00
+spring-projects/spring-framework,36323,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了声明式事务管理的程序化配置示例"",
+    ""description"": ""未发现明显问题。该代码是一个标准的Spring配置类，用于演示如何通过Java配置启用声明式事务管理。它定义了必要的Bean（FooService和PlatformTransactionManager），并使用了正确的注解（@Configuration, @EnableTransactionManagement）。代码结构清晰，符合Spring的最佳实践。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ce3ef4666bd8e79ef0ff9d8b6e8f868ebd5a3fec', 'message': 'Transaction docs: add programmatic configuration example\n\n- Extract code examples to separate Java, Kotlin, and XML files\n- Add Kotlin configuration sample alongside Java\n- Change ""Java Config"" terminology to ""Programmatic Configuration""\n- Use include-code directive for better maintainability\n\nAddresses review feedback in gh-36323\n\nSigned-off-by: jisub-dev <kimjiseob1209@gmail.com>'}]","['We we modify code samples, we try to extract them to proper `.java`, `.kt` and `.xml` files, leveraging [code inclusion](https://github.com/spring-io/asciidoctor-extensions?tab=readme-ov-file#include-code) Asciidoctor capabilities. You will fine similar commits referenced in https://github.com/spring-projects/spring-framework/issues/35446.\n\nCould you please do the same here and also add a Kotlin sample?', 'Please use ""programmatic configuration"" instead of ""Java configuration"" or ""Javaconfig"" as we try to make the documentation equally relevant for Java and Kotlin developers.', 'That a good start, please take in account my comments.\n\nAlso, there are more samples in this section where a similar update would make sense, could you please handle them as well?', 'is this issue still valid?', 'I think it is, I was on PTO, I will review and potentially merge it shortly.', 'sure look at it and lmk if you need help with anything', '@jisub-dev Reworked and merged, next time please check your contribution before sending it, it was broken in several ways.', 'Thanks for the review, and for reworking and merging this. I’ll double-check my changes more carefully before submitting next time.']",2026-04-04 00:59:11
+spring-projects/spring-framework,36323,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了事务管理的程序化配置示例"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ce3ef4666bd8e79ef0ff9d8b6e8f868ebd5a3fec', 'message': 'Transaction docs: add programmatic configuration example\n\n- Extract code examples to separate Java, Kotlin, and XML files\n- Add Kotlin configuration sample alongside Java\n- Change ""Java Config"" terminology to ""Programmatic Configuration""\n- Use include-code directive for better maintainability\n\nAddresses review feedback in gh-36323\n\nSigned-off-by: jisub-dev <kimjiseob1209@gmail.com>'}]","['We we modify code samples, we try to extract them to proper `.java`, `.kt` and `.xml` files, leveraging [code inclusion](https://github.com/spring-io/asciidoctor-extensions?tab=readme-ov-file#include-code) Asciidoctor capabilities. You will fine similar commits referenced in https://github.com/spring-projects/spring-framework/issues/35446.\n\nCould you please do the same here and also add a Kotlin sample?', 'Please use ""programmatic configuration"" instead of ""Java configuration"" or ""Javaconfig"" as we try to make the documentation equally relevant for Java and Kotlin developers.', 'That a good start, please take in account my comments.\n\nAlso, there are more samples in this section where a similar update would make sense, could you please handle them as well?', 'is this issue still valid?', 'I think it is, I was on PTO, I will review and potentially merge it shortly.', 'sure look at it and lmk if you need help with anything', '@jisub-dev Reworked and merged, next time please check your contribution before sending it, it was broken in several ways.', 'Thanks for the review, and for reworking and merging this. I’ll double-check my changes more carefully before submitting next time.']",2026-04-04 00:59:15
+spring-projects/spring-framework,36293,baseline,"```json
+[
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""优化ConcurrentReferenceHashMap的computeIfAbsent和computeIfPresent方法，避免不必要的锁竞争"",
+    ""description"": ""在computeIfAbsent和computeIfPresent方法中，新增了快速路径检查，在进入doTask（可能涉及锁操作）之前，先通过无锁的getReference检查键是否存在。这可以减少在常见情况（键已存在/不存在）下的锁竞争，提升并发性能。然而，存在潜在的竞态条件风险：在快速路径检查和doTask执行之间，其他线程可能修改了映射，导致computeIfAbsent可能重复计算，computeIfPresent可能错过本应执行的映射。这违反了方法应具备的原子性语义。"",
+    ""evidence"": ""在computeIfAbsent中：\n+  // avoid locking if entry is present\n+  Reference<K, V> ref = getReference(key, Restructure.NEVER);\n+  Entry<K, V> entry = (ref != null ? ref.get() : null);\n+  if (entry != null) {\n+    return entry.getValue();\n+  }\n在computeIfPresent中：\n+  // avoid locking if entry is absent\n+  Reference<K, V> ref = getReference(key, Restructure.NEVER);\n+  Entry<K, V> entry = (ref != null ? ref.get() : null);\n+  if (entry == null) {\n+    return null;\n+  }"",
+    ""advice"": ""建议重新评估此优化。虽然性能提升的意图是好的，但破坏了方法的原子性保证，可能导致数据不一致或重复计算。如果坚持此优化，必须在注释中明确说明此方法不再是原子的，并警告调用者潜在的风险。更好的做法可能是优化doTask内部的锁粒度或采用更高效的无锁算法，而不是在原子操作外部添加非原子检查。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  }
+]
+```","[{'sha': 'cbac8013a17ce6e43a6cedeb4533a0ff86b20cbd', 'message': ""avoid unnecessary locking in ConcurrentReferenceHashMap's implementation of computeIfAbsent and computeIfPresent\n\nSigned-off-by: Christian Schuster <christian@dnup.de>""}]","[""Thanks for the PR - merged for 7.0.4 now. I'll backport this to 6.2.16 as well. Both releases are scheduled for tomorrow.\r\n\r\nThis tradeoff is entirely feasible for `ConcurrentReferenceHashMap` specifically which used to have two-step `get`+`putIfAbsent` interactions (as inherited from the default method in `ConcurrentMap`) before anyway."", 'On a related note, we revised this for 7.0.4 toward local annotation caching within our `AnnotatedMethod` handles, avoiding any access to such global caches to begin with (once resolved): see #36307. That trades off some extra memory usage with faster access paths which is why we intend to keep that part 7.0.x only.']",2026-04-04 00:59:34
+spring-projects/spring-framework,36293,with_readme,"[
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""优化ConcurrentReferenceHashMap的computeIfAbsent和computeIfPresent方法，避免不必要的锁竞争。"",
+    ""description"": ""代码变更在`computeIfAbsent`和`computeIfPresent`方法中增加了前置检查，旨在避免在键已存在或不存在时进入昂贵的`doTask`方法（该方法涉及锁操作）。然而，在并发环境下，这种乐观检查存在竞态条件风险。在`computeIfAbsent`中，检查`entry != null`后返回`entry.getValue()`，但在检查之后、返回之前，该条目可能已被其他线程移除或值被更新，导致返回的值可能不是最新的，或者更严重的是，`entry`可能已被垃圾回收导致空指针异常。同样，在`computeIfPresent`中，检查`entry == null`后返回`null`，但在检查之后、返回之前，其他线程可能已经插入了该键，导致本应执行的映射函数被跳过，违反了`computeIfPresent`的语义（即仅当键存在时才应用函数）。"",
+    ""evidence"": ""在`computeIfAbsent`方法中：\n```java\nReference<K, V> ref = getReference(key, Restructure.NEVER);\nEntry<K, V> entry = (ref != null ? ref.get() : null);\nif (entry != null) {\n    return entry.getValue(); // 竞态条件：entry可能已被移除或更新\n}\n```\n在`computeIfPresent`方法中：\n```java\nReference<K, V> ref = getReference(key, Restructure.NEVER);\nEntry<K, V> entry = (ref != null ? ref.get() : null);\nif (entry == null) {\n    return null; // 竞态条件：其他线程可能已插入该键\n}\n```"",
+    ""advice"": ""这种优化意图是好的，但实现方式破坏了方法的线程安全性和原子性保证。`ConcurrentHashMap.computeIfAbsent`和`computeIfPresent`的契约是原子操作。建议移除这些前置检查，或者重新设计以确保检查与后续的`doTask`操作在一个原子操作内。一个更安全的模式是：在`doTask`内部，先快速检查条目状态，如果满足条件（存在/不存在）则立即返回，否则执行映射函数。这需要修改`Task`的`execute`方法逻辑，而不是在外部进行非原子检查。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  }
+]","[{'sha': 'cbac8013a17ce6e43a6cedeb4533a0ff86b20cbd', 'message': ""avoid unnecessary locking in ConcurrentReferenceHashMap's implementation of computeIfAbsent and computeIfPresent\n\nSigned-off-by: Christian Schuster <christian@dnup.de>""}]","[""Thanks for the PR - merged for 7.0.4 now. I'll backport this to 6.2.16 as well. Both releases are scheduled for tomorrow.\r\n\r\nThis tradeoff is entirely feasible for `ConcurrentReferenceHashMap` specifically which used to have two-step `get`+`putIfAbsent` interactions (as inherited from the default method in `ConcurrentMap`) before anyway."", 'On a related note, we revised this for 7.0.4 toward local annotation caching within our `AnnotatedMethod` handles, avoiding any access to such global caches to begin with (once resolved): see #36307. That trades off some extra memory usage with faster access paths which is why we intend to keep that part 7.0.x only.']",2026-04-04 00:59:52
+spring-projects/spring-framework,36282,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构SendTo和Subscription方法返回值处理器，使用原生头部API"",
+    ""description"": ""代码变更将头部过滤逻辑从使用通用MessageHeaders API改为使用SimpMessageHeaderAccessor的原生头部API。这可能导致行为变化：之前setHeader(name, value)会覆盖现有值，而setNativeHeaderValues(name, values)会设置多个值。如果inputMessage的头部包含多个相同名称的值，旧代码只会取最后一个值，新代码会保留所有值。"",
+    ""evidence"": ""在SendToMethodReturnValueHandler.java中：\n- 旧代码：headerAccessor.setHeader(name, value)\n- 新代码：headerAccessor.setNativeHeaderValues(name, values)\n\n在SubscriptionMethodReturnValueHandler.java中：\n- 旧代码：accessor.setHeader(name, value)\n- 新代码：accessor.setNativeHeaderValues(name, values)"",
+    ""advice"": ""需要确认这是否是期望的行为变更。如果是，应在提交信息中明确说明。如果不是，可能需要调整逻辑以确保向后兼容性。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重构SendTo和Subscription方法返回值处理器，使用原生头部API"",
+    ""description"": ""测试代码中的变量命名从headerName/headerValue改为nativeHeaderName/nativeHeaderValue，这提高了代码的可读性，更清晰地表明了处理的是原生头部。"",
+    ""evidence"": ""在SendToMethodReturnValueHandlerTests.java中：\n- 旧变量名：headerName, headerValue\n- 新变量名：nativeHeaderName, nativeHeaderValue\n\n在SubscriptionMethodReturnValueHandlerTests.java中：\n- 旧变量名：customHeaderName, customHeaderValue\n- 新变量名：nativeHeaderName, nativeHeaderValue"",
+    ""advice"": ""这是一个好的改进，继续保持。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""重构SendTo和Subscription方法返回值处理器，使用原生头部API"",
+    ""description"": ""测试代码重构为使用SimpMessageHeaderAccessor创建测试消息，这更符合实际使用场景，测试验证也相应改为检查原生头部。"",
+    ""evidence"": ""在SendToMethodReturnValueHandlerTests.java中：\n- 新测试代码使用SimpMessageHeaderAccessor.create()创建输入消息\n- 断言改为检查sentAccessor.getFirstNativeHeader()"",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b8e9bdfbfdf9f9e0d4e75611d5f0d7123eddde2e', 'message': 'Refactor SendTo and Subscription Method Return Value Handlers to use native headers\n\nSigned-off-by: Junhwan Kim <musoyou1085@gmail.com>'}]","[""Thanks, I've incorporated merged the commit under #36179.""]",2026-04-04 01:00:14
+spring-projects/spring-framework,36282,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""重构SendTo和Subscription方法返回值处理器，使用原生头部（native headers）进行头部过滤和复制。"",
+    ""description"": ""代码变更将头部过滤逻辑从处理通用消息头（MessageHeaders）改为专门处理原生头部（native headers）。在核心逻辑中，通过`SimpMessageHeaderAccessor.wrap(inputMessage)`和`inputAccessor.toNativeHeaderMap()`获取原生头部映射，并使用`setNativeHeaderValues`进行设置。这确保了只有STOMP等协议的原生头部（如`x-custom-header`）被正确过滤和传播，避免了将框架内部头部（如`simpSessionId`）错误地复制到输出消息中，提高了设计的清晰性和正确性。"",
+    ""evidence"": ""文件: spring-messaging/src/main/java/org/springframework/messaging/simp/annotation/support/SendToMethodReturnValueHandler.java\n@@ -263,9 +263,10 @@ private MessageHeaders createHeaders(@Nullable String sessionId, MethodParameter\n \t\t\tgetHeaderInitializer().initHeaders(headerAccessor);\n \t\t}\n \t\tif (inputMessage != null && this.headerFilter != null) {\n-\t\t\tinputMessage.getHeaders().forEach((name, value) -> {\n+\t\t\tSimpMessageHeaderAccessor inputAccessor = SimpMessageHeaderAccessor.wrap(inputMessage);\n+\t\t\tinputAccessor.toNativeHeaderMap().forEach((name, values) -> {\n \t\t\t\tif (this.headerFilter.test(name)) {\n-\t\t\t\t\theaderAccessor.setHeader(name, value);\n+\t\t\t\t\theaderAccessor.setNativeHeaderValues(name, values);\n \t\t\t\t}\n \t\t\t});\n \t\t}"",
+    ""advice"": ""变更合理，无需修改。同时，相应的单元测试也已更新，使用`SimpMessageHeaderAccessor`设置原生头部并验证，确保了功能的一致性。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'b8e9bdfbfdf9f9e0d4e75611d5f0d7123eddde2e', 'message': 'Refactor SendTo and Subscription Method Return Value Handlers to use native headers\n\nSigned-off-by: Junhwan Kim <musoyou1085@gmail.com>'}]","[""Thanks, I've incorporated merged the commit under #36179.""]",2026-04-04 01:00:30
+spring-projects/spring-framework,36251,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增功能：允许禁用默认状态处理器，提供更灵活的错误处理控制。"",
+    ""description"": ""新增的 `defaultStatusHandlerEnabled` 字段和 `disableDefaultStatusHandler()` 方法允许用户禁用默认的4xx/5xx错误状态处理器。这是一个合理的功能扩展，但构造函数参数列表的修改可能影响向后兼容性（虽然这是内部类）。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/DefaultRestClient.java\n@@ -134,7 +136,7 @@ final class DefaultRestClient implements RestClient {\n\t\t\t@Nullable MultiValueMap<String, String> defaultCookies,\n\t\t\t@Nullable Object defaultApiVersion, @Nullable ApiVersionInserter apiVersionInserter,\n\t\t\t@Nullable Consumer<RequestHeadersSpec<?>> defaultRequest,\n-\t\t\t@Nullable List<StatusHandler> statusHandlers,\n+\t\t\t@Nullable List<StatusHandler> statusHandlers, boolean defaultStatusHandlerEnabled,"",
+    ""advice"": ""建议在 `DefaultRestClientBuilder` 的构造函数中，将 `defaultStatusHandlerEnabled` 参数放在 `statusHandlers` 之后，以保持参数顺序的逻辑性。同时，考虑在未来的主要版本中，如果这是公开API的一部分，需要评估对现有用户代码的影响。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增功能：允许禁用默认状态处理器，提供更灵活的错误处理控制。"",
+    ""description"": ""在 `DefaultResponseSpec` 构造函数中，条件判断 `if (DefaultRestClient.this.defaultStatusHandlerEnabled)` 直接使用了外部类的字段。虽然功能正确，但重复的 `DefaultRestClient.this` 前缀略显冗余。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/DefaultRestClient.java\n@@ -785,7 +788,9 @@ private class DefaultResponseSpec implements ResponseSpec {\n\t\tDefaultResponseSpec(RequestHeadersSpec<?> requestHeadersSpec) {\n\t\t\tthis.requestHeadersSpec = requestHeadersSpec;\n\t\t\tthis.statusHandlers.addAll(DefaultRestClient.this.defaultStatusHandlers);\n-\t\t\tthis.statusHandlers.add(StatusHandler.createDefaultStatusHandler(DefaultRestClient.this.messageConverters));\n+\t\t\tif (DefaultRestClient.this.defaultStatusHandlerEnabled) {\n+\t\t\t\tthis.statusHandlers.add(StatusHandler.createDefaultStatusHandler(DefaultRestClient.this.messageConverters));\n+\t\t\t}"",
+    ""advice"": ""可以考虑在 `DefaultResponseSpec` 构造函数开始时，将 `DefaultRestClient.this.defaultStatusHandlerEnabled` 和 `DefaultRestClient.this.messageConverters` 赋值给局部变量，以提高代码可读性和避免重复的限定符。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增功能：允许禁用默认状态处理器，提供更灵活的错误处理控制。"",
+    ""description"": ""代码变更整体设计合理，功能清晰。新增的测试用例覆盖了启用和禁用默认状态处理器两种场景，验证了功能的正确性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '50f4f81a7f2e75990eae02b2fb155b2af825bb8b', 'message': 'Add opt-out for default RestClient status handler\n\nSigned-off-by: Seunggyu Lee <dltmdrb98@gmail.com>'}]","[""@seungy0 \r\nThanks for your feedback and fixing this issue perfectly!\r\n\r\n🙏 I realize my previous implementation had an oversight (didn't consider the built-in StatusHandler logic in DefaultResponseSpec), and your solution with a dedicated disable flag passed to DefaultResponseSpec is definitely the right and complete approach. \r\n\r\nIt's a great learning for me to dive into the RestClient source code and Spring contribution process through this issue."", 'Closing as per https://github.com/spring-projects/spring-framework/issues/36248#issuecomment-3926068225.']",2026-04-04 01:00:56
+spring-projects/spring-framework,36251,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为RestClient添加禁用默认状态处理器的功能。"",
+    ""description"": ""新增的`disableDefaultStatusHandler()`方法及其相关实现，允许用户禁用默认的4xx/5xx状态码异常处理。代码变更在构造函数、构建器和响应规格类中增加了`defaultStatusHandlerEnabled`标志来控制默认处理器的添加。设计上，该标志默认为`true`以保持向后兼容。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/DefaultRestClientBuilder.java\n@@ -100,6 +100,8 @@ final class DefaultRestClientBuilder implements RestClient.Builder {\n \n \tprivate @Nullable List<StatusHandler> statusHandlers;\n \n+\tprivate boolean defaultStatusHandlerEnabled = true;\n+\n \tprivate @Nullable List<ClientHttpRequestInterceptor> interceptors;\n \n \tprivate @Nullable BiPredicate<URI, HttpMethod> bufferingPredicate;\n@@ -301,6 +304,12 @@ public RestClient.Builder defaultStatusHandler(ResponseErrorHandler errorHandler\n \t\treturn defaultStatusHandlerInternal(StatusHandler.fromErrorHandler(errorHandler));\n \t}\n \n+\t@Override\n+\tpublic RestClient.Builder disableDefaultStatusHandler() {\n+\t\tthis.defaultStatusHandlerEnabled = false;\n+\t\treturn this;\n+\t}\n"",
+    ""advice"": ""设计合理，新增功能清晰，保持了向后兼容性。建议确保在复制构造函数（`DefaultRestClientBuilder(DefaultRestClientBuilder other)`）中也正确复制了该标志，代码中已实现。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""为RestClient添加禁用默认状态处理器的功能。"",
+    ""description"": ""在`DefaultRestClient`的构造函数参数列表中新增了`boolean defaultStatusHandlerEnabled`参数，但该参数在参数列表中的位置（紧随`statusHandlers`之后）可能不够直观。参数列表较长，新增参数增加了认知负担。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/DefaultRestClient.java\n@@ -134,7 +136,7 @@ final class DefaultRestClient implements RestClient {\n \t\t\t@Nullable MultiValueMap<String, String> defaultCookies,\n \t\t\t@Nullable Object defaultApiVersion, @Nullable ApiVersionInserter apiVersionInserter,\n \t\t\t@Nullable Consumer<RequestHeadersSpec<?>> defaultRequest,\n-\t\t\t@Nullable List<StatusHandler> statusHandlers,\n+\t\t\t@Nullable List<StatusHandler> statusHandlers, boolean defaultStatusHandlerEnabled,\n \t\t\tList<HttpMessageConverter<?>> messageConverters,\n \t\t\tObservationRegistry observationRegistry,\n \t\t\t@Nullable ClientRequestObservationConvention observationConvention,"",
+    ""advice"": ""考虑到Spring Framework的代码风格和向后兼容性要求，目前的设计可能是必要的。但可以建议在未来的重构中，考虑将多个配置参数封装到一个配置对象中，以简化构造函数签名。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为RestClient添加禁用默认状态处理器的功能。"",
+    ""description"": ""代码变更逻辑清晰，新增的测试用例（`defaultStatusHandlerThrowsOnErrorStatus`和`disableDefaultStatusHandlerAllowsErrorBody`）有效验证了功能。文档（JavaDoc）也已相应更新。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/web/client/DefaultRestClientTests.java\n@@ -117,6 +118,38 @@ void requiredBodyWithParameterizedTypeReferenceAndNullBody() throws IOException\n \t\t);\n \t}\n \n+\t@Test\n+\tvoid defaultStatusHandlerThrowsOnErrorStatus() throws IOException {\n+\t\tmockSentRequest(HttpMethod.GET, \""https://example.org\"");\n+\t\tmockResponseStatus(HttpStatus.BAD_REQUEST);\n+\t\tmockResponseBody(\""Error\"", MediaType.TEXT_PLAIN);\n+\n+\t\tassertThatThrownBy(() -> this.client.get()\n+\t\t\t\t.uri(\""https://example.org\"")\n+\t\t\t\t.retrieve()\n+\t\t\t\t.body(String.class))\n+\t\t\t\t.isInstanceOf(HttpClientErrorException.class);\n+\t}\n+\n+\t@Test\n+\tvoid disableDefaultStatusHandlerAllowsErrorBody() throws IOException {\n+\t\tthis.client = RestClient.builder()\n+\t\t\t\t.requestFactory(this.requestFactory)\n+\t\t\t\t.disableDefaultStatusHandler()\n+\t\t\t\t.build();\n+\n+\t\tmockSentRequest(HttpMethod.GET, \""https://example.org\"");\n+\t\tmockResponseStatus(HttpStatus.BAD_REQUEST);\n+\t\tmockResponseBody(\""Error\"", MediaType.TEXT_PLAIN);\n+\n+\t\tString result = this.client.get()\n+\t\t\t\t.uri(\""https://example.org\"")\n+\t\t\t\t.retrieve()\n+\t\t\t\t.body(String.class);\n+\n+\t\tassertThat(result).isEqualTo(\""Error\"");\n+\t}"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '50f4f81a7f2e75990eae02b2fb155b2af825bb8b', 'message': 'Add opt-out for default RestClient status handler\n\nSigned-off-by: Seunggyu Lee <dltmdrb98@gmail.com>'}]","[""@seungy0 \r\nThanks for your feedback and fixing this issue perfectly!\r\n\r\n🙏 I realize my previous implementation had an oversight (didn't consider the built-in StatusHandler logic in DefaultResponseSpec), and your solution with a dedicated disable flag passed to DefaultResponseSpec is definitely the right and complete approach. \r\n\r\nIt's a great learning for me to dive into the RestClient source code and Spring contribution process through this issue."", 'Closing as per https://github.com/spring-projects/spring-framework/issues/36248#issuecomment-3926068225.']",2026-04-04 01:01:32
+spring-projects/spring-framework,36249,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复当apiVersion缺失时可能引发的IllegalArgumentException异常"",
+    ""description"": ""在getMatchingCondition方法中，当this.version为null时，代码会直接访问versionHolder.hasVersion()，但在此之前需要先检查this.version是否为null。原逻辑中，如果this.version为null且versionHolder.hasVersion()返回false，会返回this，但如果versionHolder.hasVersion()返回true，则会进入后续比较逻辑，可能导致空指针或非法参数异常。变更通过提前检查this.version == null并直接返回this，避免了这种情况。"",
+    ""evidence"": ""if (this.version == null) {\n\treturn this;\n}"",
+    ""advice"": ""变更合理，确保了当版本条件为null时的健壮性。建议保持现有代码，无需修改。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'd2ae5843449000888d6b661bbdf53c2b7509022d', 'message': 'fix: prevent IllegalArgumentException when apiVersion is missing\n\nSigned-off-by: François WEMAERE <32339136+fwemaere@users.noreply.github.com>'}]","['The request attribute is set at the level `AbstractHandlerMapping`, and is required to be present, and it has nothing to do with whether a mapping has a version or not.\r\n\r\nNote also a recent change #36276 that has already updated this for efficiency.']",2026-04-04 01:01:44
+spring-projects/spring-framework,36249,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复当API版本缺失时可能抛出的IllegalArgumentException。"",
+    ""description"": ""在`getMatchingCondition`方法中，当`this.version`为null时，代码会直接尝试获取`ApiVersionHolder`属性。如果该属性不存在，`exchange.getRequiredAttribute(...)`会抛出`IllegalArgumentException`。修改后，在获取属性前先检查`this.version`，若为null则直接返回，避免了潜在的异常。"",
+    ""evidence"": ""@@ -100,9 +100,12 @@ public VersionRequestCondition combine(VersionRequestCondition other) {\n \n \t@Override\n \tpublic @Nullable VersionRequestCondition getMatchingCondition(ServerWebExchange exchange) {\n+\t\tif (this.version == null) {\n+\t\t\treturn this;\n+\t\t}\n \t\tApiVersionHolder versionHolder = exchange.getRequiredAttribute(HandlerMapping.API_VERSION_ATTRIBUTE);\n \n-\t\tif (this.version == null || !versionHolder.hasVersion()) {\n+\t\tif (!versionHolder.hasVersion()) {\n \t\t\treturn this;\n \t\t}"",
+    ""advice"": ""修改逻辑正确，修复了潜在的NPE或IllegalArgumentException。代码清晰，无需进一步修改。"",
+    ""confidence"": 1.0,
+    ""severity"": ""High""
+  }
+]","[{'sha': 'd2ae5843449000888d6b661bbdf53c2b7509022d', 'message': 'fix: prevent IllegalArgumentException when apiVersion is missing\n\nSigned-off-by: François WEMAERE <32339136+fwemaere@users.noreply.github.com>'}]","['The request attribute is set at the level `AbstractHandlerMapping`, and is required to be present, and it has nothing to do with whether a mapping has a version or not.\r\n\r\nNote also a recent change #36276 that has already updated this for efficiency.']",2026-04-04 01:01:54
+spring-projects/spring-framework,36238,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将泛型类型参数显式声明为可空，以提升类型安全性。"",
+    ""description"": ""代码变更的主要目的是将 `HttpEntity`、`RequestEntity` 和 `ResponseEntity` 的泛型类型参数 `T` 显式声明为 `T extends @Nullable Object`。这旨在利用类型级别的空值注解（如 JSpecify 的 `@Nullable`）来更精确地表达类型参数的可空性，从而提升代码的类型安全性，并可能消除对单个字段或参数使用 `@Nullable` 注解的需要。然而，在 `HttpEntity` 类中，`body` 字段的类型从 `@Nullable T` 改为 `T`，但构造函数参数 `body` 的类型也从 `@Nullable T` 改为 `T`。这可能导致一个潜在问题：当 `T` 被实例化为非空类型（例如 `String`）时，构造函数现在要求一个非空的 `body` 参数，但类内部的无参构造函数和仅包含 `headers` 的构造函数仍然通过 `this(null, ...)` 传递 `null` 作为 `body`。这可能会与类型系统产生冲突，尽管使用了 `@SuppressWarnings(\""NullAway\"")` 来抑制警告，但逻辑上可能存在不一致。"",
+    ""evidence"": ""在 `HttpEntity.java` 中：\n1. 类声明改为 `public class HttpEntity<T extends @Nullable Object>`。\n2. `body` 字段从 `private final @Nullable T body;` 改为 `private final T body;`。\n3. 构造函数 `public HttpEntity(T body, @Nullable HttpHeaders headers)` 的参数 `body` 从 `@Nullable T` 改为 `T`。\n4. 无参构造函数 `protected HttpEntity()` 和单参数构造函数 `public HttpEntity(HttpHeaders headers)` 都调用了 `this(null, ...)`，并添加了 `@SuppressWarnings(\""NullAway\"")`。"",
+    ""advice"": ""建议重新审视设计：如果泛型 `T` 被声明为 `extends @Nullable Object`，这意味着 `T` 本身可以是可空类型。那么 `body` 字段的类型 `T` 应该能够容纳 `null` 值，因此将构造函数参数改为 `T` 是合理的。但是，需要确保所有调用构造函数并传递 `null` 的地方（例如无参构造函数）在类型检查上是安全的。目前通过 `@SuppressWarnings` 抑制了警告，这可能是可接受的，但应确保这种设计在整个框架中保持一致，并且不会导致运行时异常。另外，检查所有使用这些类的客户端代码，确保它们能正确处理类型变化。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""多处添加了 `@SuppressWarnings(\""NullAway\"")` 注解，可能影响代码可读性。"",
+    ""description"": ""在多个构造函数上添加了 `@SuppressWarnings(\""NullAway\"")` 注解，例如 `HttpEntity` 的无参构造函数、单 `HttpHeaders` 参数构造函数，以及 `RequestEntity` 和 `ResponseEntity` 的类似构造函数。这些注解用于抑制静态分析工具（如 NullAway）的警告，因为代码传递了 `null` 给可能期望非空值的参数。虽然这是必要的，但过多的抑制注解可能会降低代码的可读性，并可能掩盖潜在的空指针问题。"",
+    ""evidence"": ""例如在 `HttpEntity.java` 中：\n`@SuppressWarnings(\""NullAway\"")\nprotected HttpEntity() {\n    this(null, (HttpHeaders) null);\n}`\n以及 `@SuppressWarnings(\""NullAway\"")\npublic HttpEntity(HttpHeaders headers) {\n    this(null, headers);\n}`"",
+    ""advice"": ""考虑是否可以通过重构来避免这些警告，例如引入静态工厂方法来明确创建空 body 的实体。如果当前设计是合理的，确保在注解附近添加注释，解释为什么抑制警告是安全的，以提高代码的可维护性。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4fa027d13ccd733df1db91765c3c162078ba5508', 'message': 'Leverage the nullability defined at type level\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '9e894819635d211ce5da1dd67156d01bbdc82589', 'message': 'Fix unit test\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '1a6926ef6c4efbf26dbf11806b71761ac51f122d', 'message': 'Remove unused `@Nullable`\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]","['Here, you should just leverage the nullability defined at type level, so please remove the explicit `@Nullable` override here.', 'Here, you should just leverage the nullability defined at type level, so please remove the explicit `@Nullable` override here and in other similar use cases.', 'Here I think you should just use `public static <T> ResponseEntity<T> ok(T body)` since the nullability is defined at type level. Please adapt similar use cases.', 'The `T` here is for a `static` method, which is not directly tied to the `T` in the `ResponseEntity` type declaration -- even though both types are called ""T"".\n\nSo, unless I\'m confusing things, I think we need to explicitly declare this as follows.\n\n```java\npublic static <T extends @Nullable Object> ResponseEntity<T> ok(T body) {\n```\n\nOtherwise, the supplied `body` cannot be `null`.', 'Ah good point, so my remark is not relevant.', '<img width=""1731"" height=""672"" alt=""image"" src=""https://github.com/user-attachments/assets/990c3c30-e801-4df1-bdba-946a9b8004b8"" />\r\n\r\nI have removed but the compileJava task build fail\r\n\r\n>Within @NullMarked, remember, unannotated types are the same as if they were annotated with @NonNull. Since the bound of E is the same as @NonNull Number, and not @Nullable Number, that means the type argument for E can\'t be a type that includes null. @Nullable Integer can\'t be the type argument, then, since that can include null. (In other words: @Nullable Integer is not a subtype of Number.)\r\n\r\nhttps://jspecify.dev/docs/user-guide/#declaring-generics', 'DITTO', 'You need to update the rest of the codebase to fix NullAway errors, with for example here changing the return value to `HttpEntity<? extends @Nullable Object> build()` for example.', 'Can you check how `ResponseEntity` of ""empty value"" translates in a sample application checked with NullAway, using https://github.com/sdeleuze/jspecify-nullaway-demo as a basis maybe?\n\nI guess that would be `ResponseEntity<@Nullable Void>` based on https://github.com/jspecify/jspecify/issues/51 but worth to check.', 'Please add a test for empty value, ie. how `ResponseEntity<@Nullable Void>` translates to Kotlin. Is it `ResponseEntity<Unit>`?', 'Why do we remove the annotation here? Does it mean the T body is not null?', 'We remove this annotation there because with this PR, the nullability of `T` with be defined at type level and does not needs to be overridden at method level.', ""Please correct me if i'm wrong\nIMO, these are 2 completely different stories\n- `public class HttptEntity<T extends @Nullable Object>` indicates that the `final T body` is nullable (we just move `@Nullable` from `final @Nullable T body` to the `<....>`\n-The `@Nullable T body` in  `public ResponseEntity(@Nullable T body, @Nullable HttpHeaders headers, int rawStatus)`  indicates that the argument passed to the constructor is nullable. `final T body` is nullable vs ...passed to the constructor is nullable.\nI would like to reopen the comment to get your feedback. Thanks"", ""Please correct me if i'm wrong\nIMO, these are 2 completely different stories\n\n    public class HttptEntity<T extends @Nullable Object> indicates that the final T body is nullable (we just move @Nullable from final @Nullable T body to the <....>\n    -The @Nullable T body in public ResponseEntity(@Nullable T body, @Nullable HttpHeaders headers, int rawStatus) indicates that the argument passed to the constructor is nullable. final T body is nullable vs ...passed to the constructor is nullable."", 'Please refine as suggested for all similar use cases and check with a full build that NullAway does not trigger errors.', 'After discussing with the team, we would like to clarify how entity of empty value translates on both Java and Kotlin signature level before deciding if we move forward.']",2026-04-04 01:02:27
+spring-projects/spring-framework,36238,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将HttpEntity及相关类的泛型参数显式声明为可空，以利用类型级别的空值注解。"",
+    ""description"": ""此次变更的核心是将 `HttpEntity<T>`、`RequestEntity<T>` 和 `ResponseEntity<T>` 的泛型参数从 `T` 改为 `T extends @Nullable Object`。这旨在将泛型类型参数本身声明为可空，从而在类型级别（而非仅字段/参数级别）定义空值语义。然而，这种改变可能带来潜在的向后兼容性问题。例如，`HttpEntity<T>` 的构造函数参数 `body` 从 `@Nullable T` 改为 `T`，但 `T` 现在被定义为 `@Nullable`，这可能导致编译器警告或静态分析工具（如 NullAway）的混淆，因为 `T` 现在是一个可空类型，但参数上却没有 `@Nullable` 注解。此外，`getBody()` 方法的返回类型也从 `@Nullable T` 改为 `T`，虽然 `T` 是 `@Nullable`，但这种移除显式注解的做法可能影响代码的可读性和工具的理解。"",
+    ""evidence"": ""public class HttpEntity<T extends @Nullable Object> { ... public HttpEntity(T body, @Nullable HttpHeaders headers) { ... } ... public T getBody() { return this.body; }"",
+    ""advice"": ""建议审查这种设计变更对现有代码库的影响，特别是对使用这些类的客户端代码的兼容性。确保所有相关的静态分析工具（如 Checker Framework, NullAway）的配置能够正确处理这种类型级别的空值声明。如果目的是为了减少 `@Nullable` 注解的重复，这是一个合理的重构，但需要确保不会引入意外的空指针风险或破坏现有约定。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""在多个位置添加了 `@SuppressWarnings(\""NullAway\"")` 注解。"",
+    ""description"": ""在多个构造函数上添加了 `@SuppressWarnings(\""NullAway\"")` 注解，例如 `HttpEntity()`、`HttpEntity(HttpHeaders)`、`RequestEntity(HttpMethod, URI)` 等。这表明代码变更可能触发了 NullAway 等静态分析工具的警告，需要通过抑制警告来通过检查。虽然这可能是必要的，但大量使用 `@SuppressWarnings` 可能掩盖潜在的空值问题，降低代码的清晰度。"",
+    ""evidence"": ""@SuppressWarnings(\""NullAway\"") protected HttpEntity() { ... }"",
+    ""advice"": ""应评估这些警告是否确实为误报，如果是由于泛型类型 `T extends @Nullable Object` 的引入导致的，那么这种抑制可能是合理的。但建议在可能的情况下，通过调整代码或工具配置来避免警告，而不是广泛抑制。同时，确保添加的每个 `@SuppressWarnings` 都有明确的注释说明原因。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""在实例化 `HttpEntity`、`RequestEntity`、`ResponseEntity` 时，显式指定了泛型类型为 `@Nullable Object` 或 `@Nullable Void`。"",
+    ""description"": ""在多个文件中，当需要创建一个 body 为 `null` 的实体时，代码现在显式地使用 `new HttpEntity<@Nullable Object>(...)` 或 `new ResponseEntity<@Nullable Object>(...)` 或 `RequestEntity<@Nullable Void>`。例如，在 `MultipartBodyBuilder` 和多个异常处理器中。这是为了适应泛型类型 `T` 被定义为 `T extends @Nullable Object` 后的类型推断需求。然而，这增加了代码的冗长度，并且 `@Nullable Void` 这样的类型看起来有些奇怪，因为 `Void` 本身通常用于表示“无返回”，但其可空性语义可能不直观。"",
+    ""evidence"": ""return new HttpEntity<@Nullable Object>(this.body, this.headers); ... return new ResponseEntity<@Nullable Object>(body, headers, status); ... RequestEntity<@Nullable Void> build();"",
+    ""advice"": ""这种更改是类型系统严格化后的必然结果，但应确保所有团队成员理解 `@Nullable Void` 的含义（即表示一个可能为 `null` 的 `Void` 类型，通常用于无 body 的请求）。考虑是否可以通过引入辅助方法或常量来简化这些常见用例的创建，以减少代码重复和冗长。"",
+    ""confidence"": 0.85,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了在类型级别定义泛型参数的可空性。"",
+    ""description"": ""未发现明显的功能错误、安全漏洞或性能问题。变更逻辑上一致，旨在改进空值注解的使用。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4fa027d13ccd733df1db91765c3c162078ba5508', 'message': 'Leverage the nullability defined at type level\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '9e894819635d211ce5da1dd67156d01bbdc82589', 'message': 'Fix unit test\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}, {'sha': '1a6926ef6c4efbf26dbf11806b71761ac51f122d', 'message': 'Remove unused `@Nullable`\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]","['Here, you should just leverage the nullability defined at type level, so please remove the explicit `@Nullable` override here.', 'Here, you should just leverage the nullability defined at type level, so please remove the explicit `@Nullable` override here and in other similar use cases.', 'Here I think you should just use `public static <T> ResponseEntity<T> ok(T body)` since the nullability is defined at type level. Please adapt similar use cases.', 'The `T` here is for a `static` method, which is not directly tied to the `T` in the `ResponseEntity` type declaration -- even though both types are called ""T"".\n\nSo, unless I\'m confusing things, I think we need to explicitly declare this as follows.\n\n```java\npublic static <T extends @Nullable Object> ResponseEntity<T> ok(T body) {\n```\n\nOtherwise, the supplied `body` cannot be `null`.', 'Ah good point, so my remark is not relevant.', '<img width=""1731"" height=""672"" alt=""image"" src=""https://github.com/user-attachments/assets/990c3c30-e801-4df1-bdba-946a9b8004b8"" />\r\n\r\nI have removed but the compileJava task build fail\r\n\r\n>Within @NullMarked, remember, unannotated types are the same as if they were annotated with @NonNull. Since the bound of E is the same as @NonNull Number, and not @Nullable Number, that means the type argument for E can\'t be a type that includes null. @Nullable Integer can\'t be the type argument, then, since that can include null. (In other words: @Nullable Integer is not a subtype of Number.)\r\n\r\nhttps://jspecify.dev/docs/user-guide/#declaring-generics', 'DITTO', 'You need to update the rest of the codebase to fix NullAway errors, with for example here changing the return value to `HttpEntity<? extends @Nullable Object> build()` for example.', 'Can you check how `ResponseEntity` of ""empty value"" translates in a sample application checked with NullAway, using https://github.com/sdeleuze/jspecify-nullaway-demo as a basis maybe?\n\nI guess that would be `ResponseEntity<@Nullable Void>` based on https://github.com/jspecify/jspecify/issues/51 but worth to check.', 'Please add a test for empty value, ie. how `ResponseEntity<@Nullable Void>` translates to Kotlin. Is it `ResponseEntity<Unit>`?', 'Why do we remove the annotation here? Does it mean the T body is not null?', 'We remove this annotation there because with this PR, the nullability of `T` with be defined at type level and does not needs to be overridden at method level.', ""Please correct me if i'm wrong\nIMO, these are 2 completely different stories\n- `public class HttptEntity<T extends @Nullable Object>` indicates that the `final T body` is nullable (we just move `@Nullable` from `final @Nullable T body` to the `<....>`\n-The `@Nullable T body` in  `public ResponseEntity(@Nullable T body, @Nullable HttpHeaders headers, int rawStatus)`  indicates that the argument passed to the constructor is nullable. `final T body` is nullable vs ...passed to the constructor is nullable.\nI would like to reopen the comment to get your feedback. Thanks"", ""Please correct me if i'm wrong\nIMO, these are 2 completely different stories\n\n    public class HttptEntity<T extends @Nullable Object> indicates that the final T body is nullable (we just move @Nullable from final @Nullable T body to the <....>\n    -The @Nullable T body in public ResponseEntity(@Nullable T body, @Nullable HttpHeaders headers, int rawStatus) indicates that the argument passed to the constructor is nullable. final T body is nullable vs ...passed to the constructor is nullable."", 'Please refine as suggested for all similar use cases and check with a full build that NullAway does not trigger errors.', 'After discussing with the team, we would like to clarify how entity of empty value translates on both Java and Kotlin signature level before deciding if we move forward.']",2026-04-04 01:03:01
+spring-projects/spring-framework,36225,baseline,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增ProxyFactoryCustomizer接口，允许在创建代理前定制ProxyFactory。"",
+    ""description"": ""新增的`proxyCustomizers`列表在`HttpServiceProxyFactory`构造函数中被直接赋值给实例变量，但在`Builder`的`build()`方法中，`this.proxyCustomizers`是一个可变列表（`ArrayList`）。这可能导致外部代码在`Builder`构建完成后仍能修改该列表，从而影响已创建的`HttpServiceProxyFactory`实例的行为，违反了不可变设计原则，可能引入难以追踪的bug。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/service/invoker/HttpServiceProxyFactory.java\n@@ -147,6 +152,8 @@ public static final class Builder {\n \n \t\tprivate @Nullable StringValueResolver embeddedValueResolver;\n \n+\t\tprivate final List<ProxyFactoryCustomizer> proxyCustomizers = new ArrayList<>();\n+\n \t\tprivate Builder() {\n \t\t}\n \n@@ -225,7 +245,7 @@ public HttpServiceProxyFactory build() {\n \n \t\t\treturn new HttpServiceProxyFactory(\n \t\t\t\t\tadapterToUse, initArgumentResolvers(), this.requestValuesProcessors,\n-\t\t\t\t\tthis.embeddedValueResolver);\n+\t\t\t\t\tthis.embeddedValueResolver, this.proxyCustomizers);"",
+    ""advice"": ""在`Builder.build()`方法中，将`this.proxyCustomizers`列表传递给`HttpServiceProxyFactory`构造函数前，应创建一个不可修改的副本（例如，使用`Collections.unmodifiableList(new ArrayList<>(this.proxyCustomizers))`或`List.copyOf(this.proxyCustomizers)`）。这样可以确保工厂实例内部的列表在构建后不会被意外修改。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增ProxyFactoryCustomizer接口，允许在创建代理前定制ProxyFactory。"",
+    ""description"": ""在测试文件`HttpServiceProxyFactoryTests.java`中，新增的测试方法`proxyFactoryCustomizer`的导入语句顺序不一致。`org.aopalliance.intercept.MethodInterceptor`被添加在`org.jspecify.annotations.Nullable`之前，这破坏了原有的导入分组和排序约定（通常先外部库，后Spring框架内部类，再测试相关）。虽然不影响功能，但降低了代码风格的一致性。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/web/service/invoker/HttpServiceProxyFactoryTests.java\n@@ -16,9 +16,9 @@\n \n package org.springframework.web.service.invoker;\n \n+import org.aopalliance.intercept.MethodInterceptor;\n import org.jspecify.annotations.Nullable;\n import org.junit.jupiter.api.Test;"",
+    ""advice"": ""调整导入语句的顺序，使其符合项目约定的代码风格。通常，`org.jspecify.annotations.Nullable`应放在`org.aopalliance.intercept.MethodInterceptor`之前，或者按照工具（如IDE）的自动格式化规则进行整理。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'b2d9da40584765da484407352fbfc84b08e2dcbd', 'message': 'Support `ProxyFactoryCustomizer` that allows manipulating the `ProxyFactory` before creating the proxy\n\nSigned-off-by: Đặng Minh Dũng <dungdm93@live.com>'}]","[""I would make it  a nested interface in `HttpServiceProxyFactory` called `ProxyFactoryCustomizer`. I don't think it needs to be a top-level contract. "", 'Also, update the method to match, i.e. `customize(...)`', 'Thanks for the suggestion. The request makes sense, however I would update the implementation a bit as suggested below. Having at least one test would also be a good idea.\n\nPlease, let me know if you will make those updates.', 'Thanks @dungdm93.', '@rstoyanchev I update PR as your suggestion, could you please take a look.']",2026-04-04 01:03:26
+spring-projects/spring-framework,36225,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增ProxyFactoryCustomizer接口，允许在创建代理前自定义ProxyFactory"",
+    ""description"": ""新增的ProxyFactoryCustomizer接口允许用户在创建HttpService代理前对ProxyFactory进行自定义（例如添加额外的拦截器）。这是一个合理的扩展点设计，增强了框架的灵活性。"",
+    ""evidence"": ""public interface ProxyFactoryCustomizer {\n        void customize(ProxyFactory factory, Class<?> serviceType);\n    }"",
+    ""advice"": ""接口设计良好，无需修改。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增ProxyFactoryCustomizer接口，允许在创建代理前自定义ProxyFactory"",
+    ""description"": ""在Builder的proxyCustomizer方法文档中，存在一处拼写错误。'manipulating'应为'manipulate'。虽然不影响功能，但影响文档的专业性。"",
+    ""evidence"": ""Register an {@link ProxyFactoryCustomizer} that can\n         * manipulating the {@link ProxyFactory} before creating proxy."",
+    ""advice"": ""将文档中的'manipulating'修改为'manipulate'。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增ProxyFactoryCustomizer接口，允许在创建代理前自定义ProxyFactory"",
+    ""description"": ""代码变更整体设计合理，功能清晰。新增的接口和集成点（Builder和工厂方法）遵循了现有代码的结构和模式。测试用例也覆盖了新功能。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b2d9da40584765da484407352fbfc84b08e2dcbd', 'message': 'Support `ProxyFactoryCustomizer` that allows manipulating the `ProxyFactory` before creating the proxy\n\nSigned-off-by: Đặng Minh Dũng <dungdm93@live.com>'}]","[""I would make it  a nested interface in `HttpServiceProxyFactory` called `ProxyFactoryCustomizer`. I don't think it needs to be a top-level contract. "", 'Also, update the method to match, i.e. `customize(...)`', 'Thanks for the suggestion. The request makes sense, however I would update the implementation a bit as suggested below. Having at least one test would also be a good idea.\n\nPlease, let me know if you will make those updates.', 'Thanks @dungdm93.', '@rstoyanchev I update PR as your suggestion, could you please take a look.']",2026-04-04 01:03:37
+spring-projects/spring-framework,36221,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了使用Java NIO Files工具类优化文件复制和读取操作"",
+    ""description"": ""未发现明显问题。代码变更将原有的基于流的文件读写操作替换为java.nio.file.Files中的write和readAllBytes方法，简化了代码，并增加了相应的单元测试。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ffd8f2ee3a6df14439b4a482ba1b57378c3e8c93', 'message': 'Use Java Files utilities in FileCopyUtils\n\nUse helpers from java.nio.file.Files for some methods in FileCopyUtils.\n\nAdditionally, add unit tests for the various file-related methods.\n\nSigned-off-by: Patrick Strawderman <pstrawderman@netflix.com>'}]","[""@jhoeller should we deprecate some of those utility methods as a result? We've done that in the past when Java upgrades turn those into one-liners."", ""For completeness, I've also applied consistent stream closing through try-with-resources in #36223 and aligned 6.2.16 in #36224.\r\n\r\nAs for deprecating some methods, most of them do not provide much additional anymore indeed. However, they are quite old and potentially called from many parts of the ecosystem, so I'd rather leave them in place - not least of it all, for their consistent closing of streams in `FileCopyUtils` and the flushing after copying in `StreamUtils` (which some callers may effectively rely on).\r\n\r\nFWIW, once we have a JDK 25 baseline, we can use `Reader#readAllAsString` in our `FileCopyUtils#copyToString` implementation.""]",2026-04-04 01:03:46
+spring-projects/spring-framework,36221,with_readme,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了使用Java NIO Files API优化文件复制工具类"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ffd8f2ee3a6df14439b4a482ba1b57378c3e8c93', 'message': 'Use Java Files utilities in FileCopyUtils\n\nUse helpers from java.nio.file.Files for some methods in FileCopyUtils.\n\nAdditionally, add unit tests for the various file-related methods.\n\nSigned-off-by: Patrick Strawderman <pstrawderman@netflix.com>'}]","[""@jhoeller should we deprecate some of those utility methods as a result? We've done that in the past when Java upgrades turn those into one-liners."", ""For completeness, I've also applied consistent stream closing through try-with-resources in #36223 and aligned 6.2.16 in #36224.\r\n\r\nAs for deprecating some methods, most of them do not provide much additional anymore indeed. However, they are quite old and potentially called from many parts of the ecosystem, so I'd rather leave them in place - not least of it all, for their consistent closing of streams in `FileCopyUtils` and the flushing after copying in `StreamUtils` (which some callers may effectively rely on).\r\n\r\nFWIW, once we have a JDK 25 baseline, we can use `Reader#readAllAsString` in our `FileCopyUtils#copyToString` implementation.""]",2026-04-04 01:03:51
+spring-projects/spring-framework,36212,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""重命名变量以更好地匹配其类型，并修正了断言信息中的类型名。"",
+    ""description"": ""代码变更将字段、参数和局部变量从 `retryTemplate` 重命名为 `retryOperations`，使其与接口类型 `RetryOperations` 的名称保持一致，提高了代码的一致性和可读性。同时，修正了构造函数中 `Assert.notNull` 的错误信息，从 `\""RetryTemplate must not be null\""` 改为 `\""RetryOperations must not be null\""`，使其与实际参数类型匹配。"",
+    ""evidence"": ""private final RetryOperations retryOperations;\npublic RetryTask(TaskCallback<V, E> task, RetryOperations retryOperations) {\n\tAssert.notNull(retryOperations, \""RetryOperations must not be null\"");\n\tthis.retryOperations = retryOperations;\n}"",
+    ""advice"": ""无。这是一个良好的重构，提高了代码的清晰度。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '9bc980cd85e6d326d3a3312bec36940e31893541', 'message': 'Polish RetryTask\n\n1. Fix wrong type name in assertion message.\n2. Rename `retryTemplate` to `retryOperations` to match type better.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}]","['Well spotted - however, while this is debatable, it is actually intentional. `JdbcClient` and `JmsClient` follow the same pattern of accepting `Operations` interfaces while suggesting the `Template` classes both in the parameter name and the assertion message. The rationale is that the common thing to pass in there is a template instance, with the operations interface primarily declared for testability. In other words, the operations interface is just a facade for a specific template rather than an independent contract.']",2026-04-04 01:04:02
+spring-projects/spring-framework,36212,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复断言错误信息并重命名变量以匹配类型"",
+    ""description"": ""代码变更主要包含两个改进：1) 修复了断言错误信息中错误的类型名称（从'RetryTemplate'改为'RetryOperations'），这提高了错误信息的准确性。2) 将字段和参数名从'retryTemplate'重命名为'retryOperations'，使其更准确地反映实际类型（RetryOperations接口），提高了代码的可读性和一致性。"",
+    ""evidence"": ""1. -Assert.notNull(retryTemplate, \""RetryTemplate must not be null\"");\n+Assert.notNull(retryOperations, \""RetryOperations must not be null\"");\n2. -private final RetryOperations retryTemplate;\n+private final RetryOperations retryOperations;"",
+    ""advice"": ""变更合理，无需额外建议。重命名使代码意图更清晰，修复错误信息有助于调试。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '9bc980cd85e6d326d3a3312bec36940e31893541', 'message': 'Polish RetryTask\n\n1. Fix wrong type name in assertion message.\n2. Rename `retryTemplate` to `retryOperations` to match type better.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}]","['Well spotted - however, while this is debatable, it is actually intentional. `JdbcClient` and `JmsClient` follow the same pattern of accepting `Operations` interfaces while suggesting the `Template` classes both in the parameter name and the assertion message. The rationale is that the common thing to pass in there is a template instance, with the operations interface primarily declared for testability. In other words, the operations interface is just a facade for a specific template rather than an independent contract.']",2026-04-04 01:04:11

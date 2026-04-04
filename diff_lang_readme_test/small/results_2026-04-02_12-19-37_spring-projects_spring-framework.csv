@@ -1,0 +1,227 @@
+repo,pr,strategy,review,commits,review_comments,time
+spring-projects/spring-framework,36580,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对@HttpExchange注解的支持"",
+    ""description"": ""未发现明显问题。代码变更的主要目的是扩展MvcUriComponentsBuilder的功能，使其能够识别和处理@HttpExchange注解（以及其组合注解，如@GetExchange），就像处理@RequestMapping注解一样。这允许实现了@HttpExchange接口的控制器使用fromController()、fromMethodName()和fromMethodCall()等方法来构建链接。代码修改了相关的工具方法（getClassMapping和getMethodMapping）的逻辑，并添加了相应的单元测试，逻辑清晰，功能完整。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-02 12:14:52
+spring-projects/spring-framework,36580,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对@HttpExchange注解的支持"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-02 12:14:56
+spring-projects/spring-framework,36577,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复原始类型和数组类型返回类型名称的解析问题"",
+    ""description"": ""原始代码在处理原始类型（如int、void）和数组类型时，会错误地添加包名前缀，导致返回类型名称不正确。例如，原始类型'int'会被错误地解析为'java.lang.int'，数组类型'String[]'会被错误地解析为'java.lang.String.[]'。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -143,7 +143,7 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t\tAccessFlags flags = methodModel.flags();\n \t\tString declaringClassName = methodModel.parent().map(parent -> ClassUtils.convertResourcePathToClassName(parent.thisClass().name().stringValue())).orElse(null);\n \t\tClassDesc returnType = methodModel.methodTypeSymbol().returnType();\n-\t\tString returnTypeName = returnType.packageName() + \"".\"" + returnType.displayName();\n+\t\tString returnTypeName = resolveTypeName(returnType);"",
+    ""advice"": ""已通过引入resolveTypeName方法正确修复。该方法分别处理原始类型、数组类型和引用类型，确保返回正确的类型名称。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""引入辅助方法提高代码可读性和可维护性"",
+    ""description"": ""新增的resolveTypeName方法将类型名称解析逻辑封装在一个独立的方法中，使主方法（of）的逻辑更清晰，并提高了代码的可复用性。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -154,6 +154,18 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t}\n \n \n+\tprivate static String resolveTypeName(ClassDesc type) {\n+\t\tif (type.isPrimitive()) {\n+\t\t\treturn type.displayName();\n+\t\t}\n+\t\tif (type.isArray()) {\n+\t\t\treturn resolveTypeName(type.componentType()) + \""[]\"";\n+\t\t}\n+\t\tString packageName = type.packageName();\n+    \treturn (packageName.isEmpty() ? type.displayName() : packageName + \"".\"" + type.displayName());\n+\t}"",
+    ""advice"": ""这是一个良好的重构实践。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增测试用例验证修复的正确性"",
+    ""description"": ""新增的ClassFileMethodMetadataTests和扩展的AbstractMethodMetadataTests全面覆盖了void、原始类型、引用类型和数组类型的返回类型名称解析，确保了修复的健壮性。"",
+    ""evidence"": ""文件: spring-core/src/test/java24/org/springframework/core/type/classreading/ClassFileMethodMetadataTests.java\n@@ -0,0 +1,81 @@\n+...\n+@Test\n+void getReturnTypeReturnsVoidForVoidReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsPrimitiveForPrimitiveReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsReferenceTypeForReferenceReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsArrayTypeForArrayReturnType() throws Exception {...}"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6f4f0edbe55ad37a301b1e2e1ea87c4b8e271a5f', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\n\nIntroduce resolveTypeName helper for ClassDesc handling\n\nAdd ClassFileMethodMetadataTests (java24Test)\n\nExtend AbstractMethodMetadataTests with void return case\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.']",2026-04-02 12:15:26
+spring-projects/spring-framework,36577,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了原始类型和数组类型返回类型名称的生成逻辑。"",
+    ""description"": ""变更前的代码在处理原始类型（如 `int`）和数组类型（如 `String[]`）时，会错误地生成包含包名的类型名称（例如 `java.lang.int` 或 `java.lang.String[]` 的包名部分不正确）。这会导致 `getReturnTypeName()` 方法返回错误的字符串，与预期的 Java 类型名称表示不符。新增的 `resolveTypeName` 方法通过递归处理数组，并正确处理原始类型和默认包中的类，解决了此问题。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -143,7 +143,7 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t\tAccessFlags flags = methodModel.flags();\n \t\tString declaringClassName = methodModel.parent().map(parent -> ClassUtils.convertResourcePathToClassName(parent.thisClass().name().stringValue())).orElse(null);\n \t\tClassDesc returnType = methodModel.methodTypeSymbol().returnType();\n-\t\tString returnTypeName = returnType.packageName() + \"".\"" + returnType.displayName();\n+\t\tString returnTypeName = resolveTypeName(returnType);"",
+    ""advice"": ""实现正确。新增的 `resolveTypeName` 方法逻辑清晰，涵盖了原始类型、数组类型和引用类型。建议确保该方法对于多维数组（如 `int[][]`）也能正确处理，当前递归逻辑 `resolveTypeName(type.componentType()) + \""[]\""` 可以处理多维数组。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增了辅助方法以提高代码可读性和复用性。"",
+    ""description"": ""将类型名称解析逻辑提取到独立的 `resolveTypeName` 私有静态方法中，使 `of` 工厂方法的代码更简洁，逻辑更清晰。这符合单一职责原则，并提高了代码的可维护性。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -154,6 +154,18 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t}\n \n \n+\tprivate static String resolveTypeName(ClassDesc type) {\n+\t\tif (type.isPrimitive()) {\n+\t\t\treturn type.displayName();\n+\t\t}\n+\t\tif (type.isArray()) {\n+\t\t\treturn resolveTypeName(type.componentType()) + \""[]\"";\n+\t\t}\n+\t\tString packageName = type.packageName();\n+    \treturn (packageName.isEmpty() ? type.displayName() : packageName + \"".\"" + type.displayName());\n+\t}"",
+    ""advice"": ""方法实现良好。可以考虑添加一个简短的Javadoc注释来说明此方法的用途，特别是它如何处理原始类型、数组和引用类型，以进一步提升可读性。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了全面的单元测试以验证修复。"",
+    ""description"": ""新增的 `ClassFileMethodMetadataTests` 和扩展的 `AbstractMethodMetadataTests` 针对 `void`、原始类型（`int`）、引用类型（`String`）和数组类型（`String[]`）的返回类型名称进行了测试，确保了修复的正确性和功能的完整性。测试覆盖了所有关键场景。"",
+    ""evidence"": ""文件: spring-core/src/test/java24/org/springframework/core/type/classreading/ClassFileMethodMetadataTests.java\n@@ -0,0 +1,81 @@\n+...\n+@Test\n+void getReturnTypeReturnsVoidForVoidReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsPrimitiveForPrimitiveReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsReferenceTypeForReferenceReturnType() throws Exception {...}\n+@Test\n+void getReturnTypeReturnsArrayTypeForArrayReturnType() throws Exception {...}"",
+    ""advice"": ""测试编写得当，覆盖了主要用例。可以考虑为多维数组（如 `String[][]`）添加一个测试用例，以进一步增强测试的健壮性。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '6f4f0edbe55ad37a301b1e2e1ea87c4b8e271a5f', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\n\nIntroduce resolveTypeName helper for ClassDesc handling\n\nAdd ClassFileMethodMetadataTests (java24Test)\n\nExtend AbstractMethodMetadataTests with void return case\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.']",2026-04-02 12:15:58
+spring-projects/spring-framework,36562,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为多个已弃用的方法添加了`forRemoval = true`标记，明确计划在7.0移除。"",
+    ""description"": ""未发现明显问题。本次变更统一为多个在早期版本（5.1, 6.0, 6.2）中已标记为`@Deprecated`的方法和构造函数，补充了`forRemoval = true`属性，并更新了对应的Javadoc `@deprecated`注释，使其与`@Deprecated`注解的语义保持一致，明确指示这些API计划在未来的主版本（7.0）中被移除。这是对弃用策略的完善，有助于开发者更清晰地了解API的生命周期。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.']",2026-04-02 12:16:08
+spring-projects/spring-framework,36562,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""为多个已弃用的方法添加了`forRemoval = true`标记，明确计划在7.0移除。"",
+    ""description"": ""代码变更统一为多个在早期版本（5.1, 6.0, 6.2）已标记为`@Deprecated`的方法添加了`forRemoval = true`属性，并更新了对应的JavaDoc注释，使其符合JDK的弃用规范。这有助于工具（如IDE、编译器）和开发者更清晰地识别出计划在未来版本中删除的API。"",
+    ""evidence"": ""@@ -148,7 +148,7 @@ public HttpStatusCode getStatusCode() {\n \t * @deprecated as of 6.0, in favor of {@link #getStatusCode()}; scheduled\n \t * for removal in 7.0\n \t */\n-\t@Deprecated(since = \""6.0\"")\n+\t@Deprecated(since = \""6.0\"", forRemoval = true)"",
+    ""advice"": ""变更良好，无需修改。这是对弃用策略的标准化和强化，有助于项目的长期维护和用户迁移。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.']",2026-04-02 12:16:19
+spring-projects/spring-framework,36560,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""移除了未使用的废弃方法 methodIdentification"",
+    ""description"": ""该方法是已废弃且标记为将在7.1版本移除的方法，根据提交信息，它仅用于日志记录但实际上未被使用。移除该方法是合理的清理工作，符合代码维护的最佳实践。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-02 12:16:27
+spring-projects/spring-framework,36560,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码移除了一个已弃用且未使用的方法。"",
+    ""description"": ""本次代码变更移除了 `CacheAspectSupport` 类中的 `methodIdentification` 方法。根据提交信息，该方法虽然在Javadoc中说明用于日志记录，但实际上并未在任何地方被使用。该方法已在 6.2.18 版本被标记为 `@Deprecated(forRemoval = true)`，因此此次移除是符合版本演进计划的清理工作。"",
+    ""evidence"": ""@@ -291,23 +291,6 @@ public void afterSingletonsInstantiated() {\n \t\tthis.initialized = true;\n \t}\n \n-\n-\t/**\n-\t * Convenience method to return a String representation of this Method\n-\t * for use in logging. Can be overridden in subclasses to provide a\n-\t * different identifier for the given method.\n-\t * @param method the method we're interested in\n-\t * @param targetClass class the method is on\n-\t * @return log message identifying this method\n-\t * @see org.springframework.util.ClassUtils#getQualifiedMethodName\n-\t * @deprecated since 6.2.18 with no replacement, for removal in 7.1\n-\t */\n-\t@Deprecated(since = \""6.2.18\"", forRemoval = true)\n-\tprotected String methodIdentification(Method method, Class<?> targetClass) {\n-\t\tMethod specificMethod = ClassUtils.getMostSpecificMethod(method, targetClass);\n-\t\treturn ClassUtils.getQualifiedMethodName(specificMethod);\n-\t}\n \n \tprotected Collection<? extends Cache> getCaches("",
+    ""advice"": ""无。这是一个正确的清理操作。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-02 12:16:41
+spring-projects/spring-framework,36559,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新FieldError类的JavaDoc，澄清defaultMessage参数的性质"",
+    ""description"": ""本次代码变更的主要目的是更新FieldError类的JavaDoc注释，以澄清`defaultMessage`参数是一个静态字符串，而不是应用程序资源包中的国际化（i18n）键。这有助于防止开发者误解，错误地认为设置`defaultMessage`会启用国际化，而实际上这会导致无法使用国际化。变更还澄清了`codes`参数应包含应用程序中的i18n键。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n  */\n public FieldError(String objectName, String field, String defaultMessage) {\n \tthis(objectName, field, null, false, null, null, defaultMessage);\n@@ -60,9 +60,9 @@ public FieldError(String objectName, String field, String defaultMessage) {\n \t * @param rejectedValue the rejected field value\n \t * @param bindingFailure whether this error represents a binding failure\n \t * (like a type mismatch); else, it is a validation failure\n-\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n \t * @param arguments the array of arguments to be used to resolve this message\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""无。这是一个清晰且必要的文档改进，有助于提高API的可理解性和正确使用。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-02 12:17:00
+spring-projects/spring-framework,36559,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修改了FieldError类的Javadoc，以澄清参数含义。"",
+    ""description"": ""Javadoc的修改旨在澄清`defaultMessage`参数是一个静态的默认消息字符串，而不是一个国际化（i18n）的键。同时，为`codes`参数添加了说明，指出它们应该是应用程序中的i18n键。这些修改提高了API文档的清晰度，有助于开发者正确使用该类，避免将`defaultMessage`误认为是i18n键，从而导致国际化失败。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n ...\n -\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n ...\n -\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""修改是恰当的，无需进一步优化。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-02 12:17:12
+spring-projects/spring-framework,36555,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释。"",
+    ""description"": ""代码变更移除了类级别Javadoc中关于缓存先前解析的返回类型以加速查找的声明。这个注释可能已经过时或不准确，因为代码中可能不再存在该缓存机制，或者其实现细节已发生变化。保留不准确的文档会误导开发者，影响代码的可读性和可维护性。"",
+    ""evidence"": ""- * Previously resolved return types are cached for faster lookups."",
+    ""advice"": ""确认当前类中是否确实存在缓存机制。如果存在，建议更新Javadoc以准确描述其当前行为（例如，缓存的范围、失效条件等）。如果缓存机制已被移除，那么此次变更就是正确的，确保了文档与代码实现的一致性。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-02 12:17:23
+spring-projects/spring-framework,36555,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释。"",
+    ""description"": ""代码变更移除了类级别Javadoc中关于缓存已解析返回类型以提高查找速度的说明。这表明该类可能不再维护这样的缓存机制，或者该注释已不准确。保留过时的文档会误导开发者，使其对类的行为产生错误理解。"",
+    ""evidence"": ""@@ -28,7 +28,6 @@\n /**\n  * Handles method return values by delegating to a list of registered\n  * {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers}.\n- * Previously resolved return types are cached for faster lookups.\n  *\n  * @author Rossen Stoyanchev\n  * @since 3.1"",
+    ""advice"": ""审查通过。此变更是正确的文档清理。建议检查该类（HandlerMethodReturnValueHandlerComposite）的实现，确认其内部是否确实不再有缓存逻辑，以确保文档与代码行为完全一致。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-02 12:17:34
+spring-projects/spring-framework,36553,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""变更将setSupportedVersionPredicate方法的返回类型从void改为ApiVersionConfigurer，并返回this。这使得方法可以支持链式调用（fluent API）模式，与类中其他配置方法（如addSupportedVersions、detectSupportedVersions）的设计风格保持一致。当前实现没有功能性问题，但增强了API的一致性和易用性。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""无。此变更是合理的，增强了API的一致性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-02 12:17:45
+spring-projects/spring-framework,36553,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""代码变更将setSupportedVersionPredicate方法的返回类型从void改为ApiVersionConfigurer，并返回this。这符合Builder/Configurer模式的设计惯例，允许方法链式调用，提高了API的流畅性和易用性。从提交信息看，这是修复issue #36551的明确需求。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""变更合理，无需修改。建议检查项目中其他类似的Configurer类，确保设计一致性，考虑是否也需要类似修改以提供统一的链式API。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-02 12:17:54
+spring-projects/spring-framework,36549,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中的错误方法名。"",
+    ""description"": ""Javadoc示例代码中使用了不存在的方法`TypeDescriptor.value(String.class)`，这会导致开发者参考文档时产生困惑，并可能尝试调用错误的方法。正确的静态工厂方法是`TypeDescriptor.valueOf(String.class)`。"",
+    ""evidence"": ""`- * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.value(String.class)));`\n`+ * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(String.class)));`"",
+    ""advice"": ""已修复。此变更将示例代码中的方法名从`value`更正为`valueOf`，使其与实际的API保持一致，提高了文档的准确性和可读性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-02 12:18:08
+spring-projects/spring-framework,36549,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中错误的方法名引用"",
+    ""description"": ""Javadoc示例代码中引用了不存在的方法名'value'，这会导致开发者在使用示例代码时出现编译错误或误导。正确的应该是'valueOf'方法。虽然这只是文档错误，但会影响开发者的使用体验和代码示例的正确性。"",
+    ""evidence"": ""TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.value(String.class)));"",
+    ""advice"": ""已正确修复为'valueOf'方法名。建议检查TypeDescriptor类中是否还有其他类似的文档错误，确保所有示例代码都能正确编译运行。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-02 12:18:16

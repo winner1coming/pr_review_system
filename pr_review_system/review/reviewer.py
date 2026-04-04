@@ -25,12 +25,12 @@ class Reviewer:
         time.sleep(0.5)
         prs = get_valid_prs(self.github,owner, repo, MAX_PRS)
         readme = self.github.get_readme(owner, repo)
-        print(f"README内容: {readme} \n")
 
         results = []
 
-        for pr in prs:
-            pr_number = pr["number"]
+        for pr_with_comments in prs:
+            pr_number = pr_with_comments["pr"]["number"]
+            review_comments = pr_with_comments["review_comments"]
             print(f"\n===== PR #{pr_number} =====")
 
             files = self.github.get_pr_files(owner, repo, pr_number)
@@ -39,18 +39,7 @@ class Reviewer:
             diff = extract_diff(files)
             commits = self.github.get_pr_commits(owner, repo, pr_number)
             commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits[-3:]]
-            comments = self.github.get_review_comments(owner, repo, pr_number)
-            people_reviews = self.github.get_reviews(owner, repo, pr_number)
-            issue_comments = self.github.get_issue_comments(owner, repo, pr_number)
-            review_comments = []
-            review_comments += [c["body"] for c in comments if c["body"]]
-            review_comments += [r["body"] for r in people_reviews if r["body"]]
-            review_comments += [c["body"] for c in issue_comments if c["body"]]
 
-
-            if not review_comments:
-                print("跳过（无评论）")
-                continue
 
             for strategy in ["baseline", "with_readme"]:
                 startTime = time.time()
