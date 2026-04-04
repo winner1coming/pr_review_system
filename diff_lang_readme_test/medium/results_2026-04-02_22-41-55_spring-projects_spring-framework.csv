@@ -1,0 +1,626 @@
+repo,pr,strategy,review,commits,review_comments,time
+spring-projects/spring-framework,36580,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对@HttpExchange注解的支持"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-02 22:26:58
+spring-projects/spring-framework,36580,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了对@HttpExchange注解的支持"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4c23dd00ca0c9893beae386c176866a0f8cb26c7', 'message': 'Support @HttpExchange in MvcUriComponentsBuilder\n\nMvcUriComponentsBuilder now recognizes @HttpExchange and composed\nannotations such as @GetExchange in addition to @RequestMapping when\nresolving class- and method-level mappings.\n\nThis allows controllers that implement @HttpExchange interfaces to use\nfromController(), fromMethodName(), and fromMethodCall() to build links.\n\nCloses gh-36235\n\nSigned-off-by: Daeho Kwon <trewq231@naver.com>'}]","[""Nice fix! Using `AnnotatedElementUtils` here seems right to make sure it picks up on the `httpExchange` mappings when they're defined on the parents interface which is how the docs suggest using them. Nice testing too especially on the `PersonHttpExchangeControllerImpl` to verify the inheritance works as expected. Also nice on  updating the error message to include `httpExchange` which will save time debugging.""]",2026-04-02 22:27:03
+spring-projects/spring-framework,36577,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""统一类型名称解析逻辑，修复原始类型和数组类型的返回类型名称。"",
+    ""description"": ""代码变更的主要目的是修复ClassFileMethodMetadata中原始类型和数组类型的返回类型名称不正确的问题。通过引入`ClassFileAnnotationMetadata.resolveTypeName`辅助方法，统一了类型名称的解析逻辑，并移除了重复的`fromTypeDescriptor`方法。同时，修复了`toString`、`equals`和`hashCode`方法的实现，并扩展了测试用例以覆盖void返回类型和数组类型。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -143,7 +144,7 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t\tAccessFlags flags = methodModel.flags();\n \t\tString declaringClassName = methodModel.parent().map(parent -> ClassUtils.convertResourcePathToClassName(parent.thisClass().name().stringValue())).orElse(null);\n \t\tClassDesc returnType = methodModel.methodTypeSymbol().returnType();\n-\t\tString returnTypeName = returnType.packageName() + \"".\"" + returnType.displayName();\n+\t\tString returnTypeName = ClassFileAnnotationMetadata.resolveTypeName(returnType);"",
+    ""advice"": ""变更设计合理，无需额外建议。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'b01fdb01408499bf9c73de1e927017b4870ffe26', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\nIntroduce resolveTypeName helper for ClassDesc handling\nAdd ClassFileMethodMetadataTests (java24Test)\nExtend AbstractMethodMetadataTests with void return case\n\nSee gh-36577\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}, {'sha': '40ef6f68726521752ff030490eb9d658c97ee265', 'message': 'Fix method and annotation metadata for ClassFile variant\n\nPrior to this commit, the ClassFile variant for  annotation and method\nmetadata would report incorrect metadata for:\n* the method return type names in case of primitives and array types\n* `toString` values for methods\n* `equals` and `hashcode` information for methods\n\nThis commit expands the test suite and ensures that the ASM and\nClassFile variants are aligned.\n\nFixes gh-36577\n\nSigned-off-by: Brian Clozel <brian.clozel@broadcom.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.', 'Thanks for your contribution @bebeis !']",2026-04-02 22:27:19
+spring-projects/spring-framework,36577,with_readme,"[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复ClassFile方法元数据中原始类型和数组类型的返回类型名称"",
+    ""description"": ""代码变更的主要目的是修复ClassFile API在处理方法元数据时，对于原始类型和数组类型的返回类型名称不正确的问题。通过引入`ClassFileAnnotationMetadata.resolveTypeName`辅助方法来统一处理类型名称的解析，并确保`toString`、`equals`和`hashCode`方法的行为与ASM变体保持一致。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -143,7 +144,7 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t\tAccessFlags flags = methodModel.flags();\n \t\tString declaringClassName = methodModel.parent().map(parent -> ClassUtils.convertResourcePathToClassName(parent.thisClass().name().stringValue())).orElse(null);\n \t\tClassDesc returnType = methodModel.methodTypeSymbol().returnType();\n-\t\tString returnTypeName = returnType.packageName() + \"".\"" + returnType.displayName();\n+\t\tString returnTypeName = ClassFileAnnotationMetadata.resolveTypeName(returnType);"",
+    ""advice"": ""变更设计合理，通过提取公共方法`resolveTypeName`消除了重复逻辑，提高了代码的可维护性。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复ClassFile方法元数据中原始类型和数组类型的返回类型名称"",
+    ""description"": ""在`ClassFileMethodMetadata.Source`记录类中，`toString`方法的实现现在也使用了`ClassFileAnnotationMetadata.resolveTypeName`方法来生成返回类型名称，这确保了输出格式的一致性，特别是对于数组类型（如`int[]`）和原始类型。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -176,9 +177,7 @@ record Source(@Nullable String declaringClassName, AccessFlags flags, String me\n \t\t\t\tbuilder.append(flag.name().toLowerCase(Locale.ROOT));\n \t\t\t\tbuilder.append(' ');\n \t\t\t});\n-\t\t\tbuilder.append(this.descriptor.returnType().packageName());\n-\t\t\tbuilder.append(\"".\"");\n-\t\t\tbuilder.append(this.descriptor.returnType().displayName());\n+\t\t\tbuilder.append(ClassFileAnnotationMetadata.resolveTypeName(this.descriptor.returnType()));"",
+    ""advice"": ""此变更是积极的，它移除了硬编码的字符串拼接，使代码更清晰且不易出错。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复ClassFile方法元数据中原始类型和数组类型的返回类型名称"",
+    ""description"": ""代码变更在`ClassFileAnnotationDelegate`中移除了私有的`fromTypeDescriptor`方法，并改为使用新的`ClassFileAnnotationMetadata.resolveTypeName`方法。这统一了类型名称解析的逻辑，避免了潜在的重复和错误。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileAnnotationDelegate.java\n@@ -63,7 +62,7 @@ static MergedAnnotations createMergedAnnotations(\n \tprivate static <A extends java.lang.annotation.Annotation> @Nullable MergedAnnotation<A> createMergedAnnotation(\n \t\t\tString className, Annotation annotation, @Nullable ClassLoader classLoader) {\n \n-\t\tString typeName = fromTypeDescriptor(annotation.className().stringValue());\n+\t\tString typeName = ClassFileAnnotationMetadata.resolveTypeName(annotation.classSymbol());"",
+    ""advice"": ""此重构是合理的，它集中了类型解析逻辑，提高了代码的内聚性。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复ClassFile方法元数据中原始类型和数组类型的返回类型名称"",
+    ""description"": ""在`ClassFileMethodMetadata.Source`记录类中，新增了`equals`和`hashCode`方法的实现。这是必要的，因为记录类（record）默认的`equals`和`hashCode`是基于所有组件字段的。然而，`AccessFlags`和`MethodTypeDesc`是复杂对象，直接比较可能不是期望的行为（例如，比较`flags`对象本身而不是其标志位掩码）。新增的实现确保了基于关键属性（如标志位掩码、方法名、描述符字符串）进行比较，这更符合元数据比较的语义。"",
+    ""evidence"": ""文件: spring-core/src/main/java24/org/springframework/core/type/classreading/ClassFileMethodMetadata.java\n@@ -163,6 +164,20 @@ static ClassFileMethodMetadata of(MethodModel methodModel, ClassLoader classLoad\n \t */\n \trecord Source(@Nullable String declaringClassName, AccessFlags flags, String methodName, MethodTypeDesc descriptor) {\n \n+\t\t@Override\n+\t\tpublic boolean equals(Object o) {\n+\t\t\tif (!(o instanceof Source source)) {\n+\t\t\t\treturn false;\n+\t\t\t}\n+\t\t\treturn Objects.equals(this.flags.flagsMask(), source.flags.flagsMask()) &&\n+\t\t\t\t\tObjects.equals(this.methodName, source.methodName) &&\n+\t\t\t\t\tObjects.equals(this.declaringClassName, source.declaringClassName) &&\n+\t\t\t\t\tObjects.equals(this.descriptor.descriptorString(), source.descriptor.descriptorString());\n+\t\t}\n+\n+\t\t@Override\n+\t\tpublic int hashCode() {\n+\t\t\treturn Objects.hash(this.declaringClassName, this.flags.flagsMask(), this.methodName, this.descriptor.descriptorString());\n+\t\t}"",
+    ""advice"": ""这是一个重要的修复，确保了`Source`对象在集合（如`Map`、`Set`）中能正确工作。实现看起来是正确的，它比较了`flags.flagsMask()`和`descriptor.descriptorString()`，这些是稳定且可比较的表示。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': 'b01fdb01408499bf9c73de1e927017b4870ffe26', 'message': 'Fix ClassFileMethodMetadata return type names for primitives and arrays\n\nReturn correct names for primitive and array types\nIntroduce resolveTypeName helper for ClassDesc handling\nAdd ClassFileMethodMetadataTests (java24Test)\nExtend AbstractMethodMetadataTests with void return case\n\nSee gh-36577\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}, {'sha': '40ef6f68726521752ff030490eb9d658c97ee265', 'message': 'Fix method and annotation metadata for ClassFile variant\n\nPrior to this commit, the ClassFile variant for  annotation and method\nmetadata would report incorrect metadata for:\n* the method return type names in case of primitives and array types\n* `toString` values for methods\n* `equals` and `hashcode` information for methods\n\nThis commit expands the test suite and ensures that the ASM and\nClassFile variants are aligned.\n\nFixes gh-36577\n\nSigned-off-by: Brian Clozel <brian.clozel@broadcom.com>'}]","[""Please hold off further changes here, I'll take care of fixing the failing build and additional cases."", 'I realized that I mistakenly used spaces instead of a tab on one line (ClassFileMethodMetadata.java:165 only). Sorry about that.\r\nI’ll hold off on pushing any changes and leave it to you as suggested.', 'Thanks for your contribution @bebeis !']",2026-04-02 22:28:03
+spring-projects/spring-framework,36562,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为多个已标记为废弃的方法和构造器添加了 `forRemoval = true` 属性。"",
+    ""description"": ""本次代码变更的主要目的是为多个在之前版本中已标记为 `@Deprecated` 的方法和构造器，补充 `forRemoval = true` 属性。这明确指示这些 API 将在未来的主要版本（7.0）中被移除，为开发者提供了更清晰的迁移信号。所有变更均遵循了 `@Deprecated` 注解的规范用法，并与对应的 `@deprecated` JavaDoc 注释中的移除计划保持一致。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.']",2026-04-02 22:28:16
+spring-projects/spring-framework,36562,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为多个已弃用的方法添加了明确的移除标记。"",
+    ""description"": ""本次代码变更的主要目的是为多个在早期版本（如5.1、6.0、6.2）中标记为弃用（@Deprecated）的方法和构造函数，显式地添加 `forRemoval = true` 属性。这符合Java的弃用策略，明确告知开发者这些API计划在未来的主要版本（7.0）中被移除，有助于开发者提前规划迁移。提交信息准确描述了变更内容。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '4ed7abcbd67ab23a0bf8b97437150def6debe478', 'message': 'Add missing @Deprecated.forRemoval\n\nSigned-off-by: seregamorph <serega.morph@gmail.com>'}]","['Hello @seregamorph , happy to merge those changes but can you sign your commits first for the DCO? Thanks.', ""@bclozel I've updated my commit and force pushed it. Does it look correct now?"", '@seregamorph I think your commit signature doesn’t align with your GitHub profile (I redacted your email in the message)\r\n\r\n> Summary\r\n> \r\n> Commit sha: [3d21099](https://github.com/spring-projects/spring-framework/pull/36562/commits/3d2109978666eac24a2a612560bd464ec31f3924), Author: seregamorph, Committer: seregamorph; Expected ""seregamorph […]@gmail.com"", but got ""Sergey Chernov[ …]@gmail.com"".', 'Well, I see what you mean. Will update in a sec.', '🟢 ', '@bclozel I see more cases. E.g. deprecated constructors of `HttpMessageNotReadableException` (while javadoc does not claim it explicitly) are also deleted in 7.0. Should I add more cases in scope of this PR?', ""Yes please. If you don't have time you can point them to me and I'll take care of those "", ""Updated `HttpMessageNotReadableException`. Let's go ahead with merging this, will let you know if I find something else."", 'Will now add one more case: `ContentCachingRequestWrapper(HttpServletRequest request)` which is even not marked as deprecated (🟢  done)', ""@bclozel I've created a simple code analysis tool to discover non-marked deprecated for deletion. So far there are more than 20 classes.\r\nI'd like to close this PR and instead submit an issue listing all these:\r\n* public classes that were removed and lack of `@Deprecated(forRemoval)`\r\n* public/protected constructors that were removed\r\n* public/protected methods that were removed\r\n* public fields being removed (not marked properly)\r\n\r\nMaybe additionally default constructors that are not available to be called anymore (if there was only a default constructor)\r\n\r\nWhat do you think?\r\n\r\nI can submit such issues not only for spring-framework, but also other spring projects that I use (boot, data, hateoas, kafka, security)"", 'Thanks @seregamorph - please create a new issue for Spring Framework listing your findings and we\'ll review discrepancies one by one. Please hold off for now on other projects, I\'ve asked project leads because I\'m not sure the. ""forRemoval"" flag is consistently used in Spring projects.\r\n\r\nI\'ll close this PR for now then.']",2026-04-02 22:28:23
+spring-projects/spring-framework,36560,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""移除了CacheAspectSupport类中未使用的methodIdentification方法"",
+    ""description"": ""未发现明显问题。该方法是已弃用且标记为待删除的方法，根据提交信息，它仅用于日志记录但实际未被使用，因此移除是合理的清理操作。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-02 22:28:33
+spring-projects/spring-framework,36560,with_readme,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""移除了已弃用且未使用的`methodIdentification`方法。"",
+    ""description"": ""未发现明显问题。提交信息清晰，说明了移除原因（Javadoc声称用于日志记录但实际未使用）。该方法已在6.2.18版本标记为`@Deprecated(forRemoval = true)`，本次移除符合弃用策略。代码变更本身是删除操作，未引入新的逻辑或错误。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '01a865a1beb47ad63d3612ad3e5111f81b71f699', 'message': 'Remove unused method ""CacheAspectSupport::methodIdentification""\n\nThe Javadoc said it\'s used for logging, but it\'s not used anywhere.\n\nSigned-off-by: Yanming Zhou <zhouyanming@gmail.com>'}, {'sha': '8af816b9744718b2b19e7b9e0e8ef72121821a82', 'message': ""Merge branch 'main' into patch-128\n\nSigned-off-by: Sam Brannen <104798+sbrannen@users.noreply.github.com>""}]","[""Thanks for the PR, @quaff.\r\n\r\nI'll merge it after I've deprecated the method in 6.2.x/7.0.x.\r\n\r\n- See #36575""]",2026-04-02 22:28:39
+spring-projects/spring-framework,36559,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新了FieldError类的Javadoc，以澄清参数用途。"",
+    ""description"": ""本次代码变更的主要目的是增强Javadoc的清晰度，明确指出`defaultMessage`参数是一个静态的默认消息字符串，而不是一个用于国际化的键。同时，澄清了`codes`参数应该是应用程序中的国际化键。这有助于开发者正确使用API，避免将`defaultMessage`误认为是国际化键，从而导致国际化失效的问题。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n 以及 @@ -60,9 +60,9 @@ public class FieldError(String objectName, String field, String defaultMessage) {\n \t * @param rejectedValue the rejected field value\n \t * @param bindingFailure whether this error represents a binding failure\n \t * (like a type mismatch); else, it is a validation failure\n-\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n \t * @param arguments the array of arguments to be used to resolve this message\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""文档更新清晰准确，无需修改。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-02 22:28:57
+spring-projects/spring-framework,36559,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""增强FieldError类Javadoc，澄清defaultMessage和codes参数的用途。"",
+    ""description"": ""代码变更旨在澄清`FieldError`构造函数中`defaultMessage`和`codes`参数的用途。原Javadoc对`defaultMessage`的描述（\""the default message to be used to resolve this message\""）可能引起误解，让人以为它是一个国际化（i18n）的键。新的描述明确指出`defaultMessage`是一个静态的默认消息字符串，而`codes`参数才是用于解析消息的国际化键。这有助于开发者正确使用API，避免因误解而导致的国际化问题。"",
+    ""evidence"": ""@@ -47,7 +47,7 @@ public class FieldError extends ObjectError {\n \t * Create a new FieldError instance.\n \t * @param objectName the name of the affected object\n \t * @param field the affected field of the object\n-\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message\n ...\n -\t * @param codes the codes to be used to resolve this message\n+\t * @param codes the codes to be used to resolve this message. These should be i18n keys in your application\n ...\n -\t * @param defaultMessage the default message to be used to resolve this message\n+\t * @param defaultMessage the static default message to be used to resolve this message"",
+    ""advice"": ""Javadoc的修改清晰且必要，无需进一步优化。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2508ca9bf0606eaa92b762cffe571434f7e2b5f0', 'message': ""Augment FieldError.java's javadoc\n\nto make clearer that defaultMessage is not a i18n key from your application bundle, but a static string.\r\nResulting in a problem that setting defaultMessage means no i18n. If you want i18n you should use the code parameter.\r\n\r\nBehaviour shown in:\r\n* https://github.com/ottlinger/custom-validation-messages-1029\r\n* reported and resolved via https://github.com/thymeleaf/thymeleaf/issues/1029\n\nSigned-off-by: P. Ottlinger <ottlinger@users.noreply.github.com>""}]","[""Simple but effective change. By adding 'static' to the defaultMessage description it helps to prevent from accidentally passing translation keys into the wrong parameter.\n""]",2026-04-02 22:29:11
+spring-projects/spring-framework,36555,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释。"",
+    ""description"": ""代码变更移除了类级别Javadoc中关于'Previously resolved return types are cached for faster lookups.'的说明。这很可能是因为该缓存机制在当前代码中已不存在或已改变，但Javadoc没有及时更新，造成了文档与实际实现的不一致。虽然这不会导致运行时错误，但会误导开发者对类功能的理解，影响代码的可读性和维护性。"",
+    ""evidence"": ""- * Previously resolved return types are cached for faster lookups."",
+    ""advice"": ""确认当前`HandlerMethodReturnValueHandlerComposite`类是否确实不再缓存已解析的返回类型。如果确实如此，此修改是正确的。如果缓存机制以其他形式存在（例如，在父类或组合的处理器中），建议在Javadoc中更新为准确的描述。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-02 22:29:25
+spring-projects/spring-framework,36555,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了关于缓存机制的过时Javadoc注释"",
+    ""description"": ""代码变更移除了类级别Javadoc中关于'Previously resolved return types are cached for faster lookups'的注释。这个注释可能已经过时或不准确，因为当前代码中可能没有实现这样的缓存机制，或者缓存机制已经发生了变化。保留不准确的文档会误导开发者对类行为的理解。"",
+    ""evidence"": ""@@ -28,7 +28,6 @@\n /**\n  * Handles method return values by delegating to a list of registered\n  * {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers}.\n- * Previously resolved return types are cached for faster lookups.\n  *\n  * @author Rossen Stoyanchev\n  * @since 3.1"",
+    ""advice"": ""建议检查HandlerMethodReturnValueHandlerComposite类的实际实现，确认是否确实存在缓存机制。如果存在缓存，应该更新Javadoc以准确描述当前的缓存行为；如果不存在缓存，这个删除是正确的。同时，可以考虑在相关的方法（如selectHandler）的Javadoc中添加更具体的性能说明。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '27863a1030aaa8dce3175df042e60683934306c0', 'message': 'Fix incorrect Javadoc in HandlerMethodReturnValueHandlerComposite regarding caching\n\nSigned-off-by: KimDaehyeon <daehyeon3351@gmail.com>'}]",['This PR addresses the Javadoc inconsistency reported in issue #36538.'],2026-04-02 22:29:36
+spring-projects/spring-framework,36553,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""修改了setSupportedVersionPredicate方法的返回类型，从void改为ApiVersionConfigurer，并返回this。这使得方法可以支持链式调用（fluent API）模式，与类中其他配置方法（如addSupportedVersions、detectSupportedVersions）保持设计一致性。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""这是一个良好的设计改进，使API更加一致和易用。建议确保所有类似的配置方法都遵循相同的链式调用模式，以提供一致的用户体验。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-02 22:29:48
+spring-projects/spring-framework,36553,with_readme,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将setSupportedVersionPredicate方法改为返回this，支持链式调用"",
+    ""description"": ""代码变更将setSupportedVersionPredicate方法的返回类型从void改为ApiVersionConfigurer，并返回this。这使得方法可以支持链式调用（fluent API），与类中其他配置方法（如addSupportedVersions、detectSupportedVersions）的设计风格保持一致。这是一个设计一致性的改进。"",
+    ""evidence"": ""public ApiVersionConfigurer setSupportedVersionPredicate(@Nullable Predicate<Comparable<?>> predicate) {\n\t\tthis.supportedVersionPredicate = predicate;\n\t\treturn this;\n\t}"",
+    ""advice"": ""这是一个良好的改进，使API更加一致和易用。建议确保所有类似的配置方法都遵循相同的设计模式。"",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '6ee12a8917eadcc500bcdc37547bb7493360bf93', 'message': 'Fix #36551: ApiVersionConfigurer.setSupportedVersionPredicate() should return ""this""\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'd31973900708706ad59819795d705747a5c9f455', 'message': 'Fix: checkstyle\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","['Looks all good to me. Thanks.', ""I had the fix stashed locally, and didn't notice the PR. Thanks in any case.""]",2026-04-02 22:29:56
+spring-projects/spring-framework,36549,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中的错误方法名。"",
+    ""description"": ""Javadoc示例代码中使用了错误的方法名`TypeDescriptor.value(String.class)`，而正确的方法名应为`TypeDescriptor.valueOf(String.class)`。这会导致开发者参考此文档时，复制粘贴示例代码会引发编译错误或运行时错误，影响开发体验和代码正确性。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/convert/TypeDescriptor.java\n@@ -631,7 +631,7 @@ public static TypeDescriptor map(Class<?> mapType, @Nullable TypeDescriptor keyT\n \t * Create a new type descriptor as an array of the specified type.\n \t * <p>For example to create a {@code Map<String,String>[]} use:\n \t * <pre class=\""code\"">\n-\t * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.value(String.class)));\n+\t * TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.valueOf(String.class), TypeDescriptor.valueOf(String.class)));"",
+    ""advice"": ""已修复。建议在未来的代码审查中，对Javadoc中的示例代码也进行编译或运行验证，以确保其正确性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-02 22:30:12
+spring-projects/spring-framework,36549,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了TypeDescriptor.array()方法Javadoc中的错误方法名"",
+    ""description"": ""Javadoc示例代码中使用了错误的方法名`TypeDescriptor.value(String.class)`，而正确的方法名应该是`TypeDescriptor.valueOf(String.class)`。这会导致开发者参考文档时使用错误的API调用方式。"",
+    ""evidence"": ""TypeDescriptor.array(TypeDescriptor.map(Map.class, TypeDescriptor.value(String.class), TypeDescriptor.value(String.class)));"",
+    ""advice"": ""已正确修复为`TypeDescriptor.valueOf(String.class)`，确保文档示例代码的准确性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '40e1c21e8e9d05a04fcbfa0b942aabb7b04361b6', 'message': 'Fix incorrect method name in TypeDescriptor.array() Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged into `7.0.x` and `main`.\r\n\r\nThanks'],2026-04-02 22:30:19
+spring-projects/spring-framework,36548,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复NullAway静态分析工具关于泛型参数可空性的警告"",
+    ""description"": ""代码变更将方法参数和返回值的泛型类型从 `MultiValueMap<String, Object>` 修改为 `MultiValueMap<String, @Nullable Object>`。这解决了静态分析工具（如NullAway）在检查泛型参数可空性时可能产生的警告。原代码中，`MultiValueMap` 的值类型 `Object` 被隐式视为 `@NonNull`，但实际使用中可能包含 `null` 值。此修改使类型声明与实际使用情况保持一致，提高了代码的类型安全性，避免了未来版本静态分析工具可能产生的误报。"",
+    ""evidence"": ""@@ -823,7 +823,7 @@ private static MergedAnnotations findRepeatableAnnotations(AnnotatedElement elem\n \t\treturn MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY, repeatableContainers);\n \t}\n \n-\tprivate static @Nullable MultiValueMap<String, Object> nullIfEmpty(MultiValueMap<String, Object> map) {\n+\tprivate static @Nullable MultiValueMap<String, @Nullable Object> nullIfEmpty(MultiValueMap<String, @Nullable Object> map) {"",
+    ""advice"": ""建议检查项目中其他类似使用 `MultiValueMap` 或其他集合类型且值可能为 `null` 的地方，是否也需要进行类似的泛型参数可空性注解更新，以保持代码库的一致性并预防类似的静态分析警告。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '47750e14385e45c0faf8898bd1dd0a79909f9d5a', 'message': 'Address nullness warning from future version of NullAway\n\nSigned-off-by: Manu Sridharan <msridhar@gmail.com>'}]",['FYI @sdeleuze '],2026-04-02 22:30:38
+spring-projects/spring-framework,36548,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""更新方法签名以解决NullAway工具的空值警告。"",
+    ""description"": ""代码变更将 `nullIfEmpty` 方法的参数和返回值的泛型类型从 `MultiValueMap<String, Object>` 修改为 `MultiValueMap<String, @Nullable Object>`。这解决了静态分析工具（如NullAway）可能发出的警告，因为方法在map为空时返回null，但map中的值本身可能为null。原始签名暗示map中的值是非空的，这与方法的实际行为（允许null值）和返回null的可能性不一致。"",
+    ""evidence"": ""private static @Nullable MultiValueMap<String, @Nullable Object> nullIfEmpty(MultiValueMap<String, @Nullable Object> map) {"",
+    ""advice"": ""此修改是正确的，它提高了代码的精确性和与静态分析工具的兼容性。无需进一步修改。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '47750e14385e45c0faf8898bd1dd0a79909f9d5a', 'message': 'Address nullness warning from future version of NullAway\n\nSigned-off-by: Manu Sridharan <msridhar@gmail.com>'}]",['FYI @sdeleuze '],2026-04-02 22:30:48
+spring-projects/spring-framework,36516,baseline,"[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""修复了AbstractEnvironment类Javadoc中错误的交叉引用链接。"",
+    ""description"": ""未发现明显问题。本次变更仅修正了Javadoc注释中的一个方法引用，将指向`doGetActiveProfilesProperty()`的错误链接更正为指向`doGetDefaultProfilesProperty()`。这是一个文档修正，不影响代码逻辑、功能、性能或安全性。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ea0ff92cb6a65268b13cb43c6ffbd41c13df1783', 'message': 'Fix incorrect cross-reference links in AbstractEnvironment Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged.\r\n\r\nThanks'],2026-04-02 22:31:02
+spring-projects/spring-framework,36516,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了AbstractEnvironment类Javadoc中错误的交叉引用链接。"",
+    ""description"": ""Javadoc注释中引用的方法名不正确。原文引用了`doGetActiveProfilesProperty()`方法，但根据上下文和实际存在的类方法，应该引用`doGetDefaultProfilesProperty()`方法。这是一个文档错误，会影响开发者阅读和理解代码的意图。"",
+    ""evidence"": ""then check for the presence of {@link #doGetActiveProfilesProperty()}"",
+    ""advice"": ""将`doGetActiveProfilesProperty()`更正为`doGetDefaultProfilesProperty()`是正确的。这确保了Javadoc的准确性，使开发者能够通过链接直接跳转到正确的方法定义。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ea0ff92cb6a65268b13cb43c6ffbd41c13df1783', 'message': 'Fix incorrect cross-reference links in AbstractEnvironment Javadoc\n\nSigned-off-by: Junseo Bae <ferrater1013@gmail.com>'}]",['This has been merged.\r\n\r\nThanks'],2026-04-02 22:31:12
+spring-projects/spring-framework,36514,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了在设置API版本时添加空值检查，以保留默认值"",
+    ""description"": ""未发现明显问题"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.5,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c210352043ad0b0e2a53c0600010dadb904189d4', 'message': 'Add null check when setting API version to preserve default value\n\nSigned-off-by: Vishnutheep B <vishnutheep@gmail.com>'}]",['As mentioned in the Boot issue the cause of this is commit b83cb4a9479ae8c3b2e37f2a797c2648c6c2f25a which relates to issue #36374'],2026-04-02 22:31:20
+spring-projects/spring-framework,36514,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了设置API版本时未检查null值，导致默认值被覆盖的问题。"",
+    ""description"": ""在RestClientAdapter和WebClientAdapter的newRequest方法中，原先直接调用spec.apiVersion(values.getApiVersion())，当values.getApiVersion()返回null时，会覆盖RestClient/WebClient中通过defaultApiVersion设置的默认值。这会导致即使请求未指定API版本，默认版本也不会被应用。"",
+    ""evidence"": ""文件: spring-web/src/main/java/org/springframework/web/client/support/RestClientAdapter.java\n@@ -99,7 +99,9 @@ public RestClient.RequestBodySpec newRequest(HttpRequestValues values) {\n \t\tRestClient.RequestBodySpec spec = setUri(uriSpec, values);\n \t\tspec.headers(headers -> headers.putAll(values.getHeaders()));\n \t\tsetCookieHeader(spec, values);\n-\t\tspec.apiVersion(values.getApiVersion());\n+\t\tif (values.getApiVersion() != null) {\n+\t\t\tspec.apiVersion(values.getApiVersion());\n+\t\t}\n \t\tspec.attributes(attributes -> attributes.putAll(values.getAttributes()));\n \t\tsetBody(spec, values);\n \t\treturn spec;"",
+    ""advice"": ""代码变更正确。通过添加null检查，只有当请求明确指定了API版本时才进行设置，从而保留了通过defaultApiVersion设置的默认值。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""为修复添加了相应的单元测试，验证默认API版本在请求未指定时能正确生效。"",
+    ""description"": ""在RestClientAdapterTests和WebClientAdapterTests中分别添加了greetingWithDefaultApiVersion测试方法，验证当HttpRequestValues中的apiVersion为null时，RestClient/WebClient配置的defaultApiVersion能通过ApiVersionInserter正确插入到请求头中。"",
+    ""evidence"": ""文件: spring-web/src/test/java/org/springframework/web/client/support/RestClientAdapterTests.java\n@@ -200,6 +200,27 @@ void greetingWithApiVersion() throws Exception {\n \t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n \t}\n \n+\t@Test\n+\tvoid greetingWithDefaultApiVersion() throws Exception {\n+\t\tprepareResponse(builder ->\n+\t\t\t\tbuilder.setHeader(\""Content-Type\"", \""text/plain\"").body(\""Hello Spring 2!\""));\n+\n+\t\tRestClient restClient = RestClient.builder()\n+\t\t\t\t.baseUrl(anotherServer.url(\""/\"").toString())\n+\t\t\t\t.defaultApiVersion(\""1.0\"")\n+\t\t\t\t.apiVersionInserter(ApiVersionInserter.useHeader(\""X-Version\""))\n+\t\t\t\t.build();\n+\n+\t\tRestClientAdapter adapter = RestClientAdapter.create(restClient);\n+\t\tService service = HttpServiceProxyFactory.builderFor(adapter).build().createClient(Service.class);\n+\n+\t\tString actualResponse = service.getGreeting();\n+\n+\t\tRecordedRequest request = anotherServer.takeRequest();\n+\t\tassertThat(request.getHeaders().get(\""X-Version\"")).isEqualTo(\""1.0\"");\n+\t\tassertThat(actualResponse).isEqualTo(\""Hello Spring 2!\"");\n+\t}"",
+    ""advice"": """",
+    ""confidence"": 1,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'c210352043ad0b0e2a53c0600010dadb904189d4', 'message': 'Add null check when setting API version to preserve default value\n\nSigned-off-by: Vishnutheep B <vishnutheep@gmail.com>'}]",['As mentioned in the Boot issue the cause of this is commit b83cb4a9479ae8c3b2e37f2a797c2648c6c2f25a which relates to issue #36374'],2026-04-02 22:31:52
+spring-projects/spring-framework,36513,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Accept-Language头为空字符串时，默认区域设置被忽略的问题"",
+    ""description"": ""当Accept-Language头存在但为空字符串时，原代码会跳过默认区域设置，直接使用JVM系统区域设置。这与Accept-Language头缺失时的行为不一致，因为空字符串的Accept-Language头应被视为与缺失相同，都应使用默认区域设置。"",
+    ""evidence"": ""if (defaultLocale != null && !StringUtils.hasText(request.getHeader(\""Accept-Language\""))) {"",
+    ""advice"": ""使用StringUtils.hasText()检查Accept-Language头是否为空字符串是正确的修复方式，已解决该问题。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""代码主要实现了正确处理空白Accept-Language头"",
+    ""description"": ""未发现明显问题。代码变更逻辑正确，测试用例覆盖了修复的场景。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4b211643bb0bde7e3096500350093bbbc28854ff', 'message': 'Handle blank Accept-Language header in AcceptHeaderLocaleResolver\n\nWhen the Accept-Language header is present but blank, defaultLocale\nwas ignored and fell back to Locale.getDefault() (JVM system locale).\nA blank header represents the same intent as an absent header.\n\nCloses gh-36513\n\nSigned-off-by: elgun.shukurov <elgun.sukurov@kapitalbank.az>'}]","['@elgunshukurov at this stage we try to avoid introducing behavior changes in the 6.2.x line. Can you rebase against 7.0.x please?', '@bclozel done, rebased against 7.0.x. Thanks for the guidance.\r\n\r\n', 'Thanks for your contribution @elgunshukurov this has been merged in 7.0.x and main.']",2026-04-02 22:32:06
+spring-projects/spring-framework,36513,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Accept-Language头为空字符串时默认区域设置被忽略的问题"",
+    ""description"": ""原代码仅检查Accept-Language头是否为null，当请求头存在但值为空字符串时，会跳过默认区域设置而使用系统默认区域。这不符合HTTP规范，空Accept-Language头应被视为与缺失头相同的行为。"",
+    ""evidence"": ""if (defaultLocale != null && !StringUtils.hasText(request.getHeader(\""Accept-Language\""))) {"",
+    ""advice"": ""使用StringUtils.hasText()检查既处理null也处理空字符串是正确的修复方式。建议保持现有实现。"",
+    ""confidence"": 0.95,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了针对空白Accept-Language头的测试用例"",
+    ""description"": ""新增的测试方法defaultLocaleWithBlankAcceptLanguageHeader()正确验证了修复后的行为，确保当Accept-Language头为空字符串时返回设置的默认区域设置。"",
+    ""evidence"": ""request.addHeader(\""Accept-Language\"", \""\"");\nassertThat(this.resolver.resolveLocale(request)).isEqualTo(JAPANESE);"",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '4b211643bb0bde7e3096500350093bbbc28854ff', 'message': 'Handle blank Accept-Language header in AcceptHeaderLocaleResolver\n\nWhen the Accept-Language header is present but blank, defaultLocale\nwas ignored and fell back to Locale.getDefault() (JVM system locale).\nA blank header represents the same intent as an absent header.\n\nCloses gh-36513\n\nSigned-off-by: elgun.shukurov <elgun.sukurov@kapitalbank.az>'}]","['@elgunshukurov at this stage we try to avoid introducing behavior changes in the 6.2.x line. Can you rebase against 7.0.x please?', '@bclozel done, rebased against 7.0.x. Thanks for the guidance.\r\n\r\n', 'Thanks for your contribution @elgunshukurov this has been merged in 7.0.x and main.']",2026-04-02 22:32:20
+spring-projects/spring-framework,36494,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""将Content-Type字符集处理逻辑从ServletServerHttpRequest移到ServletRequestHeadersAdapter"",
+    ""description"": ""代码变更将字符集处理逻辑从ServletServerHttpRequest.getHeaders()方法移到了ServletRequestHeadersAdapter中，实现了更合理的职责分离。但新的getContentType()方法在处理application/json时存在逻辑问题：它检查MediaType.APPLICATION_JSON.equals(contentType)，但MediaType.equals()方法会同时比较类型、子类型和参数，而contentType是从请求解析的，可能包含其他参数，导致equals()返回false，从而错误地添加charset参数。"",
+    ""evidence"": ""if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n    params.put(\""charset\"", charset.toString());\n}"",
+    ""advice"": ""建议使用MediaType.isCompatibleWith()或比较类型和子类型：if (!(MediaType.APPLICATION_JSON.getType().equals(contentType.getType()) && MediaType.APPLICATION_JSON.getSubtype().equals(contentType.getSubtype())))"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""添加了Content-Type值的缓存机制"",
+    ""description"": ""新增了cachedContentType字段和缓存逻辑，避免重复解析和构建Content-Type字符串。但缓存仅在getContentType()方法内部使用，而getFirst()和get()方法都会调用getContentType()，这可能导致多次调用时性能提升。不过，缓存没有考虑请求字符编码变化的情况，如果请求的字符编码在请求处理过程中发生变化，缓存的值将不正确。"",
+    ""evidence"": ""private @Nullable String cachedContentType;\n\nprivate @Nullable String getContentType() {\n    String stringContentType = this.cachedContentType;\n    if (stringContentType != null) {\n        return stringContentType;\n    }\n    // ... 解析逻辑\n    this.cachedContentType = stringContentType;\n    return stringContentType;\n}"",
+    ""advice"": ""考虑缓存的有效性范围，如果请求的字符编码可能变化，需要添加缓存失效机制。或者添加文档说明缓存假设字符编码在请求生命周期中不变。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""添加了测试用例验证字符集处理逻辑"",
+    ""description"": ""新增的测试用例全面覆盖了字符集处理的各种场景：文本类型添加charset、application/json不添加charset、已存在charset时不添加、无字符编码时不添加。测试用例设计良好，验证了核心功能。"",
+    ""evidence"": ""@Test // gh-36426\nvoid contentTypeCharsetAppendedForTextType() {\n    request.setContentType(\""text/plain\"");\n    request.setCharacterEncoding(\""UTF-8\"");\n    assertThat(headersAdapter.getFirst(HttpHeaders.CONTENT_TYPE)).isEqualTo(\""text/plain;charset=UTF-8\"");\n}"",
+    ""advice"": """",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '1a545ff5d3c89cbcfa4d847a4ca3c7660394610e', 'message': 'Fix: Avoid updating to request ""Content-Type"" for characterEncoding in ServletServerHttpRequest\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '201735bbbc3b7a3f0746850922e7618496f23bf7', 'message': 'Fix: fix javadoc\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","[""I'm sorry but this is not the right approach and the issue is not open for contribution.""]",2026-04-02 22:32:50
+spring-projects/spring-framework,36494,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Servlet请求中Content-Type头字符集处理逻辑，避免重复更新"",
+    ""description"": ""在`getContentType()`方法中，当`contentType`为`null`时，代码会尝试解析`stringContentType`为`MediaType`，但此时`stringContentType`可能为`null`，导致`MediaType.parseMediaType(null)`抛出`IllegalArgumentException`，而不是预期的`InvalidMediaTypeException`。这会导致缓存失效，且可能抛出未处理的异常。"",
+    ""evidence"": ""在`getContentType()`方法中：\n```java\nstringContentType = this.request.getContentType();\ntry {\n    MediaType contentType = stringContentType != null ? MediaType.parseMediaType(stringContentType) : null;\n    // ...\n}\ncatch (InvalidMediaTypeException ex) {\n    // Ignore: simply not exposing an invalid content type in HttpHeaders...\n}\n```"",
+    ""advice"": ""建议在调用`MediaType.parseMediaType()`之前，先检查`stringContentType`是否为`null`或空字符串。或者，确保`MediaType.parseMediaType(null)`的行为符合预期（当前可能抛出`IllegalArgumentException`）。可以添加更详细的异常处理，或者提前返回。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""修复Servlet请求中Content-Type头字符集处理逻辑，避免重复更新"",
+    ""description"": ""`getContentType()`方法中，每次调用都会创建新的`LinkedCaseInsensitiveMap`对象来存储参数，即使最终可能不需要修改（例如，当字符集已存在或媒体类型为`application/json`时）。这可能导致不必要的对象分配和内存开销。"",
+    ""evidence"": ""在`getContentType()`方法中：\n```java\nMap<String, String> params = new LinkedCaseInsensitiveMap<>();\nparams.putAll(contentType.getParameters());\nif (!MediaType.APPLICATION_JSON.equals(contentType)) {\n    params.put(\""charset\"", charset.toString());\n}\n```"",
+    ""advice"": ""建议仅在确实需要添加字符集参数时才创建新的`Map`对象。可以先检查`contentType.getParameters()`是否已包含\""charset\""，以及媒体类型是否为`application/json`，然后再决定是否创建新`Map`。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复Servlet请求中Content-Type头字符集处理逻辑，避免重复更新"",
+    ""description"": ""`getContentType()`方法中的条件逻辑嵌套较深，可读性较差。特别是`if (contentType != null && contentType.getCharset() == null)`内部又嵌套了多个条件，使得代码难以理解。"",
+    ""evidence"": ""在`getContentType()`方法中：\n```java\nif (contentType != null && contentType.getCharset() == null) {\n    String requestEncoding = this.request.getCharacterEncoding();\n    if (StringUtils.hasLength(requestEncoding)) {\n        Charset charset = Charset.forName(requestEncoding);\n        Map<String, String> params = new LinkedCaseInsensitiveMap<>();\n        params.putAll(contentType.getParameters());\n        if (!MediaType.APPLICATION_JSON.equals(contentType)) {\n            params.put(\""charset\"", charset.toString());\n        }\n        MediaType mediaType = new MediaType(contentType.getType(), contentType.getSubtype(), params);\n        stringContentType = mediaType.toString();\n    }\n}\n```"",
+    ""advice"": ""建议将内部逻辑提取为独立的方法，例如`appendCharsetIfNeeded(MediaType contentType, String requestEncoding)`，以提高可读性和可测试性。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复Servlet请求中Content-Type头字符集处理逻辑，避免重复更新"",
+    ""description"": ""`cachedContentType`字段的缓存机制可能引入线程安全问题。`ServletRequestHeadersAdapter`可能在多线程环境下使用（例如，在异步Servlet处理中），而`cachedContentType`字段没有使用`volatile`或同步机制，可能导致缓存不一致或可见性问题。"",
+    ""evidence"": ""在`ServletRequestHeadersAdapter`类中：\n```java\n/**\n * Cached Content-Type value with charset appended.\n */\nprivate @Nullable String cachedContentType;\n```\n以及在`getContentType()`方法中：\n```java\nString stringContentType = this.cachedContentType;\nif (stringContentType != null) {\n    return stringContentType;\n}\n// ... 计算逻辑\nthis.cachedContentType = stringContentType;\n```"",
+    ""advice"": ""建议考虑线程安全性。如果该类确实可能在多线程环境下使用，应使用`volatile`关键字或同步块来确保缓存的可见性和原子性。或者，确认该类的使用场景是线程受限的（例如，每个请求一个实例）。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': '1a545ff5d3c89cbcfa4d847a4ca3c7660394610e', 'message': 'Fix: Avoid updating to request ""Content-Type"" for characterEncoding in ServletServerHttpRequest\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '201735bbbc3b7a3f0746850922e7618496f23bf7', 'message': 'Fix: fix javadoc\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]","[""I'm sorry but this is not the right approach and the issue is not open for contribution.""]",2026-04-02 22:33:31
+spring-projects/spring-framework,36493,baseline,"```json
+[
+  {
+    ""type"": ""Performance"",
+    ""conclusion"": ""使用computeIfAbsent优化optionArgs的初始化逻辑"",
+    ""description"": ""代码变更将原有的if检查+put操作替换为computeIfAbsent，减少了冗余的map查找操作。原实现中，当optionValue不为null时，需要再次调用this.optionArgs.get(optionName)来获取列表，而新实现通过computeIfAbsent的返回值直接复用，避免了额外的get调用。"",
+    ""evidence"": ""List<String> values = this.optionArgs.computeIfAbsent(optionName, key -> new ArrayList<>());\nif (optionValue != null) {\n\tvalues.add(optionValue);\n}"",
+    ""advice"": ""这是一个良好的优化，保持了代码的简洁性和性能。无需进一步修改。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '10d1ad3c4aec86120bd47e41e312689f2d6877c8', 'message': 'Use computeIfAbsent in CommandLineArgs.addOptionArg\n\nSigned-off-by: junhyung8795 <junhyung8795@naver.com>'}]",['Please [sign the DCO](https://github.com/spring-projects/spring-framework/pull/36493/checks?check_run_id=67541216670).'],2026-04-02 22:33:43
+spring-projects/spring-framework,36493,with_readme,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""使用 computeIfAbsent 简化添加命令行选项参数的逻辑。"",
+    ""description"": ""代码变更将原有的手动检查并初始化列表的逻辑，替换为使用 `Map.computeIfAbsent` 方法。这提高了代码的简洁性和可读性，消除了冗余的 `get` 调用，并使意图（“如果不存在则计算并添加”）更加清晰。"",
+    ""evidence"": ""List<String> values = this.optionArgs.computeIfAbsent(optionName, key -> new ArrayList<>());\nif (optionValue != null) {\n\tvalues.add(optionValue);\n}"",
+    ""advice"": ""这是一个很好的改进。它遵循了现代Java的编码习惯，减少了代码行数并提高了表达力。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '10d1ad3c4aec86120bd47e41e312689f2d6877c8', 'message': 'Use computeIfAbsent in CommandLineArgs.addOptionArg\n\nSigned-off-by: junhyung8795 <junhyung8795@naver.com>'}]",['Please [sign the DCO](https://github.com/spring-projects/spring-framework/pull/36493/checks?check_run_id=67541216670).'],2026-04-02 22:33:52
+spring-projects/spring-framework,36475,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了GenericTypeResolver中处理通配符类型（WildcardType）时的问题，并增加了相关测试。"",
+    ""description"": ""在`resolveType`方法中，当`genericType`是`WildcardType`时，新增的处理逻辑存在潜在问题。代码仅处理了`originalLowerBound.length == 1`和`originalUpperBound.length == 1`的情况，但没有处理`originalLowerBound.length > 1`或`originalUpperBound.length > 1`的情况。虽然Java语言规范规定通配符的边界数组长度通常为0或1，但`WildcardType`接口允许返回多个边界。如果遇到多个边界的情况，当前代码会直接跳过处理，返回原始的`genericType`，这可能不是预期的行为，尤其是在某些通过反射生成的复杂泛型类型场景下。"",
+    ""evidence"": ""else if (genericType instanceof WildcardType wildcardType) {\n\tType[] originalLowerBound = wildcardType.getLowerBounds();\n\tType[] originalUpperBound = wildcardType.getUpperBounds();\n\n\tif (originalLowerBound.length == 1) {\n\t\t// ...\n\t}\n\telse if (originalUpperBound.length == 1) {\n\t\t// ...\n\t}\n}"",
+    ""advice"": ""建议在`else if`分支后添加一个`else`分支，或者至少添加日志或注释，说明对于边界数组长度不为1的情况，我们选择保留原始类型。更好的做法是考虑递归解析所有边界，但需要评估其复杂性和必要性。可以添加一个断言或日志来帮助调试未来可能遇到的边缘情况。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了GenericTypeResolver中处理通配符类型（WildcardType）时的问题，并增加了相关测试。"",
+    ""description"": ""在`ResolvableType`类中新增的`isUnresolvableWildcard`方法，其方法注释（Javadoc）描述不准确。注释说“Determine whether the underlying type represents a wildcard has unresolvable upper bound or lower bound.”，但方法实现中，对于上界（upper bound）的处理，仅当`upperBounds.length == 1 && upperBounds[0] != Object.class`时才进行检查。如果上界是`Object.class`，方法会直接返回`false`，而不会递归检查其泛型参数是否不可解析。这与方法名和注释的表述存在偏差，可能引起误解。"",
+    ""evidence"": ""/**\n * Determine whether the underlying type represents a wildcard\n * has unresolvable upper bound or lower bound.\n */\nprivate boolean isUnresolvableWildcard(Set<Type> alreadySeen) {\n\tif (this.type instanceof WildcardType wildcardType) {\n\t\tType[] lowerBounds = wildcardType.getLowerBounds();\n\t\tif (lowerBounds.length == 1) {\n\t\t\t// ...\n\t\t}\n\t\tType[] upperBounds = wildcardType.getUpperBounds();\n\t\tif (upperBounds.length == 1 && upperBounds[0] != Object.class) {\n\t\t\t// ...\n\t\t}\n\t}\n\treturn false;\n}"",
+    ""advice"": ""建议更新方法注释，使其更精确地描述方法的行为。例如，可以说明：“Determine whether the underlying type represents a wildcard with a single, non-Object upper bound or a single lower bound that is unresolvable.” 或者考虑调整方法逻辑，使其更符合注释的广义描述，但这可能会改变现有行为，需要谨慎。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""修复了GenericTypeResolver中处理通配符类型（WildcardType）时的问题，并增加了相关测试。"",
+    ""description"": ""新增的`forWildcardTypeWithUpperBound`和`forWildcardTypeWithLowerBound`工厂方法设计上存在不一致性。`forWildcardTypeWithUpperBound`方法要求传入的`WildcardType`的下界（lower bound）数组长度必须为0，而`forWildcardTypeWithLowerBound`方法允许上界（upper bound）数组长度为0或者第一个元素是`Object.class`。这种不对称的校验逻辑可能反映了底层`WildcardTypeImpl`构造的约束，但作为公共API，这种差异会增加使用者的认知负担，且校验失败时的异常信息（虽然提供了）可能不够直观。"",
+    ""evidence"": ""// forWildcardTypeWithUpperBound 中的校验\nAssert.isTrue(originalLowerBound.length == 0,\n\t\t() -> \""The WildcardType has lower bound while upper bound provided \"" + wildcardType);\n// forWildcardTypeWithLowerBound 中的校验\nAssert.isTrue(originalUpperBound.length == 0 || originalUpperBound[0] == Object.class,\n\t\t() -> \""The WildcardType has upper bound %s while lower bound provided %s\""\n\t\t\t\t.formatted(originalUpperBound[0], wildcardType));"",
+    ""advice"": ""建议统一两个方法的校验逻辑风格，或者至少确保异常信息清晰指明期望的输入条件。可以考虑在类级别文档或方法文档中明确说明这些工厂方法的预期使用场景和约束。此外，考虑是否可以通过重构，使这两个方法共享更基础的校验和构造逻辑，以减少重复和潜在的不一致。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '18a8995e2aed3c711b23842eea2546db56fbce83', 'message': 'Add test cases\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '1e4f2eac44adefb2c9ca9dee23d8102c75c17da0', 'message': 'Fix generic with WildcardType return type support in HttpServiceMethod\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'b07b77f72abb7e6dae06f7b8d770098d20a4e2d6', 'message': 'Fix: Checkstyle and refactor\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]",['Error: eckstyle] [ERROR] /home/runner/work/spring-framework/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java:1698:57: Use a single space to separate non-whitespace characters. [SingleSpaceSeparator]\nMay this is a bug from checkstyle?'],2026-04-02 22:34:40
+spring-projects/spring-framework,36475,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了GenericTypeResolver中通配符类型解析的边界处理问题。"",
+    ""description"": ""在`resolveType`方法中，当`genericType`是`WildcardType`时，新增的逻辑会递归解析其边界（`lowerBound`或`upperBound`）。然而，当边界解析后与原始边界相同时（`lowerBound != originalLowerBound[0]`或`upperBound != originalUpperBound[0]`），代码会返回一个新的`WildcardType`。问题在于，如果边界解析后没有变化，方法会直接返回原始的`genericType`，但此时可能忽略了`contextClass`对边界内部泛型参数的进一步解析。例如，边界`List<? extends T>`中的`T`可能需要在`contextClass`下被解析为具体类型，但当前逻辑在边界类型对象引用未变时会跳过此过程，导致泛型信息未完全解析。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/GenericTypeResolver.java\n@@ -203,10 +198,39 @@ else if (typeArgument instanceof ParameterizedType) {\n\t\t\t\t}\n\t\t\t}\n\t\t}\n+\t\telse if (genericType instanceof WildcardType wildcardType) {\n+\t\t\tType[] originalLowerBound = wildcardType.getLowerBounds();\n+\t\t\tType[] originalUpperBound = wildcardType.getUpperBounds();\n+\n+\t\t\tif (originalLowerBound.length == 1) {\n+\t\t\t\tType lowerBound = resolveType(originalLowerBound[0], contextClass);\n+\t\t\t\tif (lowerBound != originalLowerBound[0]) {\n+\t\t\t\t\treturn ResolvableType.forWildcardTypeWithLowerBound(\n+\t\t\t\t\t\t\twildcardType, ResolvableType.forType(lowerBound))\n+\t\t\t\t\t\t\t.getType();\n+\t\t\t\t}\n+\t\t\t}\n+\t\t\telse if (originalUpperBound.length == 1) {\n+\t\t\t\tType upperBound = resolveType(originalUpperBound[0], contextClass);\n+\t\t\t\tif (upperBound != originalUpperBound[0]) {\n+\t\t\t\t\treturn ResolvableType.forWildcardTypeWithUpperBound(\n+\t\t\t\t\t\t\twildcardType, ResolvableType.forType(upperBound))\n+\t\t\t\t\t\t\t.getType();\n+\t\t\t\t}\n+\t\t\t}\n+\t\t}\n\t\t}\n\t\treturn genericType;\n\t}"",
+    ""advice"": ""即使边界类型引用未变，也应考虑边界内部可能包含的泛型变量。建议修改逻辑：总是对边界进行解析（调用`resolveType`），然后比较解析前后的`Type`对象是否在语义上相等（例如使用`equals`方法，或检查`ResolvableType`的等效性），而不是仅比较引用。如果解析后的边界在语义上不同（例如，`List<T>` 被解析为 `List<String>`），则应返回新的`WildcardType`；否则，可以返回原始类型。这确保了嵌套在边界内的泛型信息得到正确处理。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增了`ResolvableType.forWildcardTypeWithUpperBound/LowerBound`方法以支持通配符类型构造。"",
+    ""description"": ""新增的`forWildcardTypeWithUpperBound`和`forWildcardTypeWithLowerBound`方法用于根据给定的边界创建`ResolvableType`。这些方法的设计存在潜在问题：它们接受一个原始的`WildcardType`参数（`wildcardType`），但在构造新的`WildcardTypeImpl`时，几乎完全忽略了这个参数，仅用它来进行断言检查。例如，`forWildcardTypeWithUpperBound`方法断言原始类型没有下界，然后使用新的上界和空下界创建`WildcardTypeImpl`。这导致原始`wildcardType`参数除了验证外几乎没有其他作用，可能使方法签名产生误导，且如果原始类型有多个上界（虽然Java不允许）或其他属性，这些信息会丢失。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/ResolvableType.java\n@@ -1185,6 +1207,51 @@ public static ResolvableType forClassWithGenerics(Class<?> clazz, @Nullable Reso\n\t\t\t\t(generics != null ? new TypeVariablesVariableResolver(variables, generics) : null));\n\t}\n \n+\t/**\n+\t * Return a {@code ResolvableType} for the specified {@link WildcardType} with pre-declared upper bound.\n+\t * @param wildcardType the WildcardType to introspect\n+\t * @param upperBound the upper bound of the wildcardType\n+\t * @return a {@code ResolvableType} for the specific wildcardType and upperBound\n+\t */\n+\tpublic static ResolvableType forWildcardTypeWithUpperBound(WildcardType wildcardType, ResolvableType upperBound) {\n+\t\tAssert.notNull(wildcardType, \""WildcardType must not be null\"");\n+\t\tAssert.notNull(upperBound, \""UpperBound must not be null\"");\n+\t\tType[] originalLowerBound = wildcardType.getLowerBounds();\n+\t\tAssert.isTrue(originalLowerBound.length == 0,\n+\t\t\t\t() -> \""The WildcardType has lower bound while upper bound provided \"" + wildcardType);\n+\n+\t\tType upperBoundType = upperBound.getType();\n+\t\tVariableResolver variableResolver = upperBoundType instanceof TypeVariable<?> typeVariable ?\n+\t\t\t\tnew TypeVariablesVariableResolver(\n+\t\t\t\t\t\tnew TypeVariable<?>[]{typeVariable}, new ResolvableType[]{upperBound}) :\n+\t\t\t\tnull;\n+\n+\t\treturn forType(new WildcardTypeImpl(new Type[]{upperBoundType}, EMPTY_TYPE_ARRAY), variableResolver);\n+\t}"",
+    ""advice"": ""考虑重新设计这两个方法。可能更清晰的方法是：1) 移除`wildcardType`参数，直接要求提供边界类型，因为原始通配符的大部分信息未被使用；或 2) 真正利用原始`wildcardType`的其他属性（如果有，虽然Java通配符只有边界信息）。当前设计可能为了保持API对称性，但造成了混淆。建议至少更新JavaDoc，明确说明`wildcardType`参数主要用于验证，而非用于构造结果。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""提取了重复的TypeVariable解析逻辑到新方法`resolveVariableConsiderBounds`中。"",
+    ""description"": ""在`GenericTypeResolver.resolveType`方法中，对`TypeVariable`的解析逻辑（先尝试解析，若失败则使用变量边界）出现了两次。变更将其提取到一个新的私有方法`resolveVariableConsiderBounds`中，提高了代码的可读性和可维护性，消除了重复代码。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/GenericTypeResolver.java\n@@ -154,11 +154,8 @@ public static Class<?> resolveReturnType(Method method, Class<?> clazz) {\n \tpublic static Type resolveType(Type genericType, @Nullable Class<?> contextClass) {\n \t\tif (contextClass != null) {\n \t\t\tif (genericType instanceof TypeVariable<?> typeVariable) {\n-\t\t\t\tResolvableType resolvedTypeVariable = resolveVariable(\n+\t\t\t\tResolvableType resolvedTypeVariable = resolveVariableConsiderBounds(\n \t\t\t\t\t\ttypeVariable, ResolvableType.forClass(contextClass));\n-\t\t\t\tif (resolvedTypeVariable == ResolvableType.NONE) {\n-\t\t\t\t\tresolvedTypeVariable = ResolvableType.forVariableBounds(typeVariable);\n-\t\t\t\t}\n \t\t\t\tif (resolvedTypeVariable != ResolvableType.NONE) {\n \t\t\t\t\tType type = resolvedTypeVariable.getType();\n \t\t\t\t\tif (type instanceof ParameterizedType) {\n@@ -179,18 +176,16 @@ else if (genericType instanceof ParameterizedType parameterizedType) {\n \t\t\t\t\tfor (int i = 0; i < typeArguments.length; i++) {\n \t\t\t\t\t\tType typeArgument = typeArguments[i];\n \t\t\t\t\t\tif (typeArgument instanceof TypeVariable<?> typeVariable) {\n-\t\t\t\t\t\t\tResolvableType resolvedTypeArgument = resolveVariable(typeVariable, contextType);\n-\t\t\t\t\t\t\tif (resolvedTypeArgument == ResolvableType.NONE) {\n-\t\t\t\t\t\t\t\tresolvedTypeArgument = ResolvableType.forVariableBounds(typeVariable);\n-\t\t\t\t\t\t\t}\n+\t\t\t\t\t\t\tResolvableType resolvedTypeArgument = resolveVariableConsiderBounds(\n+\t\t\t\t\t\t\t\t\ttypeVariable, contextType);\n \t\t\t\t\t\t\tif (resolvedTypeArgument != ResolvableType.NONE) {\n \t\t\t\t\t\t\t\tgenerics[i] = resolvedTypeArgument;\n \t\t\t\t\t\t\t}\n \t\t\t\t\t\t\telse {\n \t\t\t\t\t\t\t\tgenerics[i] = ResolvableType.forType(typeArgument);\n \t\t\t\t\t\t\t}\n \t\t\t\t\t\t}\n-\t\t\t\t\t\telse if (typeArgument instanceof ParameterizedType) {\n+\t\t\t\t\t\telse if (typeArgument instanceof ParameterizedType || typeArgument instanceof WildcardType) {\n \t\t\t\t\t\t\tgenerics[i] = ResolvableType.forType(resolveType(typeArgument, contextClass));\n \t\t\t\t\t\t}\n \t\t\t\t\t\telse {\n@@ -203,10 +198,39 @@ else if (typeArgument instanceof ParameterizedType) {\n \t\t\t\t\t}\n \t\t\t\t}\n \t\t\t}\n+\t\t\telse if (genericType instanceof WildcardType wildcardType) {\n+\t\t\t\tType[] originalLowerBound = wildcardType.getLowerBounds();\n+\t\t\t\tType[] originalUpperBound = wildcardType.getUpperBounds();\n+\n+\t\t\t\tif (originalLowerBound.length == 1) {\n+\t\t\t\t\tType lowerBound = resolveType(originalLowerBound[0], contextClass);\n+\t\t\t\t\tif (lowerBound != originalLowerBound[0]) {\n+\t\t\t\t\t\treturn ResolvableType.forWildcardTypeWithLowerBound(\n+\t\t\t\t\t\t\t\twildcardType, ResolvableType.forType(lowerBound))\n+\t\t\t\t\t\t\t.getType();\n+\t\t\t\t\t}\n+\t\t\t\t}\n+\t\t\t\telse if (originalUpperBound.length == 1) {\n+\t\t\t\t\tType upperBound = resolveType(originalUpperBound[0], contextClass);\n+\t\t\t\t\tif (upperBound != originalUpperBound[0]) {\n+\t\t\t\t\t\treturn ResolvableType.forWildcardTypeWithUpperBound(\n+\t\t\t\t\t\t\t\twildcardType, ResolvableType.forType(upperBound))\n+\t\t\t\t\t\t\t.getType();\n+\t\t\t\t\t}\n+\t\t\t\t}\n+\t\t\t}\n \t\t}\n \t\treturn genericType;\n \t}\n \n+\tprivate static ResolvableType resolveVariableConsiderBounds(TypeVariable<?> typeVariable, ResolvableType contextType) {\n+\t\tResolvableType resolvedTypeArgument = resolveVariable(typeVariable, contextType);\n+\t\tif (resolvedTypeArgument == ResolvableType.NONE) {\n+\t\t\tresolvedTypeArgument = ResolvableType.forVariableBounds(typeVariable);\n+\t\t}\n+\t\treturn resolvedTypeArgument;\n+\t}"",
+    ""advice"": ""这是一个良好的重构。无需修改。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '18a8995e2aed3c711b23842eea2546db56fbce83', 'message': 'Add test cases\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': '1e4f2eac44adefb2c9ca9dee23d8102c75c17da0', 'message': 'Fix generic with WildcardType return type support in HttpServiceMethod\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}, {'sha': 'b07b77f72abb7e6dae06f7b8d770098d20a4e2d6', 'message': 'Fix: Checkstyle and refactor\n\nSigned-off-by: anaconda875 <hflbtmax@gmail.com>'}]",['Error: eckstyle] [ERROR] /home/runner/work/spring-framework/spring-framework/spring-core/src/main/java/org/springframework/core/ResolvableType.java:1698:57: Use a single space to separate non-whitespace characters. [SingleSpaceSeparator]\nMay this is a bug from checkstyle?'],2026-04-02 22:36:14
+spring-projects/spring-framework,36449,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Kotlin内联值类（inline class）参数在可为空时的装箱处理逻辑"",
+    ""description"": ""原始代码中，当Kotlin内联值类参数类型标记为可为空（nullable）且传入参数值为null时，会跳过装箱处理。这可能导致在后续处理中，null值无法被正确识别为该内联值类的实例，从而引发类型转换错误或空指针异常。修改后，无论参数值是否为null，只要参数类型是内联值类，都会尝试进行装箱处理，确保类型一致性。"",
+    ""evidence"": ""文件: spring-core/src/main/java/org/springframework/core/CoroutinesUtils.java\n@@ -134,7 +134,7 @@ public static Publisher<?> invokeSuspendingFunction(\n\t\t\t\t\t\t\tObject arg = args[index];\n\t\t\t\t\t\t\tif (!(parameter.isOptional() && arg == null)) {\n\t\t\t\t\t\t\t\tKType type = parameter.getType();\n-\t\t\t\t\t\t\t\tif (!(type.isMarkedNullable() && arg == null) &&\n+\t\t\t\t\t\t\t\tif (!type.isMarkedNullable() &&\n\t\t\t\t\t\t\t\t\t\ttype.getClassifier() instanceof KClass<?> kClass &&\n\t\t\t\t\t\t\t\t\t\tKotlinDetector.isInlineClass(JvmClassMappingKt.getJavaClass(kClass))) {\n\t\t\t\t\t\t\t\t\targ = box(kClass, arg);\n@@ -166,7 +166,7 @@ public static Publisher<?> invokeSuspendingFunction(\n\tprivate static Object box(KClass<?> kClass, @Nullable Object arg) {\n\t\tKFunction<?> constructor = Objects.requireNonNull(KClasses.getPrimaryConstructor(kClass));\n\t\tKType type = constructor.getParameters().get(0).getType();\n-\t\tif (!(type.isMarkedNullable() && arg == null) &&\n+\t\tif (!type.isMarkedNullable() &&\n\t\t\t\ttype.getClassifier() instanceof KClass<?> parameterClass &&\n\t\t\t\tKotlinDetector.isInlineClass(JvmClassMappingKt.getJavaClass(parameterClass))) {\n\t\t\targ = box(parameterClass, arg);"",
+    ""advice"": ""修改逻辑正确。建议在`box`方法内部，当`arg`为null且类型为可空内联值类时，明确返回null或进行适当的空值处理，以确保递归装箱的终止条件清晰。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  }
+]
+```","[{'sha': 'f70446aacd69ef68a2b963e695fbf9c06958d3e4', 'message': 'remove  ""args == null"" condition to handle nullable value class param correctly\n\nSigned-off-by: T45K <tasktas9@gmail.com>'}]","['@T45K Can you please update the commit to comply with the [DCO requirement](https://github.com/spring-projects/spring-framework/blob/main/CONTRIBUTING.md#submit-a-pull-request)?', '@sdeleuze force pushed', '@sdeleuze \r\nSorry to rush you, but could you check this when you get a chance?']",2026-04-02 22:36:39
+spring-projects/spring-framework,36449,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复Kotlin内联值类参数在可为空时的装箱处理逻辑"",
+    ""description"": ""原始代码中，当处理Kotlin内联值类参数时，条件 `!(type.isMarkedNullable() && arg == null)` 存在逻辑缺陷。当 `type.isMarkedNullable()` 为true（类型标记为可为空）且 `arg == null` 时，整个条件为false，会跳过后续的装箱逻辑。然而，对于可为空的内联值类，即使参数值为null，也可能需要正确的类型处理或传递。移除 `&& arg == null` 部分后，逻辑变为：如果类型标记为可为空，则跳过装箱；否则，如果类型是内联值类，则进行装箱。这更符合Kotlin可为空类型与内联值类的语义，确保null值能正确传递，避免潜在的NullPointerException或类型转换错误。"",
+    ""evidence"": ""if (!type.isMarkedNullable() &&\n\t\t\t\t\ttype.getClassifier() instanceof KClass<?> kClass &&\n\t\t\t\t\tKotlinDetector.isInlineClass(JvmClassMappingKt.getJavaClass(kClass))) {\n\t\t\t\t\targ = box(kClass, arg);\n\t\t\t\t}"",
+    ""advice"": ""变更合理，无需修改。建议补充单元测试，覆盖可为空的内联值类参数传入null值的场景，以确保修复的正确性。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'f70446aacd69ef68a2b963e695fbf9c06958d3e4', 'message': 'remove  ""args == null"" condition to handle nullable value class param correctly\n\nSigned-off-by: T45K <tasktas9@gmail.com>'}]","['@T45K Can you please update the commit to comply with the [DCO requirement](https://github.com/spring-projects/spring-framework/blob/main/CONTRIBUTING.md#submit-a-pull-request)?', '@sdeleuze force pushed', '@sdeleuze \r\nSorry to rush you, but could you check this when you get a chance?']",2026-04-02 22:36:53
+spring-projects/spring-framework,36448,baseline,"[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了异常消息中的类名拼写错误。"",
+    ""description"": ""在抛出的 IllegalArgumentException 异常消息中，类名引用错误。原消息中使用了 'MappingJackson2MessageConverter'，但实际类名是 'JacksonJsonMessageConverter'。这会导致错误信息不准确，可能误导开发者，尤其是在调试或排查问题时。"",
+    ""evidence"": ""throw new IllegalArgumentException(\""Unsupported message type [\"" + targetType +\n\t\t\t\t\""]. JacksonJsonMessageConverter by default only supports TextMessages and BytesMessages.\"");"",
+    ""advice"": ""已修复。将异常消息中的类名更正为正确的 'JacksonJsonMessageConverter'，确保了错误信息的准确性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'ea482b36caae4a145cecf037f5279e35039fa07b', 'message': 'Update JacksonJsonMessageConverter.java\n\nFix typo\n\nSigned-off-by: gbouwen <57719521+gbouwen@users.noreply.github.com>'}]",['Good catch!\r\n\r\nThis has been merged into `main`.\r\n\r\nThanks\r\n\r\n----\r\n\r\np.s. I noticed two other spots that I addressed in 4e8acb9ef2ff43c6f841af2a2ad0a3de53cac914.'],2026-04-02 22:37:05
+spring-projects/spring-framework,36448,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""修复了异常消息中的类名拼写错误。"",
+    ""description"": ""异常消息中引用的类名 'MappingJackson2MessageConverter' 与当前类名 'JacksonJsonMessageConverter' 不一致。这是一个拼写错误，会导致错误信息不准确，可能误导开发者，尤其是在调试或排查问题时。"",
+    ""evidence"": ""throw new IllegalArgumentException(\""Unsupported message type [\"" + targetType +\n\t\t\t\t\""]. MappingJackson2MessageConverter by default only supports TextMessages and BytesMessages.\"");"",
+    ""advice"": ""将错误消息中的类名更正为当前类的实际名称 'JacksonJsonMessageConverter'，以保持信息的一致性。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'ea482b36caae4a145cecf037f5279e35039fa07b', 'message': 'Update JacksonJsonMessageConverter.java\n\nFix typo\n\nSigned-off-by: gbouwen <57719521+gbouwen@users.noreply.github.com>'}]",['Good catch!\r\n\r\nThis has been merged into `main`.\r\n\r\nThanks\r\n\r\n----\r\n\r\np.s. I noticed two other spots that I addressed in 4e8acb9ef2ff43c6f841af2a2ad0a3de53cac914.'],2026-04-02 22:37:14
+spring-projects/spring-framework,36429,baseline,"```json
+[
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""移除了多个文件中未使用的import语句"",
+    ""description"": ""未发现明显问题。本次提交主要清理了代码中未使用的import语句，这有助于提高代码的整洁度和可读性，减少潜在的编译警告。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'e11ad1b688b385d1541a0572756a8c64ec9d68c6', 'message': 'Remove unused import\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['This has been merged into `main`.\r\n\r\nThanks'],2026-04-02 22:37:22
+spring-projects/spring-framework,36429,with_readme,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""清理了多个文件中的未使用import语句"",
+    ""description"": ""本次提交移除了多个Java文件中的未使用import语句。虽然这有助于提高代码整洁度，但提交信息过于简单，没有说明清理的具体原因或范围。在大型项目中，这种批量清理最好能分组或说明清理标准（例如，通过IDE工具自动清理）。"",
+    ""evidence"": ""文件: framework-docs/src/main/java/org/springframework/docs/testing/mockmvc/assertj/mockmvctesterrequests/HotelControllerTests.java\n@@ -21,7 +21,6 @@\n import org.springframework.test.web.servlet.assertj.MvcTestResult;\n \n import static org.assertj.core.api.Assertions.assertThat;\n-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;\n\n文件: framework-docs/src/main/java/org/springframework/docs/web/websocket/stomp/websocketstompconfigurationperformance/MessageSizeLimitWebSocketConfiguration.java\n@@ -17,9 +17,7 @@\n package org.springframework.docs.web.websocket.stomp.websocketstompconfigurationperformance;\n \n import org.springframework.context.annotation.Configuration;\n-import org.springframework.messaging.simp.config.MessageBrokerRegistry;\n import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;\n-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;\n import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;\n import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;"",
+    ""advice"": ""建议在提交信息中提供更多上下文，例如说明是手动清理还是通过工具（如IDE的优化导入功能）进行的清理。对于涉及多个文件的批量修改，可以简要说明清理的标准（例如，移除所有未使用的import）。这有助于其他开发者理解变更的意图。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': 'e11ad1b688b385d1541a0572756a8c64ec9d68c6', 'message': 'Remove unused import\n\nSigned-off-by: Tran Ngoc Nhan <ngocnhan.tran1996@gmail.com>'}]",['This has been merged into `main`.\r\n\r\nThanks'],2026-04-02 22:37:39
+spring-projects/spring-framework,36410,baseline,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复日志格式化字符串参数数量不匹配的问题"",
+    ""description"": ""原始代码中，`logger.debug()` 调用使用了字符串插值（`.formatted()`），但括号位置错误，导致格式化字符串和参数可能被错误解析。具体来说，`.formatted(beanMethod, beanName)` 被应用到了整个 `logger.debug()` 调用上，而不是仅应用于字符串字面量。这可能导致格式化失败或产生意外的日志输出。"",
+    ""evidence"": ""logger.debug(\""Skipping bean definition for %s: a definition for bean '%s' already exists. \"" +\n\t\t\t\t\""This top-level bean definition is considered as an override.\"".formatted(beanMethod, beanName));"",
+    ""advice"": ""将 `.formatted(beanMethod, beanName)` 的括号正确包裹整个字符串字面量，确保格式化操作仅应用于字符串本身。变更后的代码已经正确修复了此问题。"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  }
+]
+```","[{'sha': 'a1e24f40b61988472002ea2473ff84a280783e0c', 'message': 'Fix format string argument count\n\nSigned-off-by: cetf <cetf9h@163.com>'}]","['We consider the code in question fine as it is: we do not wrap concatenated strings within parentheses.\r\n\r\nIf you are wondering about our coding guidelines, please consult our [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) wiki page.\r\n\r\nIn light of that, I am closing this PR.\r\n\r\n----\r\n\r\nIn addition, your proposed change has absolutely nothing to do with ""fixing a format string argument count"". Did you perhaps use AI to generate this PR?\r\n', 'I think this PR is valid, the parentheses do have a meaning here and are actually fixing a bug. In Java, the method call `.` operator has a higher precedence than the string concatenation `+` operator. Here, the arguments are only applied to the last string, before concatenation - so arguments are in fact not replaced.\r\n\r\nSee the following:\r\n\r\n```java\r\nSystem.out.println(""First %s"" + "", second %s"" + "", third"".formatted(""1"", ""2""));\r\n// prints \'First %s, second %s, third\'\r\n\r\nSystem.out.println((""First %s"" + "", second %s"" + "", third"").formatted(""1"", ""2""));\r\n// prints \'First 1, second 2, third\'\r\n```\r\nReopening.', 'Indeed. I apologize: I glanced at that too quickly.', '<img width=""1604"" height=""56"" alt=""image"" src=""https://github.com/user-attachments/assets/6294f781-b60b-47d8-a669-56c675220838"" />\r\n@sbrannen \r\n\r\n\r\nI did not use AI.\r\nMy test results are shown in the figure.\r\nIn the original `str1 + str2.formatted(beanMethod, beanName)`, the `str2.formatted(beanMethod, beanName)` part is executed first, and then its result is concatenated with `str1`.\r\n\r\n我没有使用AI\r\n我的测试结果如图，原来的 `str1 + str2.formatted(beanMethod, beanName)`，其中 `str2.formatted(beanMethod, beanName)` 会先执行，然后其结果与 `str1` 进行连接', 'Thanks @cetf9h this is now merged and backported']",2026-04-02 22:37:52
+spring-projects/spring-framework,36410,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了日志格式化字符串的参数数量不匹配问题。"",
+    ""description"": ""在变更前的代码中，`logger.debug` 调用使用了字符串插值方法 `formatted`，但格式化字符串 `\""Skipping bean definition for %s: a definition for bean '%s' already exists. ...\""` 包含两个 `%s` 占位符，而 `formatted` 方法只传入了一个参数 `beanMethod`。这会导致 `MissingFormatArgumentException` 异常，因为第二个占位符 `'%s'` 没有对应的参数。变更后的代码通过将整个字符串（包括占位符）用括号括起来，再调用 `.formatted(beanMethod, beanName)`，正确地传入了两个参数 `beanMethod` 和 `beanName`，从而修复了此问题。"",
+    ""evidence"": ""logger.debug(\""Skipping bean definition for %s: a definition for bean '%s' already exists. \"" +\n\t\t\t\t\""This top-level bean definition is considered as an override.\"".formatted(beanMethod, beanName));"",
+    ""advice"": ""修复正确。建议确保所有类似的日志格式化语句都检查参数数量与占位符数量是否匹配。"",
+    ""confidence"": 1,
+    ""severity"": ""High""
+  }
+]","[{'sha': 'a1e24f40b61988472002ea2473ff84a280783e0c', 'message': 'Fix format string argument count\n\nSigned-off-by: cetf <cetf9h@163.com>'}]","['We consider the code in question fine as it is: we do not wrap concatenated strings within parentheses.\r\n\r\nIf you are wondering about our coding guidelines, please consult our [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) wiki page.\r\n\r\nIn light of that, I am closing this PR.\r\n\r\n----\r\n\r\nIn addition, your proposed change has absolutely nothing to do with ""fixing a format string argument count"". Did you perhaps use AI to generate this PR?\r\n', 'I think this PR is valid, the parentheses do have a meaning here and are actually fixing a bug. In Java, the method call `.` operator has a higher precedence than the string concatenation `+` operator. Here, the arguments are only applied to the last string, before concatenation - so arguments are in fact not replaced.\r\n\r\nSee the following:\r\n\r\n```java\r\nSystem.out.println(""First %s"" + "", second %s"" + "", third"".formatted(""1"", ""2""));\r\n// prints \'First %s, second %s, third\'\r\n\r\nSystem.out.println((""First %s"" + "", second %s"" + "", third"").formatted(""1"", ""2""));\r\n// prints \'First 1, second 2, third\'\r\n```\r\nReopening.', 'Indeed. I apologize: I glanced at that too quickly.', '<img width=""1604"" height=""56"" alt=""image"" src=""https://github.com/user-attachments/assets/6294f781-b60b-47d8-a669-56c675220838"" />\r\n@sbrannen \r\n\r\n\r\nI did not use AI.\r\nMy test results are shown in the figure.\r\nIn the original `str1 + str2.formatted(beanMethod, beanName)`, the `str2.formatted(beanMethod, beanName)` part is executed first, and then its result is concatenated with `str1`.\r\n\r\n我没有使用AI\r\n我的测试结果如图，原来的 `str1 + str2.formatted(beanMethod, beanName)`，其中 `str2.formatted(beanMethod, beanName)` 会先执行，然后其结果与 `str1` 进行连接', 'Thanks @cetf9h this is now merged and backported']",2026-04-02 22:38:03
+spring-projects/spring-framework,36409,baseline,"```json
+[
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""移除了重复的条件判断，简化了代码逻辑"",
+    ""description"": ""代码变更移除了一个冗余的 `if (skipEquals)` 条件判断。在原始代码中，外层已经检查了 `if (skipEquals && bucket.size() == 1)`，内层又重复检查了 `if (skipEquals)`，这是不必要的重复，降低了代码的可读性。"",
+    ""evidence"": ""原始代码片段：\nif (skipEquals && bucket.size() == 1) {\n    if (skipEquals) {\n        e.pop();\n    }\n    callback.processCase(bucket.get(0), end);\n}\n\n变更后代码片段：\nif (skipEquals && bucket.size() == 1) {\n    e.pop();\n    callback.processCase(bucket.get(0), end);\n}"",
+    ""advice"": ""变更已经正确移除了冗余的条件判断。这是一个良好的代码清理实践。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '2fd0153235106732dae564a0eb463a2eecdbd820', 'message': ""Repeat condition 'skipEquals'\n\nSigned-off-by: cetf <cetf9h@163.com>""}]","[""Thanks but this code is not directly maintained by the Spring team, this is an internal copy of the cglib codebase. We'd rather not merge cosmetic changes if it makes it harder for us to track the changes.\r\n\r\nYou can [suggest this enhancement to the cglib project directly](https://github.com/cglib/cglib).""]",2026-04-02 22:38:16
+spring-projects/spring-framework,36409,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""修复了条件判断逻辑，移除了冗余的嵌套if语句。"",
+    ""description"": ""在原始代码中，外层条件 `if (skipEquals && bucket.size() == 1)` 已经检查了 `skipEquals` 变量，但内部又有一个冗余的 `if (skipEquals)` 检查。这导致代码逻辑虽然正确，但结构冗余，可读性差。移除内部的条件判断后，逻辑不变，但代码更简洁清晰。"",
+    ""evidence"": ""@@ -273,10 +273,8 @@ public void processCase(int key, Label ignore_end) throws Exception {\n                 List bucket = (List)buckets.get(key);\n                 Label next = null;\n                 if (skipEquals && bucket.size() == 1) {\n-                    if (skipEquals) {\n-\t\t\t\t\t\te.pop();\n-\t\t\t\t\t}\n-                    callback.processCase(bucket.get(0), end);\n+                    e.pop();\n+                    callback.processCase(bucket.get(0), end);"",
+    ""advice"": ""这是一个正确的重构。移除冗余的条件判断提高了代码的可读性，没有引入任何功能或性能上的副作用。"",
+    ""confidence"": 1.0,
+    ""severity"": ""Low""
+  }
+]","[{'sha': '2fd0153235106732dae564a0eb463a2eecdbd820', 'message': ""Repeat condition 'skipEquals'\n\nSigned-off-by: cetf <cetf9h@163.com>""}]","[""Thanks but this code is not directly maintained by the Spring team, this is an internal copy of the cglib codebase. We'd rather not merge cosmetic changes if it makes it harder for us to track the changes.\r\n\r\nYou can [suggest this enhancement to the cglib project directly](https://github.com/cglib/cglib).""]",2026-04-02 22:38:32

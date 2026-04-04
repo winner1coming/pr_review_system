@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+kubernetes/kubernetes,baseline,0.0812,0.0,8
+kubernetes/kubernetes,with_readme,0.1062,0.0,8

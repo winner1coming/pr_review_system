@@ -4,7 +4,7 @@ import time
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
-OUTPUT_DIR = os.path.join(BASE_DIR, "diff_lang_readme_test","small")
+OUTPUT_DIR = os.path.join(BASE_DIR, "same_lang_readme_test","small")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
