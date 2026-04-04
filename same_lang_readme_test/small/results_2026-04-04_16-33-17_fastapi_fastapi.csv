@@ -1,0 +1,130 @@
+repo,pr,strategy,review,commits,review_comments,time
+fastapi/fastapi,15295,baseline,"```json
+[
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""AuthStaticFiles的__call__方法中，当认证失败时，直接返回JSONResponse，但未正确处理HTTPException的headers属性。如果HTTPException没有headers属性，getattr会返回None，导致JSONResponse的headers参数为None，这可能引发TypeError。"",
+    ""evidence"": ""response = JSONResponse(\n    {\""detail\"": exc.detail},\n    status_code=exc.status_code,\n    headers=getattr(exc, \""headers\"", None),\n)"",
+    ""advice"": ""建议将headers参数改为：headers=exc.headers if hasattr(exc, 'headers') else None，或者使用getattr(exc, 'headers', {})来确保headers总是一个字典。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""在AuthStaticFiles的__init__方法中，参数'auth'被放在所有其他参数之后，这不符合FastAPI/Starlette中通常将关键参数放在前面的惯例，可能影响代码的可读性和一致性。"",
+    ""evidence"": ""def __init__(\n    self,\n    *,\n    directory: str | None = None,\n    packages: list[str | tuple[str, str]] | None = None,\n    html: bool = False,\n    check_dir: bool = True,\n    follow_symlink: bool = False,\n    auth: Callable[[Request], Awaitable[Any]],\n) -> None:"",
+    ""advice"": ""建议将'auth'参数移到更靠前的位置，或者至少放在'directory'参数之后，因为'auth'是这个类的核心新功能。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Rightness"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""代码主要实现了为静态文件服务添加认证功能，解决了静态文件绕过FastAPI依赖注入的问题。整体设计合理，功能完整，包含详细的文档和测试用例。"",
+    ""evidence"": """",
+    ""advice"": """",
+    ""confidence"": 0.9,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '95f571efc9588bfa4da07ec09fa3f28c2a3a47b6', 'message': ""Add AuthStaticFiles to support authentication for static file serving\n\nAdds a new AuthStaticFiles class that extends StaticFiles with an `auth`\nparameter, allowing users to protect static files behind authentication.\nThis addresses a long-standing feature request (issue #858) where mounted\nstatic files bypass FastAPI's dependency injection and serve files without\nany access control.\n\nCloses #858\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>""}, {'sha': '6513de420df4c4b4699ae6d6ec019ff2ac9913b8', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Faisalsaificode:feature/auth-static-files</code> (6513de4) with <code>master</code> (180e81b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Faisalsaificode%3Afeature%2Fauth-static-files?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (c3c9dd6) during the generation of this report, so 180e81b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '## 📝 Docs preview\n\nLast commit 6513de420df4c4b4699ae6d6ec019ff2ac9913b8 at: https://a2bf1dfe.fastapitiangolo.pages.dev']",2026-04-04 16:31:40
+fastapi/fastapi,15295,with_readme,"```json
+[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""在__call__方法中，当认证失败时，如果异常不是HTTPException，会直接raise，这可能导致未处理的异常泄露给ASGI服务器，而不是返回适当的错误响应。这违反了FastAPI的错误处理模式，可能导致服务器错误（500）而不是客户端错误（401/403）。"",
+    ""evidence"": ""async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:\n    if scope[\""type\""] == \""http\"":\n        request = Request(scope, receive)\n        try:\n            await self.auth(request)\n        except Exception as exc:\n            from fastapi.exceptions import HTTPException\n\n            if isinstance(exc, HTTPException):\n                response = JSONResponse(\n                    {\""detail\"": exc.detail},\n                    status_code=exc.status_code,\n                    headers=getattr(exc, \""headers\"", None),\n                )\n                await response(scope, receive, send)\n                return\n            raise"",
+    ""advice"": ""建议将非HTTPException的异常也包装成适当的错误响应（如500 Internal Server Error），或者至少记录日志。可以修改为：\n```python\nexcept Exception as exc:\n    from fastapi.exceptions import HTTPException\n    \n    if isinstance(exc, HTTPException):\n        response = JSONResponse(\n            {\""detail\"": exc.detail},\n            status_code=exc.status_code,\n            headers=getattr(exc, \""headers\"", None),\n        )\n    else:\n        # 记录日志或返回500错误\n        response = JSONResponse(\n            {\""detail\"": \""Internal server error\""},\n            status_code=500,\n        )\n    await response(scope, receive, send)\n    return\n```"",
+    ""confidence"": 0.9,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""AuthStaticFiles的__init__方法中，auth参数被定义为位置参数（没有默认值），但放在所有可选参数之后。这违反了Python的参数顺序约定：位置参数应该在关键字参数之前。这会导致调用时出现语法错误。"",
+    ""evidence"": ""def __init__(\n    self,\n    *,\n    directory: str | None = None,\n    packages: list[str | tuple[str, str]] | None = None,\n    html: bool = False,\n    check_dir: bool = True,\n    follow_symlink: bool = False,\n    auth: Callable[[Request], Awaitable[Any]],\n) -> None:"",
+    ""advice"": ""应该将auth参数移到所有可选参数之前，或者给它一个默认值（如None），并在文档中说明它是必需的。建议修改为：\n```python\ndef __init__(\n    self,\n    *,\n    auth: Callable[[Request], Awaitable[Any]],\n    directory: str | None = None,\n    packages: list[str | tuple[str, str]] | None = None,\n    html: bool = False,\n    check_dir: bool = True,\n    follow_symlink: bool = False,\n) -> None:\n```"",
+    ""confidence"": 0.95,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""在__call__方法中动态导入HTTPException（from fastapi.exceptions import HTTPException），这会影响性能（每次调用都需要导入）并且降低了代码的可读性。"",
+    ""evidence"": ""except Exception as exc:\n    from fastapi.exceptions import HTTPException"",
+    ""advice"": ""建议在文件顶部导入HTTPException，或者在类初始化时导入。修改为在文件顶部添加：\n```python\nfrom fastapi.exceptions import HTTPException\n```\n然后在__call__方法中直接使用HTTPException。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Security"",
+    ""conclusion"": ""新增AuthStaticFiles类，为静态文件服务添加认证支持"",
+    ""description"": ""示例代码中的认证函数使用硬编码的令牌值（\""Bearer mysecrettoken\""），这在生产环境中是不安全的。虽然这只是示例代码，但可能会误导用户。"",
+    ""evidence"": ""async def verify_token(request: Request) -> None:\n    \""\""\""Check for a valid Bearer token in the Authorization header.\""\""\""\n    token = request.headers.get(\""Authorization\"")\n    if token != \""Bearer mysecrettoken\"":\n        raise HTTPException(status_code=401, detail=\""Not authenticated\"")"",
+    ""advice"": ""建议在示例代码中添加注释，提醒用户在生产环境中应该使用安全的令牌验证方式（如JWT验证、从环境变量或配置中读取令牌等）。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  }
+]
+```","[{'sha': '95f571efc9588bfa4da07ec09fa3f28c2a3a47b6', 'message': ""Add AuthStaticFiles to support authentication for static file serving\n\nAdds a new AuthStaticFiles class that extends StaticFiles with an `auth`\nparameter, allowing users to protect static files behind authentication.\nThis addresses a long-standing feature request (issue #858) where mounted\nstatic files bypass FastAPI's dependency injection and serve files without\nany access control.\n\nCloses #858\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>""}, {'sha': '6513de420df4c4b4699ae6d6ec019ff2ac9913b8', 'message': '🎨 Auto format'}]","['<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>Faisalsaificode:feature/auth-static-files</code> (6513de4) with <code>master</code> (180e81b)[^unexpected-base]</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/Faisalsaificode%3Afeature%2Fauth-static-files?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n[^unexpected-base]: No successful run was found on <code>master</code> (c3c9dd6) during the generation of this report, so 180e81b was used instead as the comparison base. There might be some changes unrelated to this pull request in this report.\n', '## 📝 Docs preview\n\nLast commit 6513de420df4c4b4699ae6d6ec019ff2ac9913b8 at: https://a2bf1dfe.fastapitiangolo.pages.dev']",2026-04-04 16:32:09
+fastapi/fastapi,15293,baseline,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""脚本用于检查最新版本标题，若缺少日期则自动添加今日日期。"",
+    ""description"": ""脚本逻辑存在缺陷。当找到第一个匹配的版本标题（即文件中最顶部的版本）时，无论其是否为最新版本，都会为其添加日期并退出。这可能导致为旧版本而非最新版本添加日期，如果旧版本标题恰好缺少日期的话。"",
+    ""evidence"": ""`for i, line in enumerate(lines):\n        match = RELEASE_HEADER_PATTERN.match(line)\n        if not match:\n            continue\n\n        version = match.group(1)\n        date_part = match.group(2)\n\n        if date_part:\n            print(f\""Latest release {version} already has a date: {date_part}\"")\n            sys.exit(0)\n\n        today = date.today().isoformat()\n        lines[i] = f\""## {version} ({today})\""\n        print(f\""Added date: {version} ({today})\"")\n\n        with open(RELEASE_NOTES_FILE, \""w\"") as f:\n            f.writelines(lines)\n        sys.exit(0)`"",
+    ""advice"": ""修改逻辑，确保只处理最新的（即第一个出现的）版本标题。当前代码在找到第一个有日期的标题时就退出，这是正确的。但找到第一个无日期的标题时，也应直接处理并退出，因为第一个标题就是最新的。然而，代码注释和变量名（如`latest_release`）应更明确。建议：1. 将循环改为只处理第一个匹配项（`break`或直接取`lines[0]`附近的逻辑）。2. 或者，更清晰地注释说明我们假设文件顶部就是最新版本。"",
+    ""confidence"": 0.9,
+    ""severity"": ""High""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""脚本用于检查最新版本标题，若缺少日期则自动添加今日日期。"",
+    ""description"": ""脚本在成功添加日期后，直接覆盖原文件。如果脚本在写入过程中被中断（如电源故障），可能导致文件损坏或数据丢失。虽然对于小文件风险较低，但缺乏原子性操作或备份机制。"",
+    ""evidence"": ""`with open(RELEASE_NOTES_FILE, \""w\"") as f:\n            f.writelines(lines)`"",
+    ""advice"": ""建议采用更安全的写入方式，例如先写入临时文件，然后重命名替换原文件。这可以确保在写入失败时原文件不被破坏。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""脚本用于检查最新版本标题，若缺少日期则自动添加今日日期。"",
+    ""description"": ""脚本的退出码使用不够清晰。当找到有日期的标题时，退出码为0（成功）；当添加日期成功时，退出码也为0；当未找到任何版本标题时，退出码为1。这可能导致调用方难以区分“已有日期”和“成功添加日期”两种情况，尽管它们都是预期内的成功状态。"",
+    ""evidence"": ""`if date_part:\n            print(f\""Latest release {version} already has a date: {date_part}\"")\n            sys.exit(0)` 和 `sys.exit(0)` (添加日期后) 以及 `sys.exit(1)` (未找到标题时)。"",
+    ""advice"": ""考虑使用不同的退出码来区分不同情况，或者确保调用方（如pre-commit hook）只关心成功（0）与失败（非0），而不细分成功类型。如果当前设计满足需求，可以保持，但建议在脚本注释或文档中明确说明退出码的含义。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'a394083a109deaeb12f91bab5456d4cfca6c5ed1', 'message': '🔨 Add pre-commit hook to ensure latest release header has date'}]","['Excellent, thank you! 🙌 ', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>release-date-hook</code> (a394083) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/release-date-hook?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n']",2026-04-04 16:32:36
+fastapi/fastapi,15293,with_readme,"[
+  {
+    ""type"": ""Bug"",
+    ""conclusion"": ""脚本用于检查并自动为最新的发布版本标题添加缺失的日期。"",
+    ""description"": ""脚本逻辑存在一个潜在问题：它只处理找到的第一个匹配的发布标题（即最新的一个）。然而，如果最新的发布标题已经有日期，脚本会直接退出（`sys.exit(0)`）。这符合预期。但如果最新的发布标题没有日期，脚本会修改该行并写入文件，然后立即退出。这里的问题是，它没有考虑在写入文件后，文件内容可能已经被修改，但脚本的后续循环或逻辑没有机会处理。虽然在这个特定场景下（找到第一个匹配项就处理并退出）是合理的，但代码结构上，`sys.exit(0)` 放在循环内部，一旦找到匹配项就退出，这可能导致循环的意图不明确。更清晰的做法是在找到目标后，执行修改并退出循环，然后在循环外执行文件写入。当前代码在修改后立即写入并退出，虽然功能正确，但将文件写入操作放在条件分支内，如果未来逻辑扩展（例如需要处理多个标题），这种结构可能不易维护。此外，如果文件写入失败（例如权限问题），脚本会因异常而崩溃，没有进行错误处理。"",
+    ""evidence"": ""        if date_part:\n            print(f\""Latest release {version} already has a date: {date_part}\"")\n            sys.exit(0)\n\n        today = date.today().isoformat()\n        lines[i] = f\""## {version} ({today})\\n\""\n        print(f\""Added date: {version} ({today})\"")\n\n        with open(RELEASE_NOTES_FILE, \""w\"") as f:\n            f.writelines(lines)\n        sys.exit(0)"",
+    ""advice"": ""1. 重构循环逻辑：将找到目标版本、修改内容、写入文件的操作分离。可以在循环中设置一个标志（如 `modified = False` 和 `target_line_index`），找到目标后修改 `lines` 并设置标志，然后跳出循环。在循环结束后，根据标志决定是否写入文件和退出。这样逻辑更清晰，易于扩展。\n2. 增加错误处理：在文件读写操作周围添加 try-except 块，捕获可能的 IOError 或 PermissionError，并打印错误信息后以非零状态退出。\n3. 考虑使用 `argparse` 或类似库来处理命令行参数，使脚本更灵活（例如允许指定文件路径）。"",
+    ""confidence"": 0.8,
+    ""severity"": ""Medium""
+  },
+  {
+    ""type"": ""Readability"",
+    ""conclusion"": ""脚本用于检查并自动为最新的发布版本标题添加缺失的日期。"",
+    ""description"": ""正则表达式 `RELEASE_HEADER_PATTERN` 的命名可以更具体，以反映其匹配的是发布标题。当前名称 `RELEASE_HEADER_PATTERN` 是合适的，但可以添加注释说明其格式。另外，脚本中的硬编码文件路径 `RELEASE_NOTES_FILE` 虽然对于单一用途脚本可以接受，但缺乏灵活性。如果未来需要重用或路径变更，需要修改代码。"",
+    ""evidence"": ""RELEASE_NOTES_FILE = \""docs/en/docs/release-notes.md\""\nRELEASE_HEADER_PATTERN = re.compile(r\""^## (\\d+\\.\\d+\\.\\d+)\\s*(\\(.*\\))?\\s*$\"")"",
+    ""advice"": ""1. 为正则表达式添加注释，说明它匹配 Markdown 的二级标题，版本号格式为语义化版本，可选括号内日期。\n2. 考虑将文件路径作为命令行参数或环境变量，增加脚本的灵活性。即使保持硬编码，也可以添加注释说明文件相对于项目根目录的位置。"",
+    ""confidence"": 0.7,
+    ""severity"": ""Low""
+  },
+  {
+    ""type"": ""Design"",
+    ""conclusion"": ""脚本用于检查并自动为最新的发布版本标题添加缺失的日期。"",
+    ""description"": ""脚本的设计是单次执行、立即退出的，这适合作为预提交钩子（pre-commit hook）。然而，它直接修改源文件，没有创建备份或提供 dry-run 选项。在预提交钩子上下文中，这可能是可接受的，因为钩子通常在提交前运行，用户可以检查更改。但作为一种通用脚本，缺乏安全措施（如备份）可能在某些场景下带来风险。"",
+    ""evidence"": ""        with open(RELEASE_NOTES_FILE, \""w\"") as f:\n            f.writelines(lines)"",
+    ""advice"": ""根据项目背景，此脚本是作为预提交钩子使用的，因此直接修改文件可能是设计意图。不过，可以考虑添加一个 `--dry-run` 选项，仅打印将要进行的更改而不实际写入文件，这有助于调试和验证。另外，可以在写入前备份原文件（例如创建 `.bak` 副本），尽管对于预提交钩子可能不是必需的，因为版本控制系统（如 Git）会跟踪更改。"",
+    ""confidence"": 0.6,
+    ""severity"": ""Low""
+  }
+]","[{'sha': 'a394083a109deaeb12f91bab5456d4cfca6c5ed1', 'message': '🔨 Add pre-commit hook to ensure latest release header has date'}]","['Excellent, thank you! 🙌 ', '<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will **not alter performance**\n\n\n\n\n`✅ 20` untouched benchmarks  \n\n\n\n---\n\n<sub>Comparing <code>release-date-hook</code> (a394083) with <code>master</code> (1f442c4)</sub>\n\n<a href=""https://codspeed.io/fastapi/fastapi/branches/release-date-hook?utm_source=github&utm_medium=comment-v2&utm_content=button"">\n  <picture>\n    <source media=""(prefers-color-scheme: dark)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-dark.svg"">\n    <source media=""(prefers-color-scheme: light)"" srcset=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"">\n    <img alt=""Open in CodSpeed"" src=""https://codspeed.io/pr-report/open-in-codspeed-light.svg"" width=""169"" height=""32"">\n  </picture>\n</a>\n\n']",2026-04-04 16:33:01

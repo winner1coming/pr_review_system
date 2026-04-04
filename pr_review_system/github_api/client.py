@@ -78,3 +78,46 @@ class GitHubClient:
             return []
 
         return r.json()
+    
+    def get_repo_tree(self, owner, repo):
+        """
+        获取仓库完整目录树（递归）
+        返回：包含文件路径的列表
+        """
+        import requests
+
+        # ---------- Step 1: 获取默认分支 ----------
+        url_repo = f"https://api.github.com/repos/{owner}/{repo}"
+        r_repo = requests.get(url_repo)
+        if r_repo.status_code != 200:
+            raise ValueError(f"Failed to get repo info: {r_repo.status_code} {r_repo.text}")
+        repo_info = r_repo.json()
+        default_branch = repo_info.get("default_branch")
+        if not default_branch:
+            raise ValueError(f"Cannot determine default branch for {owner}/{repo}")
+
+        # ---------- Step 2: 获取树 ----------
+        url_tree = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
+        r_tree = requests.get(url_tree)
+        if r_tree.status_code != 200:
+            raise ValueError(f"Failed to get repo tree: {r_tree.status_code} {r_tree.text}")
+        
+        data = r_tree.json()
+
+        # ---------- Step 3: 检查返回结构 ----------
+        if "tree" not in data:
+            raise ValueError(f"No 'tree' in response: {data}")
+
+        # ---------- Step 4: 返回文件路径列表 ----------
+        paths = [item["path"] for item in data["tree"]]
+        return paths
+    
+    def fetch_file_content(self,owner, repo, path):
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+        r = requests.get(url)
+
+        if r.status_code != 200:
+            return ""
+
+        import base64
+        return base64.b64decode(r.json()["content"]).decode("utf-8", errors="ignore")

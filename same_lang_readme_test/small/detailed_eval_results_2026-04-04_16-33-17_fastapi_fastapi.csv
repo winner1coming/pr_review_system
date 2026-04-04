@@ -1,0 +1,5 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+fastapi/fastapi,15295,baseline,0.1,人类Review仅包含自动化性能报告和文档预览链接，未提出任何代码相关问题。AI Review提出了三个合理的代码问题（设计缺陷、可读性、功能正确性），具有较高价值。因此，基于评估原则，忽略非代码review，主要依据issue_relevance和advice_quality评分。,[],[],2026-04-04 16:31:40
+fastapi/fastapi,15295,with_readme,0.1,人类Review仅包含自动化性能报告和文档预览链接，未提出任何代码相关问题。AI Review提出了多个合理的代码问题（Bug、设计、可读性、安全），但与人类Review的语义覆盖度极低。评分主要基于AI Review自身的问题相关性（较高）和建议质量（较高），但由于人类Review无代码问题，semantic_coverage和review_dimension_match维度得分极低。,[],[],2026-04-04 16:32:09
+fastapi/fastapi,15293,baseline,0.1,人类Review不包含任何代码问题，仅为感谢和自动化性能报告。AI Review提出了多个合理的代码问题（逻辑缺陷、文件写入安全性、退出码设计），因此issue_relevance和advice_quality较高。但由于没有可覆盖的代码问题，semantic_coverage和review_dimension_match极低。,[],[],2026-04-04 16:32:36
+fastapi/fastapi,15293,with_readme,0.1,人类Review仅包含非代码信息（感谢语和自动化性能报告），未提出任何具体的代码问题。AI Review提出了多个合理的代码问题（如逻辑结构、错误处理、可读性、设计），因此issue_relevance和advice_quality维度得分较高。但由于人类Review无代码问题可覆盖，semantic_coverage维度得分极低，review_dimension_match维度也因关注点不同而得分低。,[],[],2026-04-04 16:33:01
