@@ -41,7 +41,7 @@ class Reviewer:
             
             diff = extract_diff(files)
             commits = self.github.get_pr_commits(owner, repo, pr_number)
-            commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits[-5:]]
+            commit_info = [{"sha": c["sha"], "message": c["commit"]["message"]} for c in commits]
 
 
             startTime = time.time()

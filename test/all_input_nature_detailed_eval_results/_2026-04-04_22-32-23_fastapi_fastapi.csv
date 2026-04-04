@@ -1,0 +1,9 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+fastapi/fastapi,15295,with_readme,0.1,人类Review仅包含自动化性能报告和文档预览链接，未提出任何具体的代码问题。AI Review提出了多个合理的代码问题（如错误处理、API设计、可读性、示例安全性），但与人类Review的语义无关。根据评估原则，当人类Review无代码问题时，应主要评估AI Review自身的问题相关性，但基础评分因语义覆盖极低而受限。,[],[],2026-04-04 22:29:54
+fastapi/fastapi,15293,with_readme,0.1,人类Review仅包含非代码内容（感谢语和自动化性能报告），未提出任何代码相关问题。AI Review提出了多个合理的代码问题（Bug、Readability、Design），具有较高价值。因此，语义覆盖维度权重降低，主要基于AI自身提出的问题质量评分。,[],[],2026-04-04 22:30:12
+fastapi/fastapi,15281,with_readme,0.1,人类Review主要包含自动化性能报告（非代码问题）和PR流程评论（关闭建议），无核心代码问题。AI Review提出了合理的代码可读性改进问题，但与人类Review的语义关联极弱。,[],[],2026-04-04 22:30:24
+fastapi/fastapi,15280,with_readme,0.1,人类Review的核心内容是关于性能报告（无变化）、文档预览链接和一个关于愚人节玩笑的评论，不包含实质性的代码问题。AI Review则专注于分析代码设计、可读性和测试的正确性，提出了合理的代码问题。由于人类Review在代码问题层面几乎没有提供可覆盖的内容，因此语义覆盖分极低。评分主要基于AI Review自身提出的问题的相关性和质量。,[],[],2026-04-04 22:30:46
+fastapi/fastapi,15273,with_readme,0.1,人类Review主要包含自动化性能报告（非代码问题）和PR流程评论（重复PR），未提出任何具体的代码问题。AI Review提出了关于路径前缀处理、设计改进和测试可读性的合理代码问题，与人类Review的语义覆盖度极低。评分主要基于AI Review自身的问题相关性（合理）和建议质量（合理）。,[],[],2026-04-04 22:31:04
+fastapi/fastapi,15272,with_readme,0.1,人类Review的核心代码问题是关于operation ID的唯一性（两个路径操作会生成相同的ID），而AI Review关注的是生成ID的确定性（同一路由内多个方法的选择顺序）。两者关注的根本问题不同。AI提出的问题是合理的，但与人类指出的核心问题（ID冲突）语义不匹配。人类Review中的其他内容（CI标签、性能报告、流程提醒）属于非代码信息，已忽略。,[],['修复方法错误，会导致不同路径操作生成相同的operation ID，而operation ID必须是唯一的'],2026-04-04 22:31:19
+fastapi/fastapi,15271,with_readme,0.15,AI Review 专注于代码中一个具体的 Bug 修复（operation_id 生成的确定性），而人类 Review 的核心是关于文档更新的讨论和 PR 流程管理，几乎没有涉及具体的代码问题。AI 提出的 Bug 是合理的，但与人类 Review 的语义覆盖极低。,[],"['文档更新说明（澄清 operation_id 在多方法路由中的限制）', 'PR 流程评论（关闭 PR 的决定）']",2026-04-04 22:31:31
+fastapi/fastapi,15269,with_readme,0.85,AI Review 的核心 Bug 描述与人类 Review 中关于 FastAPI 错误预填充默认值导致 `model_fields_set` 问题的根本原因高度一致，语义覆盖良好。人类 Review 中的其他内容（如性能报告、测试修复说明）属于非代码问题，已忽略。AI 还提出了可读性和测试设计等合理且有价值的额外维度。,"['修复了模型参数默认值处理逻辑，确保缺失字段不被标记为已设置（model_fields_set 问题）', '新增了测试用例验证修复效果']",[],2026-04-04 22:31:52

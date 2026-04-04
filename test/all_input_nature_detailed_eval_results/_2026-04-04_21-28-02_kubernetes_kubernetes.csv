@@ -1,0 +1,9 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+kubernetes/kubernetes,138210,with_readme,0.1,人类Review内容几乎全部是关于PR流程、标签、测试结果和权限的非代码问题，没有提出任何具体的代码问题。AI Review专注于代码重命名的一致性和潜在错误，提出了一个合理的代码问题。由于两者在代码问题层面几乎没有交集，语义覆盖极低，但AI提出的问题本身是相关且合理的。,[],[],2026-04-04 21:25:36
+kubernetes/kubernetes,138209,with_readme,0.1,人类Review内容完全是PR流程和自动化通知，不包含任何代码层面的问题。AI Review提出了两个合理的代码问题（Bug和Readability），因此issue_relevance和advice_quality较高。但由于没有可覆盖的代码问题，semantic_coverage和review_dimension_match极低。,[],[],2026-04-04 21:25:59
+kubernetes/kubernetes,138205,with_readme,0.1,人类Review内容全部为PR流程、标签、测试结果等非代码问题，AI Review未覆盖任何代码问题。AI Review本身提出的‘验证生成器的更新和重构’问题合理，但与人类Review完全无关。根据评估原则，在代码问题层面两者完全无关。,[],[],2026-04-04 21:26:08
+kubernetes/kubernetes,138203,with_readme,0.1,人类Review内容完全是PR审批流程和自动化通知，不包含任何代码层面的问题。AI Review提出了一个关于JSON标签冗余的合理设计问题，但两者在代码审查的语义上完全无关。,[],[],2026-04-04 21:26:19
+kubernetes/kubernetes,138202,with_readme,0.1,人类Review内容均为非代码问题（如CLA、欢迎信息、PR流程、API审查提醒），未提出任何具体的代码问题。AI Review针对代码变更进行了分析，提出了合理的代码问题（验证逻辑），但两者在语义上完全无关。根据评估原则，忽略非代码信息后，AI与人类Review在代码问题层面无关联。,[],[],2026-04-04 21:26:27
+kubernetes/kubernetes,138200,with_readme,0.1,人类Review几乎全部是关于PR流程、标签、提交信息格式和CI测试的自动化评论，不包含任何具体的代码问题。AI Review提出了一个关于测试配置泄漏的合理Bug，但该问题在人类Review中未被提及。根据评估原则，应忽略非代码信息，因此AI与人类Review在代码问题层面几乎无关。,[],[],2026-04-04 21:26:39
+kubernetes/kubernetes,138199,with_readme,0.15,人类Review的核心代码问题是关于`dependencies.yaml`文件格式一致性的设计讨论（是否保留`dependents`后缀，以及如何避免版本漂移）。AI Review仅识别了版本更新的表面事实，完全未触及这一核心设计问题。AI提出的问题（版本更新）虽然合理，但与人类讨论的深度和维度不匹配。评分主要基于issue_relevance和advice_quality，因为semantic_coverage几乎为零。,['识别了代码将Pause镜像版本从3.10.1更新至3.10.2'],['未覆盖关于`dependencies.yaml`文件格式一致性的核心设计讨论（如`dependents`后缀的作用、版本漂移风险、源与依赖项的表示方式）'],2026-04-04 21:26:47
+kubernetes/kubernetes,138198,with_readme,0.1,人类Review内容均为PR流程、欢迎信息和自动化状态，不包含任何具体的代码问题。AI Review提出了多个合理的代码问题（Bug、Readability、Design），但与人类Review在代码层面无关联。根据评估原则，忽略非代码信息，主要依据AI自身问题的合理性评分。,[],[],2026-04-04 21:27:34

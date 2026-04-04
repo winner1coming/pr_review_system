@@ -1,0 +1,2 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+rust-lang/rust,with_readme,0.1688,0.125,8

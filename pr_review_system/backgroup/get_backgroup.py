@@ -8,18 +8,25 @@ from pr_review_system.backgroup.get_code_sample import build_code_samples
 from pr_review_system.prompt.system_prompt import *
 from pr_review_system.prompt.user_prompt import *
 import time
+time.sleep(1)
 
 class BackGround:
     def __init__ (self):
         self.llm = LLMClient()
         self.github = GitHubClient()
         self.prompt_builder = PromptBuilder()
+        self.cache = {}
 
 
     def get_background(self, owner, repo):
         # ========== Step 1: 数据准备 ==========
+        key = f"{owner}/{repo}"
+        if key in self.cache:
+            print("使用缓存的背景信息")
+            return self.cache[key]
         readme = self.github.get_readme(owner, repo)
         repo_tree = self.github.get_repo_tree(owner, repo)
+        self.cache[key] = repo_tree  # 缓存结果
 
         # 构造上下文（非LLM）
         dependency_context = build_dependency_context(owner, repo, repo_tree)

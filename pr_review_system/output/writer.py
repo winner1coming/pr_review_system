@@ -11,7 +11,7 @@ def save_results(results):
     keys = results[0].keys()
     repo_name = results[0].get("repo", "unknown_repo/unknown_repo")
     owner, repo = repo_name.split("/")
-    OUTPUT_DIR = os.path.join(BASE_DIR, "test","all_input_json_results")
+    OUTPUT_DIR = os.path.join(BASE_DIR, "test","all_input_nature_results")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     file_path = os.path.join(OUTPUT_DIR, f"{timestamp}_{owner}_{repo}.csv")
 
@@ -30,7 +30,7 @@ def save_eval_results(eval_results, filename_front):
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     repo = eval_results[0].get("repo", "unknown_repo/unknown_repo")
     owner, repo = repo.split("/")
-    OUTPUT_DIR = os.path.join(BASE_DIR, "test",f"all_input_json_{filename_front}")
+    OUTPUT_DIR = os.path.join(BASE_DIR, "test",f"all_input_nature_{filename_front}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     file_path = os.path.join(OUTPUT_DIR, f"_{timestamp}_{owner}_{repo}.csv")
     with open(file_path, "w", newline="", encoding="utf-8") as f:
@@ -45,7 +45,7 @@ def save_eval_results(eval_results, filename_front):
 
 
 def write_summary_to_csv(file_path, summary_dict):
-    OUTPUT_DIR = os.path.join(BASE_DIR, "test","all_input_json_summary")
+    OUTPUT_DIR = os.path.join(BASE_DIR, "test","all_input_nature_summary")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     file_path = os.path.join(OUTPUT_DIR, file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

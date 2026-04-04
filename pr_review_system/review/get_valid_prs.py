@@ -1,26 +1,16 @@
+import time
+
 import requests
 from pr_review_system.review.valid import is_valid_pr
 from pr_review_system.github_api.pr_service import filter_files
 
 def get_valid_prs(github_client, owner, repo, max_prs=10):
+    time.sleep(1)  # 避免过快请求导致速率限制
     valid_prs = []
     page = 1
 
     while len(valid_prs) < max_prs:
-        url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
-        params = {
-            "state": "all",
-            "per_page": 100,
-            "page": page
-        }
-
-        r = requests.get(url, headers=github_client.headers, params=params)
-
-        if r.status_code != 200:
-            print("GitHub API error:", r.text)
-            break
-
-        prs = r.json()
+        prs = github_client.get_prs(owner, repo, page)
         if not prs:
             break
 
