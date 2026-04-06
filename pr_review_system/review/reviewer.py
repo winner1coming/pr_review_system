@@ -34,8 +34,26 @@ class Reviewer:
             return json.loads(text)
         except:
             return []
+        
+    def parse_summary_json(self, text):
+        if not text or not isinstance(text, str):
+            return {}
 
-    def run_parallel_reviews(self, diff, commit_info, background):
+        try:
+            text = text.strip().replace("```json", "").replace("```", "")
+            data = json.loads(text)
+
+            if isinstance(data, dict):
+                return data
+            else:
+                print("⚠️ summary 解析结果不是 dict")
+                return {}
+
+        except Exception as e:
+            print("❌ summary JSON 解析失败:", e)
+            return {}
+
+    def run_parallel_reviews(self, diff, commit_info, code_summary,readme_summary, architecture_summary, dependency_summary):
 
         with ThreadPoolExecutor(max_workers=4) as executor:
 
@@ -45,7 +63,7 @@ class Reviewer:
                         {
                             "system": build_style_review_system_prompt(),
                             "user": build_style_review_user_prompt(
-                                format_code_style_summary(self.safe_json_parse(background.get("code_summary", ""))),
+                                code_summary,
                                 diff,
                                 commit_info
                             )
@@ -57,7 +75,7 @@ class Reviewer:
                         {
                             "system": build_correctness_review_system_prompt(),
                             "user": build_correctness_review_user_prompt(
-                                format_readme_summary(self.safe_json_parse(background.get("readme_summary", ""))),
+                                readme_summary,
                                 diff,
                                 commit_info
                             )
@@ -69,7 +87,7 @@ class Reviewer:
                         {
                             "system": build_architecture_review_system_prompt(),
                             "user": build_architecture_review_user_prompt(
-                                format_architecture_summary(self.safe_json_parse(background.get("tree_summary", ""))),
+                                architecture_summary,
                                 diff,
                                 commit_info
                             )
@@ -81,7 +99,7 @@ class Reviewer:
                         {
                             "system": build_tech_review_system_prompt(),
                             "user": build_tech_review_user_prompt(
-                                format_dependency_summary(self.safe_json_parse(background.get("dependency_summary", ""))),
+                                dependency_summary,
                                 diff,
                                 commit_info
                             )
@@ -106,6 +124,10 @@ class Reviewer:
         time.sleep(0.5)
         prs = get_valid_prs(self.github ,owner, repo, MAX_PRS)
         background = self.background.get_background(owner, repo)
+        code_summary = format_code_style_summary(self.parse_summary_json(background.get("code_summary", "")))
+        readme_summary = format_readme_summary(self.parse_summary_json(background.get("readme_summary", "")))
+        architecture_summary = format_architecture_summary(self.parse_summary_json(background.get("tree_summary", "")))
+        dependency_summary = format_dependency_summary(self.parse_summary_json(background.get("dependency_summary", "")))
 
         results = []
 
@@ -125,8 +147,7 @@ class Reviewer:
             startTime = time.time()
             #prompt = self.prompt_builder.build("with_readme", diff, commit_info, background)
             #review = self.llm.review(prompt)
-            parallel_reviews = self.run_parallel_reviews(diff, commit_info, background)
-            print(f"并行审查结果: {parallel_reviews}, 结果类型: {type(parallel_reviews)}")
+            parallel_reviews = self.run_parallel_reviews(diff, commit_info, code_summary, readme_summary, architecture_summary, dependency_summary)
             metrics, score = aggregate_all(parallel_reviews)
 
             duration = round(time.time() - startTime, 2)
@@ -142,8 +163,6 @@ class Reviewer:
                 "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                 "duration": duration
             })
-            print(f"commit:\n{commit_info}")
-            print(f"审查耗时: {duration} 秒")
             time.sleep(1)
         evaluator = EvalutionBase()
         evaluator.evaluate(results)

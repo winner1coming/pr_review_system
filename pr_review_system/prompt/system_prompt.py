@@ -267,6 +267,17 @@ def build_repo_tree_system_prompt():
 4. architecture_pattern：
    - 架构模式（如 MVC、分层架构、微服务等）
 
+输出示例】
+{
+  "code_modules": ["api", "service", "controller", "model"],
+  "module_hierarchy": "src -> controller -> service -> model",
+  "module_responsibilities": {
+    "controller": "处理请求",
+    "service": "业务逻辑"
+  },
+  "architecture_pattern": "分层架构"
+}
+
 【要求】
 - 不要逐行复述目录
 - 必须进行抽象总结

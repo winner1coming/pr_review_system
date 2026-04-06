@@ -1,0 +1,9 @@
+repo,pr,score,reason,covered_aspects,missing_aspects,time
+pytorch/pytorch,179438,0.1,人类Review仅包含CI失败信息和标签提醒，未提出任何代码相关问题。AI Review详细分析了代码变更，提出了关于Bug修复、设计改进和代码风格的问题和建议，这些是合理且有价值的。因此，评分主要基于AI Review自身的问题相关性（issue_relevance）和建议质量（advice_quality），语义覆盖（semantic_coverage）因无代码问题可覆盖而影响极低。,[],[],2026-04-06 10:26:03
+pytorch/pytorch,179437,0.1,人类Review仅包含CI报告、标签提醒和CLA签署提醒，不包含任何代码问题。AI Review提出了关于代码风格、潜在Bug和设计的合理问题，但无法与人类Review的语义进行覆盖比较。评分主要基于AI Review自身的问题相关性。,[],[],2026-04-06 10:26:18
+pytorch/pytorch,179436,0.1,人类Review仅包含CI自动化报告（lint失败），未提出任何代码问题。AI Review提出了合理的代码风格改进建议（使用C++20 contains方法），但与人类Review的语义无关。根据评估原则，忽略非代码review，主要依据issue_relevance评分。,[],[],2026-04-06 10:26:30
+pytorch/pytorch,179435,0.1,人类Review仅包含CI失败报告和PR标签流程评论，未提出任何代码相关问题。AI Review提出了多个合理的代码问题（如Bug、设计、可读性），但因其与人类Review的代码问题语义覆盖无关，故base_score主要由issue_relevance和advice_quality决定。忽略非代码review内容。,[],[],2026-04-06 10:26:49
+pytorch/pytorch,179434,0.1,人类Review仅包含CI状态和自动化报告等非代码信息，未提出任何代码相关问题。AI Review提出了关于数据类型存在性、测试验证等合理的代码问题。根据评估原则，忽略非代码review，主要依据AI提出的问题合理性评分。,[],[],2026-04-06 10:27:05
+pytorch/pytorch,179432,0.15,人类Review仅包含CI状态和标签流程信息，无任何代码相关问题。AI Review提出了多个合理的代码问题（如风格、可读性、潜在Bug、设计），但均与人类Review无关。根据评估原则，忽略非代码review，主要依据issue_relevance评分。,[],[],2026-04-06 10:27:26
+pytorch/pytorch,179431,0.15,人类Review仅包含CI状态和PR标签流程信息，未提出任何代码相关问题。AI Review提出了多个关于代码设计、潜在Bug和测试移除的合理问题。由于没有可覆盖的代码问题，semantic_coverage权重降低，评分主要基于AI自身提出的问题质量（issue_relevance）。,[],[],2026-04-06 10:27:47
+pytorch/pytorch,179429,0.1,人类Review仅包含CI状态、标签提醒和导入通知，未提出任何代码相关问题。AI Review详细分析了代码变更，提出了关于性能、设计、可读性等方面的合理问题。根据评估原则，忽略非代码review，主要依据AI提出的问题是否合理进行评分。,[],[],2026-04-06 10:28:20

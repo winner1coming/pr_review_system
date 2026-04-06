@@ -89,7 +89,7 @@ def format_readme_summary(data):
 典型应用场景包括：{scenarios_str}。"""
 
 def format_architecture_summary(data):
-
+    print(f"格式化架构摘要：{data}, type: {type(data)}")
     modules = data.get("core_modules", [])
     hierarchy = data.get("module_hierarchy", "未知")
     responsibilities = data.get("module_responsibilities", {})
