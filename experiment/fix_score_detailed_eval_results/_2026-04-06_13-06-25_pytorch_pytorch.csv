@@ -1,0 +1,9 @@
+repo,pr,score,reason,covered_aspects,missing_aspects,time
+pytorch/pytorch,179441,0.1,人类Review仅包含CI状态和标签流程信息，未提出任何代码相关问题。AI Review提出了多个合理的代码风格、可读性和设计问题，但与人类Review在代码层面无关联。,[],[],2026-04-06 13:03:51
+pytorch/pytorch,179440,0.1,人类Review的核心是警告不应修改C稳定API文件（c_shim_*.h），这是一个关键的代码设计/兼容性问题。AI Review完全未提及此问题，而是专注于代码风格、测试用例细节和设计意图描述。AI提出的问题（如参数顺序、维度匹配）虽然合理，但与人类Review的核心语义无关。因此，语义覆盖和维度一致性得分极低。,[],"['不应修改定义稳定C ABI的C头文件（c_shim_cpu.h, c_shim_cuda.h, c_shim_mps.h），如需更改函数签名，应引入新版本。']",2026-04-06 13:04:10
+pytorch/pytorch,179438,0.1,人类Review仅包含CI失败信息和PR标签要求，未提出任何代码相关问题。AI Review详细分析了代码风格、Bug修复和设计问题，提出了合理且有价值的代码建议。由于核心评估依据（代码问题）在人类Review中缺失，AI Review的语义覆盖无法评估，但AI提出的问题本身具有高相关性。评分主要基于issue_relevance和advice_quality。,[],[],2026-04-06 13:04:33
+pytorch/pytorch,179437,0.1,人类Review仅包含CI链接、标签提醒和CLA签署状态等非代码问题，未提出任何代码层面的问题。AI Review提出了关于FP8数据类型映射的代码风格、潜在Bug和设计改进等合理且有价值的代码问题。根据评估原则，当人类Review无代码问题时，应主要评估AI Review自身的问题相关性，并降低语义覆盖维度的影响。AI Review的问题相关性高，因此给予基础分。,[],[],2026-04-06 13:04:47
+pytorch/pytorch,179436,0.1,人类Review仅包含CI失败信息（Lint错误），未提出任何代码问题。AI Review提出了合理的代码风格改进建议，但与人类Review的语义无关。根据评估原则，忽略非代码信息后，两者在代码问题层面无关联。,[],[],2026-04-06 13:05:00
+pytorch/pytorch,179435,0.1,人类Review仅包含CI失败报告和PR标签流程评论，未提出任何具体的代码问题。AI Review提出了多个关于代码风格、可读性、潜在Bug和设计的合理问题，但均与人类Review内容无关。根据评估原则，忽略非代码信息，AI Review在语义覆盖上得分为0，但因其提出的问题本身合理，故给予基础分。,[],[],2026-04-06 13:05:16
+pytorch/pytorch,179434,0.1,人类Review仅包含CI流程和自动化报告，未提出任何代码相关问题。AI Review提出了关于测试命名、代码风格、功能实现和架构设计的合理问题，与人类Review在代码层面无交集。根据评估原则，忽略非代码review，主要依据AI自身提出的问题质量评分。,[],[],2026-04-06 13:05:29
+pytorch/pytorch,179432,0.1,人类Review仅包含CI状态和PR标签流程信息，未提出任何代码相关问题。AI Review提出了多个合理的代码问题（如命名规范、注释一致性、潜在Bug、设计合理性），但与人类Review在代码问题层面无关联。评分主要基于issue_relevance和advice_quality，忽略semantic_coverage的影响。,[],[],2026-04-06 13:05:56
