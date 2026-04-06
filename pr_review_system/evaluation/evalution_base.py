@@ -29,7 +29,7 @@ class EvalutionBase:
             advice = r.get("advice", "")
             conclution = r.get("conclusion", "")
 
-            text = f"{i+1}.概括：{conclution} 类型：{type} 问题：{desc} 建议：{advice}"
+            text = f"{i+1}.概括：{conclution} 问题类型：{type} 问题描述：{desc} 建议：{advice}"
             texts.append(text)
 
         return "\n".join(texts)
@@ -57,11 +57,10 @@ class EvalutionBase:
 
     def evaluate(self, results, threshold=0.6):
         eval_results= []
-        startegy_stats = {}
 
         for item in results:
             people_review = item["review_comments"]
-            llm_review = item["review"]
+            llm_review = item["parallel_reviews"]
 
             score_result = self.compute_match_score(people_review, llm_review)
             result_json = {}
@@ -77,37 +76,24 @@ class EvalutionBase:
             eval_results.append({
                 "repo": item["repo"],
                 "pr": item["pr"],
-                "strategy": item["strategy"],
                 "score": score,  
                 "reason": result_json.get("reason", ""),
                 "covered_aspects": result_json.get("covered_aspects", []),
                 "missing_aspects": result_json.get("missing_aspects", []),
                 "time": item["time"]
             })
-
-            startegy = item["strategy"]
-            if startegy not in startegy_stats:
-                startegy_stats[startegy] = {
-                    "scores": []
-                }
-            
-            if score is not None:
-                startegy_stats[startegy]["scores"].append(score)
         
         summary = []
-        for strategy, data in startegy_stats.items():
-            scores = data["scores"]
-            if not scores:
-                continue
-            avg_score = sum(scores) / len(scores) if scores else 0
-            ratio = sum(1 for s in scores if s >= threshold) / len(scores)
+        
+        scores = [item["score"] for item in eval_results if item["score"] is not None]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        ratio = sum(1 for s in scores if s >= threshold) / len(scores)
 
-            summary.append({
-                "repo": results[0]["repo"] if results else "",
-                "strategy": strategy,
-                "avg_score": round(avg_score, 4),
-                "high_quality_ratio": round(ratio, 4),
-                "num_samples": len(scores)
-            })
+        summary.append({
+            "repo": results[0]["repo"] if results else "",
+            "avg_score": round(avg_score, 4),
+            "high_quality_ratio": round(ratio, 4),
+            "num_samples": len(scores)
+        })
         save_eval_results(eval_results, filename_front="detailed_eval_results")
         save_eval_results(summary, filename_front="summary_eval_results")

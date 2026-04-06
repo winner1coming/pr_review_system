@@ -1,0 +1,9 @@
+repo,pr,score,reason,covered_aspects,missing_aspects,time
+fastapi/fastapi,15300,0.65,AI Review 内容为空，无法覆盖人类 Review 中的任何代码问题。人类 Review 包含对代码设计、安全性和测试的观察，但 AI 未提供任何实质性内容。评分主要基于 issue_relevance 和 advice_quality 为0，semantic_coverage 和 review_dimension_match 也为0。,[],"['代码安全性（eval使用）的注释建议', '测试覆盖范围建议（如嵌套forward refs）', '对代码设计（_ForwardRefNamespace）的评价', '与其他PR方法的比较分析']",2026-04-06 00:33:35
+fastapi/fastapi,15295,0.0,AI Review 输出为无法解析的 Python 对象列表，未提供任何可评估的代码审查内容。因此，在代码问题层面，AI Review 与人类 Review 完全无关。已忽略人类 Review 中的非代码部分（性能报告、文档预览）。,[],"['JSON错误响应格式问题', '性能开销与文档建议', '测试覆盖评价', '命名与API设计评价']",2026-04-06 00:33:56
+fastapi/fastapi,15293,0.0,人类Review仅包含非代码内容（感谢语和自动化性能报告），无任何代码相关问题。AI Review输出为无法解析的对象列表，未提供任何可评估的代码审查内容。因此，在代码问题层面，两者完全无关。,[],[],2026-04-06 00:34:24
+fastapi/fastapi,15281,0.0,人类Review仅包含自动化性能报告和PR流程评论，无代码相关问题。AI Review输出为调试对象列表，未提供任何可评估的代码审查内容。因此，在代码问题层面，两者完全无关。,[],[],2026-04-06 00:34:37
+fastapi/fastapi,15280,0.1,人类Review主要包含自动化性能报告、文档预览链接和一句玩笑评论，未提出任何具体的代码问题。AI Review输出为内部对象列表，未提供任何可评估的代码审查内容。因此，在代码问题层面，两者完全无关。,[],[],2026-04-06 00:34:55
+fastapi/fastapi,15273,0.0,人类Review仅包含自动化性能报告和PR流程评论（重复PR），不包含任何代码相关问题。AI Review输出为对象列表，未提供具体代码审查内容。因此，在代码问题层面，AI未覆盖任何人类提出的核心代码问题（因为人类未提出），但AI也未提出任何可评估的合理代码问题。,[],[],2026-04-06 00:35:10
+fastapi/fastapi,15272,0.0,人类Review的核心代码问题是‘operation IDs重复’，但AI Review输出为无法解析的对象列表，未提供任何可评估的代码审查内容。因此，AI Review在语义覆盖、维度一致性、问题相关性和建议质量上均无贡献。,[],['operation IDs重复问题'],2026-04-06 00:35:21
+fastapi/fastapi,15271,0.0,AI生成的Review内容无法解析，仅显示为Python对象列表，未提供任何可评估的代码审查意见。人类Review中涉及代码问题（operation_id冲突的解决方案）和非代码信息（文档预览、性能报告、PR流程）。由于AI Review内容缺失，无法评估其覆盖情况。,[],['operation_id冲突的解决方案（使用单独的路径操作装饰器而非显式设置operation_id）'],2026-04-06 00:35:35

@@ -1,0 +1,2 @@
+repo,pr,score,reason,covered_aspects,missing_aspects,time
+fastapi/fastapi,15300,0.0,AI Review 与 Human Review 在代码问题上完全无关。Human Review 主要讨论的是类型注解解析、ForwardRef 处理、测试覆盖和代码设计，而 AI Review 提出了 SQL 注入、N+1 查询和魔法数字等完全不相关的问题。已忽略 Human Review 中的非代码评论（如性能报告、PR流程讨论）。,[],"['_ForwardRefNamespace 设计的安全性说明（eval）', '测试覆盖建议（如嵌套 forward refs）', 'Deprecation cleanup 的认可', '与其他 PR 方法对比的设计讨论（如保留 Annotated 结构、延迟解析）']",2026-04-06 02:47:21

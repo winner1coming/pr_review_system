@@ -1,0 +1,2 @@
+repo,pr,score,reason,covered_aspects,missing_aspects,time
+fastapi/fastapi,15300,0.85,AI review 覆盖了人类 review 中关于代码设计、安全性和测试的核心问题，并提出了合理的补充建议。忽略了非代码的 CI 性能报告和 PR 流程讨论。,"['代码设计优雅性（_ForwardRefNamespace）', 'eval 安全性问题', '测试覆盖范围（建议增加嵌套 forward refs 测试）', '清理已弃用代码（evaluate_forwardref）']",['与其他 PR 方案的详细比较分析'],2026-04-06 00:22:38

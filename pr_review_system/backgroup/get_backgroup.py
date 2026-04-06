@@ -69,16 +69,68 @@ class BackGround:
             for key, future in futures.items():
                 results[key] = future.result()
 
-        '''summary_for_csv ={
-            "readme":(readme, results.get("readme_summary", "")),
-            "repo_tree":("\n".join(repo_tree), results.get("tree_summary", "")),
-            "dependency":(str(dependency_context), results.get("dependency_summary", "")),
-            "code_sample":(str(code_sample_context), results.get("code_summary", ""))
-        }'''
-        #timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-        #write_summary_to_csv(f"{owner}_{repo}_first_test_backgroup_{timestamp}", summary_for_csv)
         # ========== Step 3: 汇总 ==========
         return {
             **results
         }
+    
+def format_readme_summary(data):
+
+    summary = data.get("project_summary", "未知")
+    domain = data.get("application_domain", "未知")
+    features = data.get("key_features", [])
+    scenarios = data.get("usage_scenarios", [])
+
+    features_str = "、".join(features) if features else "未知"
+    scenarios_str = "、".join(scenarios) if scenarios else "未知"
+
+    return f"""该项目主要用于{summary}，属于{domain}领域。
+其核心功能包括：{features_str}。
+典型应用场景包括：{scenarios_str}。"""
+
+def format_architecture_summary(data):
+
+    modules = data.get("core_modules", [])
+    hierarchy = data.get("module_hierarchy", "未知")
+    responsibilities = data.get("module_responsibilities", {})
+    pattern = data.get("architecture_pattern", "未知")
+
+    modules_str = "、".join(modules) if modules else "未知"
+
+    resp_str = "；".join(
+        [f"{k}负责{v}" for k, v in responsibilities.items()]
+    ) if responsibilities else "未知"
+
+    return f"""该项目采用{pattern}架构，核心模块包括{modules_str}。
+模块层级结构为：{hierarchy}。
+各模块职责如下：{resp_str}。"""
+
+def format_dependency_summary(data):
+    langs = data.get("programming_languages", [])
+    frameworks = data.get("frameworks", [])
+    infra = data.get("infrastructure_components", [])
+    arch_type = data.get("architecture_type", "未知")
+
+    langs_str = "、".join(langs) if langs else "未知"
+    fw_str = "、".join(frameworks) if frameworks else "未知"
+    infra_str = "、".join(infra) if infra else "未知"
+
+    return f"""该项目主要使用{langs_str}开发，基于{fw_str}等框架。
+系统依赖的基础组件包括：{infra_str}。
+整体系统类型为{arch_type}。"""
+
+def format_code_style_summary(data):
+    naming = data.get("naming_convention", "未知")
+    comment = data.get("comment_style", "未知")
+    structure = data.get("code_structure", "未知")
+    error = data.get("error_handling", "未知")
+    quality = data.get("code_quality_characteristics", [])
+
+    quality_str = "、".join(quality) if quality else "未知"
+
+    return f"""该项目代码主要采用{naming}命名规范。
+注释风格为：{comment}。
+代码结构方面：{structure}。
+错误处理方式为：{error}。
+整体代码质量特征包括：{quality_str}。"""
 
