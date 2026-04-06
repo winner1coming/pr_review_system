@@ -1,0 +1,2 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+fastapi/fastapi,with_readme,0.15,0.0,8

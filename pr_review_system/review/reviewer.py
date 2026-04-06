@@ -2,6 +2,7 @@ import json
 
 from pr_review_system.github_api.client import GitHubClient
 from pr_review_system.github_api.pr_service import filter_files
+from pr_review_system.review.aggregator import aggregate_all
 from pr_review_system.utils.diff_utils import extract_diff
 from pr_review_system.prompt.builder import PromptBuilder
 from pr_review_system.llm.client import LLMClient
@@ -21,6 +22,13 @@ class Reviewer:
         self.prompt_builder = PromptBuilder()
         self.llm = LLMClient()
         self.background = BackGround()
+
+    def safe_json_parse(self, text):
+        try:
+            text = text.strip().replace("```json", "").replace("```", "")
+            return json.loads(text)
+        except:
+            return []
 
     def run(self, repo_name):
         owner, repo = repo_name.split("/")
@@ -47,10 +55,15 @@ class Reviewer:
             startTime = time.time()
             prompt = self.prompt_builder.build("with_readme", diff, commit_info, background)
             review = self.llm.review(prompt)
+            review = self.safe_json_parse(review)
+            metrics, score = aggregate_all(review)
+
             results.append({
                 "repo": repo_name,
                 "pr": pr_number,
                 "strategy": "with_readme",
+                "score": score,
+                "metrics": metrics,
                 "review": review,
                 "commits": commit_info,
                 "review_comments": review_comments,
