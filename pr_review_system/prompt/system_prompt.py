@@ -111,9 +111,14 @@ def build_context_system_prompt():
     "evidence": "引用相关代码片段",
     "advice": "给出优化建议（如有必要可参考背景）",
     "confidence": 0~1,
+    "relevance": 0~1,
     "severity": "Low | Medium | High"
   }
 ]
+
+【字段说明】
+- confidence：你对该问题“真实存在”的置信度（基于代码+上下文）
+- relevance：该问题与“项目背景信息”的相关程度（是否利用了提供的背景信息）
 
 【特殊要求】
 如果没有明显问题，也必须输出一条低严重性建议：
