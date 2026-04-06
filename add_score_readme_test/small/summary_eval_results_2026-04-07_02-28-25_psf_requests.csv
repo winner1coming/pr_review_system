@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+psf/requests,baseline,0.3438,0.25,8
+psf/requests,with_readme,0.2438,0.125,8

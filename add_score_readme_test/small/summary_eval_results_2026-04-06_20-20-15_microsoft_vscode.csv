@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+microsoft/vscode,baseline,0.5038,0.25,8
+microsoft/vscode,with_readme,0.4775,0.375,8

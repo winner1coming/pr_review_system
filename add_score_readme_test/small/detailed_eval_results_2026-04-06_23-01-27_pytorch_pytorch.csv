@@ -1,0 +1,17 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+pytorch/pytorch,179457,baseline,0.1,人类Review仅包含CI报告、文档链接和标签提醒等非代码问题，未提出任何具体的代码问题。AI Review提出了关于测试健壮性、潜在Bug和代码可读性的合理代码问题，因此issue_relevance和advice_quality维度得分较高。但由于没有人类代码问题可供覆盖，semantic_coverage和review_dimension_match维度得分极低。,[],[],2026-04-06 22:55:28
+pytorch/pytorch,179457,with_readme,0.1,人类Review仅包含CI报告、文档链接和标签提醒等非代码问题，未提出任何具体的代码问题。AI Review提出了关于潜在Bug、可读性和设计的合理代码问题，但与人类Review的语义覆盖度极低。,[],[],2026-04-06 22:55:58
+pytorch/pytorch,179456,baseline,0.1,人类Review主要由CI状态报告和PR流程评论（如标签要求）组成，未提出任何具体的代码问题。AI Review识别了代码变更的核心语义（替换依赖），并给出了一个合理的代码层面结论。由于没有需要覆盖的代码问题，semantic_coverage维度权重降低，主要基于AI自身提出的问题（issue_relevance）进行评分。,['代码变更的核心语义（将外部依赖替换为内部vendored版本）'],[],2026-04-06 22:56:06
+pytorch/pytorch,179456,with_readme,0.1,人类Review主要包含CI状态报告和PR流程提醒，未提出任何具体的代码问题。AI Review分析了代码变更，提出了合理的代码健壮性和兼容性问题。由于没有需要覆盖的代码问题，评分主要基于AI自身提出的问题的合理性。,[],[],2026-04-06 22:56:19
+pytorch/pytorch,179453,baseline,0.1,人类Review内容完全由CI失败报告、文档链接和PR流程评论（如标签要求、导出通知）组成，不包含任何代码层面的问题。AI Review仅对代码变更进行了概括性描述，未提出任何具体的代码问题。因此，在核心的代码问题层面，两者无相关性。评分主要基于AI Review自身提出的问题是否合理（issue_relevance），但其结论为‘未发现明显问题’，未提出新的有价值问题，故得分较低。,[],[],2026-04-06 22:56:28
+pytorch/pytorch,179453,with_readme,0.1,人类Review仅包含CI失败信息和PR流程评论，未提出任何具体的代码问题。AI Review提出了多个合理的代码问题（如测试参数传递、查找表合并、设计变更），但与人类Review的语义覆盖度极低。评分主要基于AI Review自身的问题相关性。,[],[],2026-04-06 22:57:05
+pytorch/pytorch,179452,baseline,0.1,人类Review内容完全是CI流程和自动化报告，不包含任何代码问题。AI Review提出了一个关于精度容差的代码问题，虽然合理但与人类Review无关。根据评估原则，当人类Review无代码问题时，应降低semantic_coverage的影响，主要评估AI问题的合理性。AI问题具有相关性，但与人类Review无覆盖关系。,[],[],2026-04-06 22:57:14
+pytorch/pytorch,179452,with_readme,0.1,人类Review内容完全是CI自动化报告和流程信息，不包含任何代码问题。AI Review提出了几个关于测试逻辑和代码可读性的合理问题，但与人类Review的语义无关。根据评估原则，当人类Review无代码问题时，应主要评估AI Review自身的问题相关性。,[],[],2026-04-06 22:57:48
+pytorch/pytorch,179451,baseline,0.1,人类Review内容完全是CI流程和自动化报告，不包含任何代码问题。AI Review分析了代码变更（添加xfail测试），提出了合理的代码问题评估。由于没有需要覆盖的代码问题，semantic_coverage权重降低，主要依据issue_relevance评分。,[],[],2026-04-06 22:57:57
+pytorch/pytorch,179451,with_readme,0.1,人类Review内容完全是CI流程和自动化报告，不包含任何代码问题。AI Review提出了关于代码可读性和设计的合理建议，但与人类Review在代码问题层面完全无关。,[],[],2026-04-06 22:58:19
+pytorch/pytorch,179446,baseline,0.1,人类Review主要包含CI失败报告（Lint错误）和PR标签流程提醒，未提出任何具体的代码问题。AI Review专注于代码功能分析，未提及CI/Lint问题，但提出了合理的代码实现评估。根据评估原则，忽略非代码信息，AI Review与人类Review在代码问题层面无关联。,[],['Lint检查失败（torch/_inductor/select_algorithm.py）'],2026-04-06 22:58:28
+pytorch/pytorch,179446,with_readme,0.1,人类Review主要包含CI失败报告和PR标签流程信息，未提出具体的代码问题。AI Review提出了多个合理的代码问题（如断言检查、代码可读性、设计状态管理），但与人类Review的语义覆盖度极低。评分主要基于AI Review自身的问题相关性。,[],[],2026-04-06 22:58:52
+pytorch/pytorch,179444,baseline,0.1,人类Review主要由CI状态、标签管理和CLA验证等非代码流程信息构成，未提出任何具体的代码问题。AI Review提出了一个关于内存限制计算的合理代码问题。由于没有可覆盖的代码问题，语义覆盖维度评分极低，但AI提出的问题本身具有相关性。,[],[],2026-04-06 22:59:03
+pytorch/pytorch,179444,with_readme,0.1,人类Review内容几乎全部为CI流程、标签管理和CLA验证等非代码问题，未提出任何具体的代码问题。AI Review提出了一个关于空指针解引用的潜在Bug，这是一个合理且有价值的代码问题。由于没有需要覆盖的人类代码问题，semantic_coverage权重降低，主要基于AI自身提出的问题质量（issue_relevance）评分。,[],[],2026-04-06 22:59:13
+pytorch/pytorch,179443,baseline,0.1,人类Review主要包含CI测试失败报告和CLA签名检查，未提出任何具体的代码问题。AI Review提出了关于内存泄漏和性能优化的合理代码问题，但两者在代码问题层面无直接关联。根据评估原则，忽略非代码信息，主要依据AI提出的问题合理性评分。,[],[],2026-04-06 22:59:44
+pytorch/pytorch,179443,with_readme,0.1,人类Review主要是CI测试失败报告和CLA签名检查，未提出任何具体的代码问题。AI Review提出了关于内存泄漏、可读性、性能和设计的合理代码问题，但与人类Review的语义覆盖度极低。,[],[],2026-04-06 23:00:24

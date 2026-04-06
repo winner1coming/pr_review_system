@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+django/django,baseline,0.1062,0.0,8
+django/django,with_readme,0.1125,0.0,8

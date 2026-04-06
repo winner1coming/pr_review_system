@@ -1,0 +1,17 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+rust-lang/rust,154879,baseline,0.1,人类Review仅包含非代码信息（如变更通知、指派审阅者、流程说明），未提出任何具体的代码问题。AI Review提出了一个合理的代码变更总结（移除冗余字段、简化数据结构），但其内容与人类Review的语义无关。根据评估原则，当人类Review无代码问题时，应降低semantic_coverage的影响，主要依据issue_relevance评分。AI提出的问题虽合理，但与人类Review无关联，故整体评分低。,[],[],2026-04-06 19:46:50
+rust-lang/rust,154879,with_readme,0.1,人类Review仅包含非代码信息（如变更通知、指派审阅者、流程说明），未提出任何具体的代码问题。AI Review虽然提出了一个合理的代码变更分析（移除冗余字段），但与人类Review的语义无关。根据评估原则，当人类Review无代码问题时，应主要关注AI Review自身的问题相关性，但两者在语义上无覆盖，因此基础分极低。,[],[],2026-04-06 19:46:55
+rust-lang/rust,154877,baseline,0.0,人类Review仅包含CI/自动化流程信息（如批准、合并、测试队列），未提出任何代码相关问题。AI Review提出了多个合理的代码问题（Bug、Readability、Performance），但因其与人类Review的语义（代码问题）无交集，故在代码问题层面覆盖度为0。评分主要基于issue_relevance和advice_quality，但semantic_coverage为0导致基础分极低。,[],[],2026-04-06 19:47:24
+rust-lang/rust,154877,with_readme,0.0,人类Review内容仅为CI/PR流程信息（如批准、排队、测试），不包含任何代码问题。AI Review提出了多个合理的代码问题（如Bug修复、API设计、属性解析、可读性改进），但与人类Review在代码层面无关联。根据评估原则，忽略非代码review，AI提出的问题本身合理，但语义覆盖为0。,[],[],2026-04-06 19:47:55
+rust-lang/rust,154876,baseline,0.1,人类Review主要包含非代码信息（如PR流程、CI结果、变更范围说明），无具体的代码问题。AI Review仅给出了一个非常宽泛的结论，未提出任何具体的代码问题或建议。两者在代码问题层面基本无关。,[],[],2026-04-06 19:48:01
+rust-lang/rust,154876,with_readme,0.1,人类Review主要涉及PR流程（批准、合并）和变更范围说明，未提出具体的代码问题。AI Review提出了关于潜在逻辑不一致和代码可读性的合理问题，但与人类Review的语义覆盖度极低。评分主要基于AI自身问题的合理性（issue_relevance）。,[],[],2026-04-06 19:48:20
+rust-lang/rust,154875,baseline,0.1,人类review主要是CI失败报告和流程性评论，未提出具体的代码问题。AI review未覆盖任何代码问题，仅对测试文件本身进行了描述性评价，与人类review的语义关联极弱。,[],[],2026-04-06 19:48:28
+rust-lang/rust,154875,with_readme,0.15,人类review主要是CI失败报告和流程性评论，未提出具体的代码问题。AI review提出了关于测试用例设计的合理代码问题，但与人类review的语义覆盖度极低。评分主要基于issue_relevance和advice_quality。,[],[],2026-04-06 19:48:39
+rust-lang/rust,154874,baseline,0.1,人类Review仅包含PR流程和分配信息，未提出任何代码相关问题。AI Review提出了关于Bug和Readability的合理代码问题，但无法与人类Review的语义进行覆盖比较。评分主要基于AI Review自身的问题相关性。,[],[],2026-04-06 19:48:53
+rust-lang/rust,154874,with_readme,0.1,人类Review仅包含PR流程和分配审阅者的信息，未提出任何代码相关问题。AI Review提出了关于Bug修复和代码可读性的合理分析，但与人类Review内容完全无关（在代码问题层面）。根据评估原则，当人类Review无代码内容时，应降低semantic_coverage的影响，但AI Review与人类Review的语义覆盖为零。,[],[],2026-04-06 19:49:04
+rust-lang/rust,154873,baseline,0.1,人类Review内容几乎完全是CI/CD流程、构建命令和自动化测试结果（如命令错误、网络错误、构建失败/成功），不包含任何对代码逻辑、设计、性能或Bug的实质性审查。AI Review则专注于代码重构、设计变更、Bug修复和性能影响等代码层面的问题。两者在语义上完全无关。根据评估原则，应忽略非代码信息，因此AI Review的语义覆盖极低，但其自身提出的问题具有合理性和价值。,[],[],2026-04-06 19:50:02
+rust-lang/rust,154873,with_readme,0.1,人类Review主要报告CI构建失败（如任务模式不匹配、网络依赖安装错误）和PR流程命令，不包含任何具体的代码问题。AI Review则专注于代码重构、潜在Bug、可读性和设计变更，提出了合理且有价值的代码问题。两者在语义上完全无关（代码问题层面）。根据评估原则，当人类Review无代码问题时，应降低semantic_coverage的影响，主要依据issue_relevance评分。AI提出的问题合理，但方向与人类反馈无关。,[],[],2026-04-06 19:50:39
+rust-lang/rust,154870,baseline,0.1,人类Review主要是CI流程、测试结果和性能报告，不包含任何具体的代码问题。AI Review提出了多个合理的代码问题（Bug/Design），但无法与人类Review的语义进行覆盖比较。根据评估原则，忽略非代码信息，主要依据AI自身提出的问题质量评分。,[],[],2026-04-06 19:51:23
+rust-lang/rust,154870,with_readme,0.1,人类Review主要是CI流程、测试结果和性能报告，不包含任何具体的代码问题。AI Review提出了多个合理的代码问题，但与人类Review的语义覆盖度极低。,[],[],2026-04-06 19:52:30
+rust-lang/rust,154869,baseline,0.1,人类Review内容完全是CI流程和自动化指令，不包含任何代码问题。AI Review提出了多个合理的代码问题（Bug和Design），具有较高价值。因此，基于评估原则，忽略非代码Review，主要依据AI提出的问题合理性评分。,[],[],2026-04-06 19:53:12
+rust-lang/rust,154869,with_readme,0.1,人类Review内容几乎全部为CI流程、自动化构建和PR管理信息，不包含任何具体的代码问题。AI Review提出了多个合理的代码问题（如Bug、Design、Security等），与人类Review在语义上完全无关。根据评估原则，当人类Review无代码问题时，应主要评估AI Review自身的问题相关性，但两者主题完全不同，故给予极低分。,[],[],2026-04-06 19:53:39

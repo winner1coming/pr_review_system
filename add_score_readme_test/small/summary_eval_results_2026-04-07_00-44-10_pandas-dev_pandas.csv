@@ -1,0 +1,3 @@
+repo,strategy,avg_score,high_quality_ratio,num_samples
+pandas-dev/pandas,baseline,0.2375,0.125,8
+pandas-dev/pandas,with_readme,0.1688,0.125,8
