@@ -1,0 +1,17 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+kubernetes/kubernetes,138245,baseline,0.1,人类Review内容完全是PR流程和自动化通知，不包含任何具体的代码问题。AI Review分析了代码逻辑，提出了合理的评估，但两者在代码审查层面无关联。评分主要基于issue_relevance，AI提出的问题合理但未覆盖人类Review（因其无代码问题）。,[],[],2026-04-07 11:55:04
+kubernetes/kubernetes,138245,with_readme,0.1,人类Review内容完全是PR流程和自动化通知，不包含任何具体的代码问题。AI Review提出了关于代码可读性、性能和Bug（缺少fmt导入）的合理建议。由于没有需要覆盖的代码问题，semantic_coverage权重降低，主要基于AI自身提出的合理问题评分。,[],[],2026-04-07 11:55:22
+kubernetes/kubernetes,138244,baseline,0.1,人类Review内容完全是PR流程、权限和自动化通知，不包含任何具体的代码问题。AI Review提出了关于代码设计和可读性的合理问题。因此，在‘代码问题’层面，两者无关联。评分主要基于AI Review自身的问题相关性（合理）和建议质量（合理），但语义覆盖和审查维度一致性因人类Review无代码内容而无法匹配。,[],[],2026-04-07 11:55:48
+kubernetes/kubernetes,138244,with_readme,0.1,人类Review内容完全是PR流程、等待审批和机器人指令，不包含任何具体的代码问题。AI Review提出了关于边界情况、错误处理和代码逻辑的合理问题，与人类Review在代码层面无关联。根据评估原则，忽略非代码review，主要基于AI自身提出的问题质量评分。,[],[],2026-04-07 11:56:14
+kubernetes/kubernetes,138243,baseline,0.1,人类Review内容几乎全部是关于PR流程（CI、审批、关闭）、自动化通知和重复PR的评论，不包含任何具体的代码问题。AI Review则详细分析了代码中的竞态条件、逻辑错误、设计改进和可读性问题。两者在‘代码问题’层面完全无关。根据评估原则，当人类Review无代码内容时，应降低semantic_coverage的影响，并主要评估AI自身提出的问题是否合理。AI提出的问题本身是合理且有价值的，但与人类Review的语义覆盖度极低。,[],[],2026-04-07 11:56:40
+kubernetes/kubernetes,138243,with_readme,0.1,人类Review内容几乎全部为PR流程、CI触发、重复PR关闭等非代码问题，不包含任何具体的代码问题。AI Review则详细分析了代码中的竞态条件、逻辑错误、可读性和设计问题，这些是合理且有价值的代码审查点。因此，在核心的代码问题层面，两者几乎没有交集，AI Review的语义覆盖度极低，但自身提出的问题具有高相关性。,[],[],2026-04-07 11:57:05
+kubernetes/kubernetes,138242,baseline,0.1,人类Review内容几乎全部为CI流程、PR状态和自动化指令等非代码问题。AI Review仅针对代码变更本身（移除Flaky标签）进行了合理分析，但未覆盖任何人类Review中的代码问题（因为人类Review未提出任何代码问题）。因此，在代码问题层面，两者关联极弱。,[],[],2026-04-07 11:57:12
+kubernetes/kubernetes,138242,with_readme,0.1,人类Review内容均为非代码问题（CI流程、PR状态、自动化指令），AI Review则专注于代码设计问题（移除测试标签的合理性）。两者在语义上完全无关。根据评估原则，忽略非代码信息后，AI未覆盖任何人类提出的核心代码问题（因为人类未提出），但AI自身提出的问题合理。因此，semantic_coverage极低，但issue_relevance和advice_quality较高。,[],[],2026-04-07 11:57:21
+kubernetes/kubernetes,138241,baseline,0.1,人类Review内容完全是PR流程和自动化通知，不包含任何代码问题。AI Review提出了一个合理的代码可读性和维护性问题，但与人类Review的语义无关。根据评估原则，当人类Review无代码问题时，应降低semantic_coverage的影响，主要依据issue_relevance评分。,[],[],2026-04-07 11:57:35
+kubernetes/kubernetes,138241,with_readme,0.1,人类Review内容完全是PR流程和自动化信息，不包含任何代码问题。AI Review提出了关于代码注释和所有权的合理问题，但与人类Review在代码层面无关联。,[],[],2026-04-07 11:57:47
+kubernetes/kubernetes,138238,baseline,0.1,人类Review内容完全是PR流程、权限和自动化机器人指令，不包含任何具体的代码问题。AI Review则专注于分析新增测试用例的代码质量和覆盖范围，两者在代码问题层面完全无关。根据评估原则，忽略非代码信息，主要依据issue_relevance评分。,[],[],2026-04-07 11:57:54
+kubernetes/kubernetes,138238,with_readme,0.1,人类Review内容完全是PR流程、权限和自动化指令，不包含任何代码相关问题。AI Review专注于分析测试用例的代码质量，提出了合理且正面的评估。两者在代码问题层面完全无关。,[],[],2026-04-07 11:58:00
+kubernetes/kubernetes,138237,baseline,0.1,人类Review内容完全是关于PR流程（标签、待处理、测试权限、审批状态）的自动化或流程性评论，不包含任何具体的代码问题。AI Review则详细分析了代码中的Bug、可读性和测试用例，提出了合理且有价值的代码问题。由于两者在代码问题层面无交集，语义覆盖极低，但AI Review本身质量高，因此给予基础分。,[],[],2026-04-07 11:58:21
+kubernetes/kubernetes,138237,with_readme,0.1,人类Review内容完全是关于PR流程、标签、权限和自动化通知，不包含任何具体的代码问题。AI Review则提出了关于Bug、可读性和性能的具体代码问题。两者在代码审查的语义层面完全无关。根据评估原则，应忽略非代码信息，因此AI Review与人类Review在核心代码问题上无覆盖。,[],[],2026-04-07 11:58:37
+kubernetes/kubernetes,138236,baseline,0.0,人类Review全部是关于PR流程、标签、欢迎信息和权限审批的非代码问题，不包含任何代码相关的Bug、逻辑、设计或性能问题。AI Review则专注于代码层面的Bug、可读性和设计问题。两者在语义上完全无关。根据评估原则，应忽略非代码信息，因此AI Review未覆盖任何人类Review的核心代码问题（因为不存在）。AI Review自身提出的问题是合理且有价值的，但这不影响semantic_coverage维度得分为0。,[],[],2026-04-07 11:59:00
+kubernetes/kubernetes,138236,with_readme,0.0,人类Review内容全部为PR流程、标签管理、欢迎信息和自动化通知，不包含任何代码相关问题。AI Review提出了关于测试用例错误信息和代码可读性的具体代码问题，两者在代码问题层面完全无关。根据评估原则，忽略非代码信息，仅评估代码问题覆盖，因此得分为0。,[],[],2026-04-07 11:59:17
