@@ -1,0 +1,9 @@
+repo,pr,strategy,score,reason,covered_aspects,missing_aspects,time
+rust-lang/rust,154916,with_readme,0.1,人类Review仅包含CI/PR流程信息（如批准、入队），未提出任何代码相关问题。AI Review提出了合理的代码重构和重命名问题，但因其与人类Review的语义覆盖度极低，故整体评分低。评分主要基于AI自身提出的问题质量（issue_relevance）。,[],[],2026-04-07 08:53:15
+rust-lang/rust,154913,with_readme,0.1,人类Review内容完全为PR流程和自动化信息（如批准、排队、关闭），不包含任何代码层面的问题。AI Review提出了多个合理的代码问题（如函数重命名、设计扩展、Bug修复），但与人类Review在代码问题层面无关联。根据评估原则，忽略非代码review，主要依据issue_relevance评分。,[],[],2026-04-07 08:53:45
+rust-lang/rust,154912,with_readme,0.1,人类Review几乎不包含任何代码问题，主要是CI流程、性能测试结果和PR管理信息。AI Review提出了多个合理的代码设计、可读性和正确性问题，但与人类Review的语义覆盖极低。评分主要基于AI Review自身的问题相关性（较高）和建议质量（合理）。,[],[],2026-04-07 08:54:17
+rust-lang/rust,154911,with_readme,0.1,人类Review的核心代码问题是CI失败（编译器panic），但AI Review完全未提及此问题。AI Review仅描述了代码变更的意图和功能，未识别出任何实际的代码缺陷或构建失败。因此，语义覆盖和问题相关性极低。,[],['CI构建失败（编译器panic）'],2026-04-07 08:54:26
+rust-lang/rust,154910,with_readme,0.65,AI Review 深入分析了代码变更的逻辑问题（Bug）和设计不一致问题（Design），这些都是核心的代码问题，具有很高的价值。人类 Review 的核心关注点是代码生成结果（stdout）与预期不符，这本质上是一个由代码逻辑或设计问题导致的 Bug。AI 虽然没有直接提及测试输出文件，但它精准地指出了导致此问题的两个潜在代码缺陷（clone.rs 中的错误条件和 partial_eq.rs 中的不一致处理），因此语义上覆盖了人类 Review 的核心关切。人类 Review 中的非代码部分（如 CI 结果、PR 流程、lint 使用统计）已被忽略。AI 还额外提出了可读性建议，增加了审查价值。,"['为包含never类型字段的ADT派生Clone/PartialEq时抑制unreachable_code警告的核心逻辑', 'clone.rs 中枚举检查逻辑可能存在的缺陷（可能为所有有字段的枚举添加属性）', 'partial_eq.rs 与 clone.rs 在处理枚举类型时存在设计不一致']",['未直接提及或分析测试输出文件 (`deriving-all-codegen.stdout`) 的具体变化'],2026-04-07 08:54:50
+rust-lang/rust,154909,with_readme,0.1,人类Review主要是CI流程、测试结果和性能报告，不包含任何具体的代码问题。AI Review提出了合理的代码修改分析和测试添加，但与人类Review的语义无关。根据评估原则，忽略非代码review，AI提出的问题本身合理，但与人类review无覆盖关系。,[],[],2026-04-07 08:55:12
+rust-lang/rust,154908,with_readme,0.1,人类Review仅包含CI构建流程信息，无任何代码问题。AI Review提出了多个合理的代码问题（如设计、可读性、Bug、性能），但均与人类Review无关。根据评估原则，忽略非代码review，主要依据issue_relevance评分。,[],[],2026-04-07 08:55:54
+rust-lang/rust,154907,with_readme,0,,[],[],2026-04-07 08:57:17
