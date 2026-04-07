@@ -59,9 +59,9 @@ class Reviewer:
                     "repo": repo_name,
                     "pr": pr_number,
                     "strategy": strategy,
-                    "review": review,
                     "metrics": metrics,
                     "score": score,
+                    "review": review,
                     "commits": commit_info,
                     "review_comments": review_comments,
                     "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
